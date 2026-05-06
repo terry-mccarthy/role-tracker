@@ -86,6 +86,7 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
 .loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-text { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); }
+.loading-tokens { font-family: var(--mono); font-size: 0.62rem; color: var(--dim); margin-top: 0.4rem; min-height: 1.2em; }
 
 /* RESULTS */
 .results { display: none; }
@@ -212,7 +213,8 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
   <!-- LOADING -->
   <div class="loading" id="loading" style="display:none">
     <div class="loading-spinner"></div>
-    <div class="loading-text">Scoring against your evaluation profile...</div>
+    <div class="loading-text" id="loading-text">Scoring against your evaluation profile...</div>
+    <div class="loading-tokens" id="loading-tokens"></div>
   </div>
 
   <!-- RESULTS -->
@@ -497,6 +499,10 @@ window.fetchAnthropic = function(prompts) {
 };
 
 window.fetchOllama = function(prompts) {
+  var tokensEl = document.getElementById('loading-tokens');
+  var textEl = document.getElementById('loading-text');
+  if (textEl) textEl.textContent = 'Generating with ' + currentOllamaModel + '...';
+
   return fetch('http://localhost:11434/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -506,10 +512,47 @@ window.fetchOllama = function(prompts) {
         { role: 'system', content: prompts.system },
         { role: 'user', content: prompts.user }
       ],
-      stream: false
+      stream: true
     })
-  }).then(function(res) { return res.json(); }).then(function(data) {
-    return data.choices[0].message.content;
+  }).then(function(res) {
+    if (!res.ok) { return res.text().then(function(t) { throw new Error('Ollama error: ' + t); }); }
+
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder();
+    var fullText = '';
+    var tokenCount = 0;
+    var buffer = '';
+
+    function read() {
+      return reader.read().then(function(chunk) {
+        if (chunk.done) return fullText;
+
+        buffer += decoder.decode(chunk.value, { stream: true });
+        var lines = buffer.split('\n');
+        buffer = lines.pop(); // keep incomplete last line
+
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (line.indexOf('data: ') !== 0) continue;
+          var raw = line.slice(6);
+          if (raw === '[DONE]') continue;
+          try {
+            var parsed = JSON.parse(raw);
+            var delta = parsed.choices[0].delta.content;
+            if (delta) {
+              fullText += delta;
+              tokenCount++;
+              if (tokensEl && tokenCount % 5 === 0) {
+                tokensEl.textContent = tokenCount + ' tokens...';
+              }
+            }
+          } catch(e) { /* incomplete JSON chunk, skip */ }
+        }
+        return read();
+      });
+    }
+
+    return read();
   });
 };
 
@@ -543,6 +586,10 @@ window.scoreRole = function() {
   }).finally(function() {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('score-btn').disabled = false;
+    var tokensEl = document.getElementById('loading-tokens');
+    var textEl = document.getElementById('loading-text');
+    if (tokensEl) tokensEl.textContent = '';
+    if (textEl) textEl.textContent = 'Scoring against your evaluation profile...';
   });
 };
 
