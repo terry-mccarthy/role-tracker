@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EM Job Search · Funnel CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0c0d0f;
+  --surface: #141618;
+  --surface2: #1c1e22;
+  --surface3: #242629;
+  --border: #2a2d32;
+  --border2: #343840;
+  --text: #e8e4dc;
+  --muted: #6b6f78;
+  --dim: #9a9ea8;
+  --accent: #e8633a;
+  --accent2: #c4a84f;
+  --green: #4caf82;
+  --blue: #5b8fe8;
+  --purple: #9b72e8;
+  --red: #e85b5b;
+  --serif: 'DM Serif Display', serif;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* TOPBAR */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.logo {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo-dot {
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.nav-tab {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.9rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  height: 52px;
+}
+
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nav-tab:hover:not(.active) { color: var(--dim); }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-add {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.4rem 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: opacity 0.15s;
+}
+.btn-add:hover { opacity: 0.85; }
+
+/* STATS BAR */
+.statsbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  display: flex;
+  gap: 0;
+}
+
+.stat-item {
+  padding: 0.75rem 1.5rem 0.75rem 0;
+  margin-right: 1.5rem;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.stat-item:last-child { border-right: none; }
+
+.stat-value {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--text);
+}
+
+.stat-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.stat-delta {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--green);
+}
+
+/* MAIN LAYOUT */
+.main { display: flex; height: calc(100vh - 104px); overflow: hidden; }
+
+/* KANBAN VIEW */
+#view-kanban {
+  display: flex;
+  flex: 1;
+  overflow-x: auto;
+  padding: 1.25rem;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.kanban-col {
+  min-width: 240px;
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 0.2rem;
+}
+
+.col-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.col-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+
+.col-name {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+}
+
+.col-count {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  background: var(--surface3);
+  color: var(--muted);
+  padding: 0.1rem 0.45rem;
+  border-radius: 2px;
+}
+
+/* CARDS */
+.card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.card:hover {
+  border-color: var(--border2);
+  transform: translateY(-1px);
+}
+
+.card-company {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.card-role {
+  font-size: 0.73rem;
+  color: var(--dim);
+  margin-bottom: 0.5rem;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.card-tier {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 2px;
+}
+
+.tier-a { background: rgba(232,99,58,0.15); color: var(--accent); }
+.tier-b { background: rgba(196,168,79,0.15); color: var(--accent2); }
+.tier-c { background: rgba(91,143,232,0.15); color: var(--blue); }
+
+.card-date {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.1rem 0.4rem;
+  border-radius: 2px;
+}
+
+.card-next {
+  font-size: 0.7rem;
+  color: var(--accent2);
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-style: italic;
+}
+
+/* Urgency indicators */
+.card-urgent { border-color: rgba(232,91,91,0.4) !important; }
+.card-urgent .card-date { color: var(--red) !important; }
+
+/* ADD CARD BUTTON */
+.add-card-btn {
+  width: 100%;
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+  padding: 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.add-card-btn:hover {
+  border-color: var(--border2);
+  color: var(--dim);
+  background: var(--surface2);
+}
+
+/* TABLE VIEW */
+#view-table {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
+}
+
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+thead { background: var(--surface2); }
+
+th {
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+td {
+  padding: 0.65rem 0.9rem;
+  font-size: 0.78rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+
+.stage-pill {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+/* FUNNEL VIEW */
+#view-funnel {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 2rem;
+}
+
+.funnel-container {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.funnel-title {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.funnel-subtitle {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 2rem;
+}
+
+.funnel-stage-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.funnel-stage-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+  text-align: right;
+}
+
+.funnel-bar-wrap {
+  position: relative;
+  height: 36px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.funnel-bar {
+  height: 100%;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  padding-left: 0.75rem;
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.funnel-bar-text {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+}
+
+.funnel-stat {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  white-space: nowrap;
+  text-align: right;
+  min-width: 80px;
+}
+
+.funnel-conversion {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0 0 0.75rem 0;
+  padding-right: 0;
+  gap: 0.4rem;
+}
+
+.conversion-arrow {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-align: right;
+  padding-right: calc(80px + 1rem);
+  padding-left: 156px;
+  width: 100%;
+}
+
+.conv-rate {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 2px;
+}
+
+.conv-good { background: rgba(76,175,130,0.15); color: var(--green); }
+.conv-warn { background: rgba(196,168,79,0.15); color: var(--accent2); }
+.conv-bad { background: rgba(232,91,91,0.15); color: var(--red); }
+
+.funnel-insights {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.insight-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+}
+
+.insight-card h4 {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.insight-card p {
+  font-size: 0.78rem;
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+.insight-card .highlight {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0.2rem;
+}
+.modal-close:hover { color: var(--text); }
+
+.modal-body { padding: 1.25rem 1.5rem; }
+
+.form-row {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.5rem 0.75rem;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  border-radius: 3px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--accent);
+}
+
+.form-select option { background: var(--surface2); }
+
+.form-textarea { resize: vertical; min-height: 70px; }
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.btn-secondary {
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--dim);
+  padding: 0.45rem 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s;
+}
+.btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+
+.btn-primary {
+  background: var(--accent);
+  border: none;
+  color: white;
+  padding: 0.45rem 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.85; }
+
+/* DETAIL PANEL */
+.detail-panel {
+  width: 340px;
+  min-width: 340px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.detail-panel.open { display: flex; }
+
+.detail-header {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-company {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.detail-role {
+  font-size: 0.8rem;
+  color: var(--dim);
+  margin-bottom: 0.75rem;
+}
+
+.detail-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.detail-body {
+  padding: 1.25rem;
+  flex: 1;
+}
+
+.detail-section {
+  margin-bottom: 1.25rem;
+}
+
+.detail-section-title {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-text {
+  font-size: 0.78rem;
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+.activity-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.activity-item {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+
+.activity-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 0.35rem;
+  flex-shrink: 0;
+}
+
+.activity-content {
+  font-size: 0.73rem;
+  color: var(--dim);
+  line-height: 1.4;
+}
+
+.activity-date {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+.stage-advance-btns {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-advance {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.7rem;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: none;
+  color: var(--dim);
+  transition: all 0.15s;
+}
+.btn-advance:hover { background: var(--surface2); color: var(--text); border-color: var(--muted); }
+.btn-advance.primary { background: var(--accent); border-color: var(--accent); color: white; }
+.btn-advance.primary:hover { opacity: 0.85; }
+.btn-advance.danger { border-color: var(--red); color: var(--red); }
+.btn-advance.danger:hover { background: rgba(232,91,91,0.1); }
+
+/* EMPTY STATE */
+.empty-col {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 1.5rem 0.5rem;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  line-height: 1.7;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* Column colour accents */
+.col-target .col-dot, .col-target .card::before { background: var(--muted); }
+.col-warm .col-dot, .col-warm .card::before { background: var(--accent2); }
+.col-screen .col-dot, .col-screen .card::before { background: var(--blue); }
+.col-interview .col-dot, .col-interview .card::before { background: var(--purple); }
+.col-offer .col-dot, .col-offer .card::before { background: var(--green); }
+.col-closed .col-dot, .col-closed .card::before { background: var(--muted); }
+
+.col-target .col-header { border-bottom-color: var(--muted); }
+.col-warm .col-header { border-bottom-color: var(--accent2); }
+.col-screen .col-header { border-bottom-color: var(--blue); }
+.col-interview .col-header { border-bottom-color: var(--purple); }
+.col-offer .col-header { border-bottom-color: var(--green); }
+.col-closed .col-header { border-bottom-color: var(--border); }
+
+/* Stage pill colours */
+.stage-target { background: rgba(107,111,120,0.2); color: var(--dim); }
+.stage-warm { background: rgba(196,168,79,0.15); color: var(--accent2); }
+.stage-screen { background: rgba(91,143,232,0.15); color: var(--blue); }
+.stage-interview { background: rgba(155,114,232,0.15); color: var(--purple); }
+.stage-offer { background: rgba(76,175,130,0.15); color: var(--green); }
+.stage-closed { background: rgba(107,111,120,0.1); color: var(--muted); }
+</style>
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      Pipeline
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchView('kanban',this)">Kanban</button>
+      <button class="nav-tab" onclick="switchView('table',this)">Table</button>
+      <button class="nav-tab" onclick="switchView('funnel',this)">Funnel</button>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn-add" onclick="openModal()" style="margin-right:0.4rem">+ Add Company</button>
+    <button class="btn-secondary" onclick="exportData()" style="font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;padding:0.35rem 0.7rem;border-radius:3px;cursor:pointer;border:1px solid var(--border2);background:none;color:var(--dim)">Export</button>
+    <button class="btn-secondary" onclick="document.getElementById('import-file').click()" style="font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;padding:0.35rem 0.7rem;border-radius:3px;cursor:pointer;border:1px solid var(--border2);background:none;color:var(--dim)">Import</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="statsbar" id="statsbar"></div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- KANBAN -->
+  <div id="view-kanban" style="flex:1; display:flex; overflow-x:auto; padding:1.25rem; gap:0.9rem; align-items:flex-start;"></div>
+
+  <!-- TABLE -->
+  <div id="view-table" style="display:none; flex:1; overflow-y:auto; padding:1.25rem;">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Role</th>
+            <th>Tier</th>
+            <th>Stage</th>
+            <th>Source</th>
+            <th>Added</th>
+            <th>Next Action</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FUNNEL -->
+  <div id="view-funnel" style="display:none; flex:1; overflow-y:auto; padding:1.5rem 2rem;">
+    <div class="funnel-container" id="funnel-container"></div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="detail-company" id="dp-company"></div>
+          <div class="detail-role" id="dp-role"></div>
+        </div>
+        <button onclick="document.getElementById('detail-panel').classList.remove('open')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0.2rem">&#x2715;</button>
+      </div>
+      <div class="detail-meta" id="dp-meta"></div>
+      <div id="dp-url-wrap" style="margin-top:0.6rem;display:none">
+        <a id="dp-url" href="#" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:0.65rem;color:var(--blue);text-decoration:none;word-break:break-all">View on LinkedIn</a>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-section">
+        <div class="detail-section-title">Contact</div>
+        <div class="detail-text" id="dp-contact"></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Notes</div>
+        <div class="detail-text" id="dp-notes">No notes yet.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Next Action</div>
+        <div class="detail-text" id="dp-next" style="color:var(--accent2);font-style:italic"></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Activity Log</div>
+        <div class="activity-log" id="dp-activity"></div>
+      </div>
+    </div>
+    <div class="stage-advance-btns" id="dp-actions"></div>
+  </div>
+
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add Company to Pipeline</div>
+      <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Company Name *</label>
+        <input class="form-input" id="f-company" placeholder="e.g. Canva">
+      </div>
+      <div class="form-row-2">
+        <div>
+          <label class="form-label">Role Title *</label>
+          <input class="form-input" id="f-role" placeholder="e.g. Engineering Manager">
+        </div>
+        <div>
+          <label class="form-label">Tier</label>
+          <select class="form-select" id="f-tier">
+            <option value="A">Tier A - Scale-up EM</option>
+            <option value="B">Tier B - Staff/Lead IC</option>
+            <option value="C">Tier C - Head/VP Eng</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div>
+          <label class="form-label">Stage</label>
+          <select class="form-select" id="f-stage">
+            <option value="target">Target</option>
+            <option value="warm">Warming Up</option>
+            <option value="screen">Screen</option>
+            <option value="interview">Interviewing</option>
+            <option value="offer">Offer</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Source</label>
+          <select class="form-select" id="f-source">
+            <option value="Network">Network</option>
+            <option value="LinkedIn">LinkedIn</option>
+            <option value="Job Board">Job Board</option>
+            <option value="Recruiter">Recruiter</option>
+            <option value="Direct">Direct Outreach</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">LinkedIn / Job URL</label>
+        <input class="form-input" id="f-url" placeholder="https://linkedin.com/jobs/view/...">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Contact Name</label>
+        <input class="form-input" id="f-contact" placeholder="e.g. Sarah Chen (VP Eng)">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Next Action</label>
+        <input class="form-input" id="f-next" placeholder="e.g. Follow up after coffee chat Thu">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="f-notes" placeholder="What do you know about this role? What problem are they solving?"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="modal-save-btn" onclick="saveCompany()">Add to Pipeline</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <div class="modal-title">Reset All Data?</div>
+      <button class="modal-close" onclick="document.getElementById('confirm-modal').classList.remove('open')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.82rem;color:var(--dim);line-height:1.6">This will permanently delete all companies from your pipeline. This cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('confirm-modal').classList.remove('open')">Cancel</button>
+      <button class="btn-advance danger" onclick="confirmReset()" style="background:var(--red);color:white;border-color:var(--red)">Delete Everything</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var STORAGE_KEY = 'pipeline-data';
+
+var STAGES = [
+  { id: 'target',    label: 'Target List',  col: 'col-target' },
+  { id: 'warm',      label: 'Warming Up',   col: 'col-warm' },
+  { id: 'screen',    label: 'Screen',       col: 'col-screen' },
+  { id: 'interview', label: 'Interviewing', col: 'col-interview' },
+  { id: 'offer',     label: 'Offer',        col: 'col-offer' },
+  { id: 'closed',    label: 'Closed',       col: 'col-closed' }
+];
+
+var STAGE_COLORS = {
+  target: '#6b6f78', warm: '#c4a84f', screen: '#5b8fe8',
+  interview: '#9b72e8', offer: '#4caf82', closed: '#3a3d42'
+};
+
+var FUNNEL_BENCHMARKS = {
+  target_warm:      { good: 30, warn: 15 },
+  warm_screen:      { good: 40, warn: 20 },
+  screen_interview: { good: 60, warn: 35 },
+  interview_offer:  { good: 25, warn: 10 }
+};
+
+var companies = [];
+var nextId = 1;
+var selectedId = null;
+var editingId = null;
+var isLoaded = false;
+
+// ── STORAGE ────────────────────────────────────────────────────────
+
+window.saveToStorage = function() {
+  try {
+    var data = JSON.stringify({ companies: companies, nextId: nextId });
+    window.storage.set(STORAGE_KEY, data).catch(function(e) { console.warn('Storage write failed', e); });
+  } catch(e) { console.warn('Storage unavailable', e); }
+};
+
+window.loadFromStorage = function() {
+  try {
+    window.storage.get(STORAGE_KEY).then(function(result) {
+      if (result && result.value) {
+        var parsed = JSON.parse(result.value);
+        companies = parsed.companies || [];
+        nextId = parsed.nextId || (companies.length + 1);
+      }
+      isLoaded = true;
+      window.render();
+    }).catch(function() {
+      isLoaded = true;
+      window.render();
+    });
+  } catch(e) {
+    isLoaded = true;
+    window.render();
+  }
+};
+
+// ── EXPORT / IMPORT ────────────────────────────────────────────────
+
+window.exportData = function() {
+  var data = JSON.stringify({ companies: companies, nextId: nextId, exported: new Date().toISOString() }, null, 2);
+  var blob = new Blob([data], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'pipeline-export-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+window.importData = function(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var parsed = JSON.parse(e.target.result);
+      if (parsed.companies && parsed.companies.length > 0) {
+        companies = parsed.companies;
+        nextId = parsed.nextId || (companies.length + 1);
+        window.saveToStorage();
+        window.render();
+      } else {
+        alert('No companies found in import file.');
+      }
+    } catch(err) {
+      alert('Invalid JSON file.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+};
+
+// ── RESET ──────────────────────────────────────────────────────────
+
+window.resetData = function() {
+  document.getElementById('confirm-modal').classList.add('open');
+};
+
+window.confirmReset = function() {
+  companies = [];
+  nextId = 1;
+  selectedId = null;
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('confirm-modal').classList.remove('open');
+  window.saveToStorage();
+  window.render();
+};
+
+// ── UTILITY ────────────────────────────────────────────────────────
+
+window.daysSince = function(dateStr) {
+  var d = new Date(dateStr);
+  var now = new Date();
+  return Math.floor((now - d) / 86400000);
+};
+
+window.todayStr = function() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+};
+
+window.todayLabel = function() {
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var d = new Date();
+  return months[d.getMonth()] + ' ' + d.getDate();
+};
+
+// ── RENDER ─────────────────────────────────────────────────────────
+
+window.render = function() {
+  window.renderStats();
+  window.renderKanban();
+  window.renderTable();
+  window.renderFunnel();
+};
+
+window.renderStats = function() {
+  var total = companies.length;
+  var active = 0, interviews = 0, offers = 0, warm = 0, viaNet = 0;
+  for (var i = 0; i < companies.length; i++) {
+    var c = companies[i];
+    if (c.stage !== 'closed') active++;
+    if (c.stage === 'interview') interviews++;
+    if (c.stage === 'offer') offers++;
+    if (c.stage === 'warm') warm++;
+    if (c.source === 'Network') viaNet++;
+  }
+  document.getElementById('statsbar').innerHTML =
+    '<div class="stat-item"><span class="stat-value">' + total + '</span><span class="stat-label">Total in Pipeline</span></div>' +
+    '<div class="stat-item"><span class="stat-value">' + active + '</span><span class="stat-label">Active</span></div>' +
+    '<div class="stat-item"><span class="stat-value">' + warm + '</span><span class="stat-label">Warming Up</span></div>' +
+    '<div class="stat-item"><span class="stat-value">' + interviews + '</span><span class="stat-label">Interviewing</span></div>' +
+    '<div class="stat-item"><span class="stat-value">' + offers + '</span><span class="stat-label">Offers</span></div>' +
+    '<div class="stat-item"><span class="stat-value">' + viaNet + '</span><span class="stat-label">Via Network</span></div>';
+};
+
+window.renderCard = function(c) {
+  var days = window.daysSince(c.added);
+  var urgent = (c.stage === 'interview' || c.stage === 'warm') && days > 5;
+  var contactTag = '';
+  if (c.contact && c.contact.length > 0) {
+    contactTag = '<span class="tag">' + c.contact.split('(')[0].trim() + '</span>';
+  }
+  var urlTag = '';
+  if (c.url && c.url.length > 0) {
+    urlTag = '<span class="tag" style="color:var(--blue)">Link</span>';
+  }
+  var nextLine = c.next ? '<div class="card-next">' + c.next + '</div>' : '';
+  return '<div class="card' + (urgent ? ' card-urgent' : '') + '" onclick="selectCompany(' + c.id + ')">' +
+    '<div class="card-company">' + c.company + '</div>' +
+    '<div class="card-role">' + c.role + '</div>' +
+    nextLine +
+    '<div class="card-meta">' +
+      '<span class="card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span>' +
+      '<span class="card-date">' + days + 'd ago</span>' +
+    '</div>' +
+    '<div class="card-tags"><span class="tag">' + c.source + '</span>' + contactTag + urlTag + '</div>' +
+  '</div>';
+};
+
+window.renderKanban = function() {
+  var wrap = document.getElementById('view-kanban');
+
+  if (companies.length === 0) {
+    wrap.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;padding:4rem 2rem;text-align:center">' +
+      '<div style="font-family:var(--serif);font-size:1.8rem;color:var(--text);margin-bottom:0.5rem">Your pipeline is empty</div>' +
+      '<div style="font-size:0.85rem;color:var(--dim);max-width:400px;line-height:1.6;margin-bottom:1.5rem">Add your first company to get started. Click the button below or use + Add Company in the top right. You can also import an existing pipeline from a JSON file.</div>' +
+      '<button class="btn-add" onclick="openModal()" style="font-size:0.7rem;padding:0.5rem 1.2rem">+ Add Your First Company</button>' +
+    '</div>';
+    return;
+  }
+
+  var html = '';
+  for (var si = 0; si < STAGES.length; si++) {
+    var s = STAGES[si];
+    var cards = [];
+    for (var ci = 0; ci < companies.length; ci++) {
+      if (companies[ci].stage === s.id) cards.push(companies[ci]);
+    }
+    html += '<div class="kanban-col ' + s.col + '">';
+    html += '<div class="col-header"><div class="col-header-left"><div class="col-dot"></div><div class="col-name">' + s.label + '</div></div><div class="col-count">' + cards.length + '</div></div>';
+    if (cards.length === 0) {
+      html += '<div class="empty-col">No companies<br>at this stage</div>';
+    } else {
+      for (var k = 0; k < cards.length; k++) {
+        html += window.renderCard(cards[k]);
+      }
+    }
+    html += '<button class="add-card-btn" onclick="openModal(\'' + s.id + '\')">+ Add</button></div>';
+  }
+  wrap.innerHTML = html;
+};
+
+window.renderTable = function() {
+  var tbody = document.getElementById('table-body');
+  if (companies.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No companies yet</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < companies.length; i++) {
+    var c = companies[i];
+    var sl = '';
+    for (var j = 0; j < STAGES.length; j++) { if (STAGES[j].id === c.stage) sl = STAGES[j].label; }
+    html += '<tr onclick="selectCompany(' + c.id + ')" style="cursor:pointer">' +
+      '<td style="font-weight:600">' + c.company + '</td>' +
+      '<td style="color:var(--dim)">' + c.role + '</td>' +
+      '<td><span class="card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span></td>' +
+      '<td><span class="stage-pill stage-' + c.stage + '">' + sl + '</span></td>' +
+      '<td style="color:var(--dim)">' + c.source + '</td>' +
+      '<td style="color:var(--dim);font-family:var(--mono);font-size:0.7rem">' + window.daysSince(c.added) + 'd ago</td>' +
+      '<td style="color:var(--accent2);font-style:italic;font-size:0.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (c.next || '') + '</td></tr>';
+  }
+  tbody.innerHTML = html;
+};
+
+window.renderFunnel = function() {
+  var container = document.getElementById('funnel-container');
+  if (companies.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:4rem 2rem;color:var(--muted)"><div style="font-family:var(--serif);font-size:1.4rem;color:var(--text);margin-bottom:0.5rem">No data yet</div><div style="font-size:0.82rem">Add companies to see funnel analysis</div></div>';
+    return;
+  }
+
+  var counts = {};
+  var i, j;
+  for (i = 0; i < STAGES.length; i++) {
+    var cnt = 0;
+    for (j = 0; j < companies.length; j++) { if (companies[j].stage === STAGES[i].id) cnt++; }
+    counts[STAGES[i].id] = cnt;
+  }
+  var total = companies.length || 1;
+  var activeStages = [];
+  for (i = 0; i < STAGES.length; i++) { if (STAGES[i].id !== 'closed') activeStages.push(STAGES[i]); }
+
+  var networkTotal = 0, networkAdv = 0, boardTotal = 0, boardAdv = 0;
+  for (i = 0; i < companies.length; i++) {
+    var c = companies[i];
+    if (c.source === 'Network') { networkTotal++; if (c.stage === 'screen' || c.stage === 'interview' || c.stage === 'offer') networkAdv++; }
+    if (c.source === 'Job Board') { boardTotal++; if (c.stage === 'screen' || c.stage === 'interview' || c.stage === 'offer') boardAdv++; }
+  }
+
+  var html = '<div class="funnel-title">Funnel Analysis</div>' +
+    '<div class="funnel-subtitle">Live conversion rates &middot; ' + companies.length + ' companies tracked</div>';
+
+  for (i = 0; i < activeStages.length; i++) {
+    var s = activeStages[i];
+    var count = counts[s.id];
+    var pct = Math.max(4, Math.round((count / total) * 100));
+    var color = STAGE_COLORS[s.id];
+    html += '<div class="funnel-stage-row">' +
+      '<div class="funnel-stage-label">' + s.label + '</div>' +
+      '<div class="funnel-bar-wrap"><div class="funnel-bar" style="width:' + pct + '%;background:' + color + '20;border-left:3px solid ' + color + '"><span class="funnel-bar-text" style="color:' + color + '">' + count + '</span></div></div>' +
+      '<div class="funnel-stat">' + count + ' &middot; ' + Math.round(count/total*100) + '%</div></div>';
+
+    if (i < activeStages.length - 1) {
+      var ns = activeStages[i+1];
+      var nc = counts[ns.id];
+      var convRate = count > 0 ? Math.round((nc / count) * 100) : 0;
+      var benchKey = s.id + '_' + ns.id;
+      var bench = FUNNEL_BENCHMARKS[benchKey];
+      var convClass = 'conv-warn';
+      if (bench) { convClass = convRate >= bench.good ? 'conv-good' : convRate >= bench.warn ? 'conv-warn' : 'conv-bad'; }
+      var benchLabel = bench ? ' <span style="color:var(--muted);font-size:0.58rem;font-family:var(--mono)">&middot; target &ge;' + bench.good + '%</span>' : '';
+      html += '<div class="conversion-arrow">&darr; <span class="conv-rate ' + convClass + '">' + convRate + '% conversion</span>' + benchLabel + '</div>';
+    }
+  }
+
+  var netConv = networkTotal > 0 ? Math.round(networkAdv/networkTotal*100) : 0;
+  var boardConv = boardTotal > 0 ? Math.round(boardAdv/boardTotal*100) : 0;
+  var screenCount = (counts['screen'] || 0) + (counts['interview'] || 0) + (counts['offer'] || 0);
+  var bottleneck = counts['target'] > (counts['warm'] || 0) * 2 ? 'target_warm' : (counts['warm'] || 0) > (counts['screen'] || 0) * 3 ? 'warm_screen' : null;
+
+  var channelMsg = netConv > boardConv ? 'Prioritise network outreach over cold applications.' : 'Both channels performing similarly.';
+  var diagMsg = '';
+  if (bottleneck === 'target_warm') {
+    diagMsg = 'You have <span class="highlight">' + counts['target'] + ' companies</span> sitting in Target without warm outreach. The block is activation.';
+  } else if (bottleneck === 'warm_screen') {
+    diagMsg = 'Warm-up is not converting to screens. Review your follow-up cadence.';
+  } else {
+    diagMsg = 'Pipeline shape looks healthy. Focus on advancing the <span class="highlight">' + (counts['interview'] || 0) + ' interviewing</span> stage.';
+  }
+
+  var tierA = 0, tierB = 0, tierC = 0;
+  for (i = 0; i < companies.length; i++) {
+    if (companies[i].tier === 'A') tierA++;
+    if (companies[i].tier === 'B') tierB++;
+    if (companies[i].tier === 'C') tierC++;
+  }
+
+  html += '<div class="funnel-insights">' +
+    '<div class="insight-card"><h4>Channel Efficiency</h4><p>Network converts at <span class="highlight">' + netConv + '%</span> to screen. Job boards at <span class="highlight">' + boardConv + '%</span>. ' + channelMsg + '</p></div>' +
+    '<div class="insight-card"><h4>Pipeline Diagnosis</h4><p>' + diagMsg + '</p></div>' +
+    '<div class="insight-card"><h4>Tier Distribution</h4><p>Tier A: <span class="highlight">' + tierA + '</span> &middot; Tier B: <span class="highlight">' + tierB + '</span> &middot; Tier C: <span class="highlight">' + tierC + '</span>. ' + (tierA < 4 ? 'Add more Tier A targets.' : 'Good tier spread.') + '</p></div>' +
+    '<div class="insight-card"><h4>Velocity</h4><p><span class="highlight">' + screenCount + '</span> active past warm stage. Target: 6-8. ' + (screenCount < 4 ? 'Accelerate outreach.' : screenCount > 10 ? 'Focus on quality now.' : 'Good momentum.') + '</p></div></div>';
+
+  container.innerHTML = html;
+};
+
+// ── DETAIL PANEL ───────────────────────────────────────────────────
+
+window.selectCompany = function(id) {
+  selectedId = id;
+  var c = null;
+  for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
+  if (!c) return;
+  document.getElementById('dp-company').textContent = c.company;
+  document.getElementById('dp-role').textContent = c.role;
+  document.getElementById('dp-notes').textContent = c.notes || 'No notes.';
+  document.getElementById('dp-next').textContent = c.next || '';
+  document.getElementById('dp-contact').textContent = c.contact || 'No contact listed';
+
+  if (c.url && c.url.length > 0) {
+    document.getElementById('dp-url').href = c.url;
+    document.getElementById('dp-url').textContent = c.url.length > 60 ? c.url.substring(0,60) + '...' : c.url;
+    document.getElementById('dp-url-wrap').style.display = 'block';
+  } else {
+    document.getElementById('dp-url-wrap').style.display = 'none';
+  }
+
+  var sl = '';
+  for (var j = 0; j < STAGES.length; j++) { if (STAGES[j].id === c.stage) sl = STAGES[j].label; }
+  document.getElementById('dp-meta').innerHTML =
+    '<span class="card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span>' +
+    '<span class="stage-pill stage-' + c.stage + '">' + sl + '</span>' +
+    '<span class="tag">' + c.source + '</span>';
+
+  var actHTML = '';
+  var acts = c.activity || [];
+  for (var k = 0; k < acts.length; k++) {
+    actHTML += '<div class="activity-item"><div class="activity-dot"></div><div class="activity-content"><div>' + acts[k].text + '</div><div class="activity-date">' + acts[k].date + '</div></div></div>';
+  }
+  document.getElementById('dp-activity').innerHTML = actHTML || '<div class="detail-text">No activity yet.</div>';
+
+  var stageIdx = -1;
+  for (var m = 0; m < STAGES.length; m++) { if (STAGES[m].id === c.stage) stageIdx = m; }
+  var btns = '';
+  if (stageIdx >= 0 && stageIdx < STAGES.length - 2) {
+    var nxt = STAGES[stageIdx + 1];
+    btns += '<button class="btn-advance primary" onclick="advanceStage(' + id + ')">Move to ' + nxt.label + '</button>';
+  }
+  btns += '<button class="btn-advance" onclick="logActivity(' + id + ')">+ Log Activity</button>';
+  btns += '<button class="btn-advance" onclick="editCompany(' + id + ')">Edit</button>';
+  btns += '<button class="btn-advance danger" onclick="closeCompany(' + id + ')">Close</button>';
+  btns += '<button class="btn-advance danger" onclick="deleteCompany(' + id + ')">Delete</button>';
+  document.getElementById('dp-actions').innerHTML = btns;
+  document.getElementById('detail-panel').classList.add('open');
+};
+
+window.advanceStage = function(id) {
+  var c = null;
+  for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
+  if (!c) return;
+  var stageIdx = -1;
+  for (var m = 0; m < STAGES.length; m++) { if (STAGES[m].id === c.stage) stageIdx = m; }
+  if (stageIdx >= 0 && stageIdx < STAGES.length - 2) {
+    var ns = STAGES[stageIdx + 1];
+    c.stage = ns.id;
+    c.activity.unshift({ date: window.todayLabel(), text: 'Advanced to ' + ns.label });
+  }
+  window.saveToStorage();
+  window.render();
+  window.selectCompany(id);
+};
+
+window.closeCompany = function(id) {
+  var c = null;
+  for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
+  if (!c) return;
+  c.stage = 'closed';
+  c.activity.unshift({ date: window.todayLabel(), text: 'Marked as closed' });
+  window.saveToStorage();
+  window.render();
+  document.getElementById('detail-panel').classList.remove('open');
+  selectedId = null;
+};
+
+window.deleteCompany = function(id) {
+  if (!confirm('Delete this company from the pipeline?')) return;
+  for (var i = 0; i < companies.length; i++) {
+    if (companies[i].id === id) { companies.splice(i, 1); break; }
+  }
+  window.saveToStorage();
+  window.render();
+  document.getElementById('detail-panel').classList.remove('open');
+  selectedId = null;
+};
+
+window.logActivity = function(id) {
+  var text = prompt('What happened?');
+  if (!text) return;
+  var c = null;
+  for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
+  if (!c) return;
+  c.activity.unshift({ date: window.todayLabel(), text: text });
+  window.saveToStorage();
+  window.render();
+  window.selectCompany(id);
+};
+
+// ── MODAL (ADD + EDIT) ─────────────────────────────────────────────
+
+window.openModal = function(stage) {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Add Company to Pipeline';
+  document.getElementById('modal-save-btn').textContent = 'Add to Pipeline';
+  if (stage) document.getElementById('f-stage').value = stage;
+  document.getElementById('modal').classList.add('open');
+};
+
+window.editCompany = function(id) {
+  var c = null;
+  for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
+  if (!c) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Edit ' + c.company;
+  document.getElementById('modal-save-btn').textContent = 'Save Changes';
+  document.getElementById('f-company').value = c.company;
+  document.getElementById('f-role').value = c.role;
+  document.getElementById('f-tier').value = c.tier;
+  document.getElementById('f-stage').value = c.stage;
+  document.getElementById('f-source').value = c.source;
+  document.getElementById('f-url').value = c.url || '';
+  document.getElementById('f-contact').value = c.contact || '';
+  document.getElementById('f-next').value = c.next || '';
+  document.getElementById('f-notes').value = c.notes || '';
+  document.getElementById('modal').classList.add('open');
+};
+
+window.closeModal = function() {
+  editingId = null;
+  document.getElementById('modal').classList.remove('open');
+  var fields = ['f-company','f-role','f-url','f-contact','f-next','f-notes'];
+  for (var i = 0; i < fields.length; i++) { document.getElementById(fields[i]).value = ''; }
+  document.getElementById('f-tier').value = 'A';
+  document.getElementById('f-stage').value = 'target';
+  document.getElementById('f-source').value = 'Network';
+};
+
+window.saveCompany = function() {
+  var company = document.getElementById('f-company').value.trim();
+  var role = document.getElementById('f-role').value.trim();
+  if (!company || !role) { alert('Company and role are required.'); return; }
+
+  if (editingId !== null) {
+    // Update existing
+    var c = null;
+    for (var i = 0; i < companies.length; i++) { if (companies[i].id === editingId) c = companies[i]; }
+    if (c) {
+      c.company = company;
+      c.role = role;
+      c.tier = document.getElementById('f-tier').value;
+      c.stage = document.getElementById('f-stage').value;
+      c.source = document.getElementById('f-source').value;
+      c.url = document.getElementById('f-url').value.trim();
+      c.contact = document.getElementById('f-contact').value.trim();
+      c.next = document.getElementById('f-next').value.trim();
+      c.notes = document.getElementById('f-notes').value.trim();
+      c.activity.unshift({ date: window.todayLabel(), text: 'Updated details' });
+    }
+  } else {
+    // Add new
+    companies.push({
+      id: nextId++, company: company, role: role,
+      tier: document.getElementById('f-tier').value,
+      stage: document.getElementById('f-stage').value,
+      source: document.getElementById('f-source').value,
+      url: document.getElementById('f-url').value.trim(),
+      contact: document.getElementById('f-contact').value.trim(),
+      next: document.getElementById('f-next').value.trim(),
+      notes: document.getElementById('f-notes').value.trim(),
+      added: window.todayStr(),
+      activity: [{ date: window.todayLabel(), text: 'Added to pipeline' }]
+    });
+  }
+
+  window.closeModal();
+  window.saveToStorage();
+  window.render();
+  if (editingId !== null) window.selectCompany(editingId);
+};
+
+// ── VIEW SWITCHING ─────────────────────────────────────────────────
+
+window.switchView = function(name, btn) {
+  var tabs = document.querySelectorAll('.nav-tab');
+  for (var i = 0; i < tabs.length; i++) { tabs[i].classList.remove('active'); }
+  btn.classList.add('active');
+  var views = ['kanban','table','funnel'];
+  for (var j = 0; j < views.length; j++) {
+    var el = document.getElementById('view-' + views[j]);
+    if (views[j] === name) { el.style.display = views[j] === 'kanban' ? 'flex' : 'block'; }
+    else { el.style.display = 'none'; }
+  }
+  if (name !== 'kanban') { document.getElementById('detail-panel').classList.remove('open'); }
+};
+
+// ── INIT ───────────────────────────────────────────────────────────
+
+window.loadFromStorage();
+</script>
+</body>
+</html>

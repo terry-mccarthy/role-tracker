@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scorer — Step 1: API Key · Tests</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0c0d0f; color: #e8e4dc; font-family: 'DM Mono', monospace; font-size: 13px; padding: 2rem; }
+h1 { font-family: serif; font-size: 1.4rem; margin-bottom: 0.25rem; }
+.subtitle { color: #6b6f78; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 2rem; }
+#suite { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.5rem; }
+.test { padding: 0.4rem 0.8rem; border-radius: 3px; font-size: 0.72rem; display: flex; align-items: center; gap: 0.6rem; }
+.test.pass { background: rgba(76,175,130,0.1); border-left: 3px solid #4caf82; }
+.test.fail { background: rgba(232,91,91,0.1); border-left: 3px solid #e85b5b; }
+.test.pending { background: rgba(107,111,120,0.1); border-left: 3px solid #6b6f78; color: #6b6f78; }
+.status { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; min-width: 36px; }
+.pass .status { color: #4caf82; }
+.fail .status { color: #e85b5b; }
+#summary { font-size: 0.78rem; padding: 0.75rem 1rem; border-radius: 3px; margin-top: 0.5rem; }
+#summary.all-pass { background: rgba(76,175,130,0.15); color: #4caf82; }
+#summary.has-fail { background: rgba(232,91,91,0.15); color: #e85b5b; }
+</style>
+</head>
+<body>
+
+<h1>Scorer · Step 1: API Key Management</h1>
+<p class="subtitle">Tests run against scorer.html loaded in an iframe</p>
+
+<div id="suite"></div>
+<div id="summary"></div>
+
+<!-- scorer.html loaded here; hidden — we test its window -->
+<iframe id="scorer-frame" src="../src/scorer.html" style="display:none"></iframe>
+
+<script>
+// ── HARNESS ───────────────────────────────────────────────────────
+var results = [];
+
+function record(name, passed, detail) {
+  results.push({ name: name, passed: passed, detail: detail || '' });
+  var el = document.createElement('div');
+  el.className = 'test ' + (passed ? 'pass' : 'fail');
+  el.innerHTML = '<span class="status">' + (passed ? 'Pass' : 'Fail') + '</span>' + name +
+    (detail ? ' <span style="color:#6b6f78;font-size:0.65rem">— ' + detail + '</span>' : '');
+  document.getElementById('suite').appendChild(el);
+}
+
+function assert(cond, name, detail) {
+  record(name, !!cond, detail);
+}
+
+function showSummary() {
+  var total = results.length;
+  var passed = results.filter(function(r) { return r.passed; }).length;
+  var failed = total - passed;
+  var el = document.getElementById('summary');
+  el.className = failed === 0 ? 'all-pass' : 'has-fail';
+  el.textContent = passed + '/' + total + ' passed' + (failed > 0 ? ' · ' + failed + ' failing' : ' · all green');
+}
+
+// ── MOCK STORAGE ──────────────────────────────────────────────────
+var mockData = {};
+var mockStorage = {
+  get: function(key) {
+    var val = mockData[key];
+    return Promise.resolve(val !== undefined ? { value: val } : null);
+  },
+  set: function(key, val) {
+    mockData[key] = val;
+    return Promise.resolve();
+  }
+};
+
+// ── LOAD SCORER IN FRAME, THEN RUN TESTS ──────────────────────────
+var frame = document.getElementById('scorer-frame');
+
+frame.addEventListener('load', function() {
+  var w = frame.contentWindow;
+
+  // Inject mocks into the frame's window after it has loaded.
+  // Functions that call storage will now use our mock.
+  w.storage = mockStorage;
+
+  var fetchCalled = false;
+  var lastFetchOptions = null;
+  var alertMsg = null;
+
+  w.fetch = function(url, opts) {
+    fetchCalled = true;
+    lastFetchOptions = opts;
+    // Return a minimal valid Claude API response
+    var fakeBody = JSON.stringify({
+      overall_score: 7,
+      overall_verdict: 'Good fit overall.',
+      hard_nos_pass: true,
+      hard_nos_detail: 'No walk-away criteria triggered.',
+      dimensions: [],
+      tensions: [],
+      discovery_items: []
+    });
+    return Promise.resolve({
+      json: function() {
+        return Promise.resolve({
+          content: [{ type: 'text', text: fakeBody }]
+        });
+      }
+    });
+  };
+
+  w.alert = function(msg) { alertMsg = msg; };
+
+  // ── RUN TESTS ──────────────────────────────────────────────────
+  Promise.resolve()
+
+    // T1 — currentApiKey variable exists
+    .then(function() {
+      assert(
+        typeof w.currentApiKey !== 'undefined',
+        'T1  currentApiKey variable is defined on window'
+      );
+    })
+
+    // T2 — starts as empty string (not null, not undefined)
+    .then(function() {
+      assert(
+        w.currentApiKey === '',
+        'T2  currentApiKey initialises to empty string'
+      );
+    })
+
+    // T3 — loadApiKey function exists
+    .then(function() {
+      assert(
+        typeof w.loadApiKey === 'function',
+        'T3  window.loadApiKey is a function'
+      );
+    })
+
+    // T4 — saveApiKey function exists
+    .then(function() {
+      assert(
+        typeof w.saveApiKey === 'function',
+        'T4  window.saveApiKey is a function'
+      );
+    })
+
+    // T5 — loadApiKey reads key from storage
+    .then(function() {
+      mockData['anthropic-api-key'] = 'sk-ant-test123';
+      return w.loadApiKey();
+    })
+    .then(function() {
+      assert(
+        w.currentApiKey === 'sk-ant-test123',
+        'T5  loadApiKey reads value from storage into currentApiKey'
+      );
+    })
+
+    // T6 — loadApiKey tolerates missing storage entry (no key stored)
+    .then(function() {
+      delete mockData['anthropic-api-key'];
+      w.currentApiKey = 'old-value';
+      return w.loadApiKey();
+    })
+    .then(function() {
+      assert(
+        w.currentApiKey === '',
+        'T6  loadApiKey sets currentApiKey to empty string when nothing stored'
+      );
+    })
+
+    // T7 — saveApiKey writes currentApiKey to storage
+    .then(function() {
+      w.currentApiKey = 'sk-ant-saved';
+      return w.saveApiKey();
+    })
+    .then(function() {
+      assert(
+        mockData['anthropic-api-key'] === 'sk-ant-saved',
+        'T7  saveApiKey persists currentApiKey to storage'
+      );
+    })
+
+    // T8 — scoreRole without a key shows an alert and does NOT call fetch
+    .then(function() {
+      w.currentApiKey = '';
+      alertMsg = null;
+      fetchCalled = false;
+      w.scoreRole();
+      assert(
+        alertMsg !== null,
+        'T8  scoreRole without API key triggers an alert'
+      );
+      assert(
+        !fetchCalled,
+        'T9  scoreRole without API key does not call fetch'
+      );
+    })
+
+    // T10 — scoreRole with a key calls fetch with the correct headers
+    .then(function() {
+      w.currentApiKey = 'sk-ant-realkey';
+      fetchCalled = false;
+      lastFetchOptions = null;
+      w.document.getElementById('jd-input').value = 'Engineering Manager, Series B startup, hybrid, Sydney.';
+      return w.scoreRole();
+    })
+    .then(function() {
+      // scoreRole is async; give the promise chain inside it a tick to settle
+      return new Promise(function(resolve) { setTimeout(resolve, 50); });
+    })
+    .then(function() {
+      assert(
+        fetchCalled,
+        'T10 scoreRole with API key calls fetch'
+      );
+      var headers = (lastFetchOptions && lastFetchOptions.headers) ? lastFetchOptions.headers : {};
+      assert(
+        headers['x-api-key'] === 'sk-ant-realkey',
+        'T11 fetch request includes x-api-key header'
+      );
+      assert(
+        headers['anthropic-dangerous-direct-browser-access'] === 'true',
+        'T12 fetch request includes anthropic-dangerous-direct-browser-access header'
+      );
+    })
+
+    .then(showSummary)
+    .catch(function(err) {
+      record('Unexpected test runner error: ' + err.message, false);
+      showSummary();
+    });
+});
+</script>
+</body>
+</html>

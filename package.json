@@ -1,0 +1,9 @@
+{
+  "name": "job-pipeline",
+  "version": "1.0.0",
+  "description": "Personal job search CRM with AI-powered role scoring",
+  "private": true,
+  "scripts": {
+    "serve": "npx serve src/"
+  }
+}

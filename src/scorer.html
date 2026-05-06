@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Role Scorer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0c0d0f;
+  --surface: #141618;
+  --surface2: #1c1e22;
+  --surface3: #242629;
+  --border: #2a2d32;
+  --border2: #343840;
+  --text: #e8e4dc;
+  --muted: #6b6f78;
+  --dim: #9a9ea8;
+  --accent: #e8633a;
+  --accent2: #c4a84f;
+  --green: #4caf82;
+  --blue: #5b8fe8;
+  --purple: #9b72e8;
+  --red: #e85b5b;
+  --serif: 'DM Serif Display', serif;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.5; min-height: 100vh; }
+
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 52px; }
+.logo { font-family: var(--serif); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; }
+.logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+.api-key-row { display: flex; align-items: center; gap: 0.5rem; }
+.api-key-row .label { font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); white-space: nowrap; }
+.api-key-input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 0.72rem; padding: 0.3rem 0.6rem; border-radius: 3px; outline: none; width: 220px; }
+.api-key-input:focus { border-color: var(--accent); }
+.api-key-input::placeholder { color: var(--muted); }
+.api-key-saved { font-family: var(--mono); font-size: 0.58rem; color: var(--green); display: none; }
+.btn-save-key { font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.3rem 0.6rem; border-radius: 3px; cursor: pointer; border: 1px solid var(--border2); background: none; color: var(--dim); white-space: nowrap; }
+.btn-save-key:hover { border-color: var(--muted); color: var(--text); }
+
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+.section-label { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
+h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
+
+/* INPUT AREA */
+.input-area { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1.5rem; margin-bottom: 2rem; }
+.input-area textarea { width: 100%; min-height: 200px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: var(--sans); font-size: 0.82rem; padding: 0.75rem; border-radius: 4px; resize: vertical; outline: none; line-height: 1.6; }
+.input-area textarea:focus { border-color: var(--accent); }
+.input-area textarea::placeholder { color: var(--muted); }
+
+.input-row { display: flex; gap: 0.75rem; margin-top: 1rem; align-items: center; }
+.input-row input { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: var(--sans); font-size: 0.82rem; padding: 0.5rem 0.75rem; border-radius: 4px; outline: none; }
+.input-row input:focus { border-color: var(--accent); }
+.input-row input::placeholder { color: var(--muted); }
+
+.btn-score { background: var(--accent); color: white; border: none; padding: 0.5rem 1.5rem; font-family: var(--mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; border-radius: 4px; white-space: nowrap; }
+.btn-score:hover { opacity: 0.85; }
+.btn-score:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* PROFILE PREVIEW */
+.profile-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; }
+.profile-bar-left { display: flex; align-items: center; gap: 1rem; }
+.profile-bar .label { font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+.profile-bar .value { font-size: 0.82rem; color: var(--dim); }
+.profile-weights { display: flex; gap: 0.75rem; }
+.weight-chip { font-family: var(--mono); font-size: 0.58rem; background: var(--surface2); border: 1px solid var(--border); padding: 0.2rem 0.5rem; border-radius: 2px; color: var(--dim); }
+.btn-edit-profile { font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.35rem 0.7rem; border-radius: 3px; cursor: pointer; border: 1px solid var(--border2); background: none; color: var(--dim); }
+.btn-edit-profile:hover { border-color: var(--muted); color: var(--text); }
+
+/* LOADING */
+.loading { text-align: center; padding: 3rem; }
+.loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); }
+
+/* RESULTS */
+.results { display: none; }
+
+.overall-score { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2rem; text-align: center; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+.overall-score::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+.overall-score.score-high::before { background: var(--green); }
+.overall-score.score-mid::before { background: var(--accent2); }
+.overall-score.score-low::before { background: var(--red); }
+
+.score-number { font-family: var(--serif); font-size: 4rem; line-height: 1; margin-bottom: 0.25rem; }
+.score-high .score-number { color: var(--green); }
+.score-mid .score-number { color: var(--accent2); }
+.score-low .score-number { color: var(--red); }
+
+.score-label { font-family: var(--mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); margin-bottom: 0.75rem; }
+.score-verdict { font-family: var(--serif); font-size: 1.1rem; color: var(--dim); font-style: italic; }
+
+/* HARD NOS */
+.hard-nos-result { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+.hard-nos-result.pass { border-left: 4px solid var(--green); }
+.hard-nos-result.fail { border-left: 4px solid var(--red); background: rgba(232,91,91,0.05); }
+.hard-nos-title { font-family: var(--mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.4rem; }
+.hard-nos-result.pass .hard-nos-title { color: var(--green); }
+.hard-nos-result.fail .hard-nos-title { color: var(--red); }
+.hard-nos-detail { font-size: 0.8rem; color: var(--dim); line-height: 1.5; }
+
+/* DIMENSION SCORES */
+.dimensions { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
+.dim-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1.25rem 1.5rem; display: grid; grid-template-columns: 1fr auto; gap: 1rem; }
+.dim-left { }
+.dim-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+.dim-name { font-family: var(--serif); font-size: 1rem; }
+.dim-weight { font-family: var(--mono); font-size: 0.58rem; background: var(--surface2); border: 1px solid var(--border); padding: 0.1rem 0.4rem; border-radius: 2px; color: var(--muted); }
+.dim-detail { font-size: 0.78rem; color: var(--dim); line-height: 1.5; }
+.dim-right { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 60px; }
+.dim-score { font-family: var(--serif); font-size: 2rem; line-height: 1; }
+.dim-score.high { color: var(--green); }
+.dim-score.mid { color: var(--accent2); }
+.dim-score.low { color: var(--red); }
+.dim-max { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); }
+
+/* TENSIONS */
+.tensions { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent2); border-radius: 6px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+.tensions-title { font-family: var(--mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent2); margin-bottom: 0.75rem; }
+.tension-item { font-size: 0.8rem; color: var(--dim); line-height: 1.5; padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
+.tension-item:last-child { border-bottom: none; }
+
+/* DISCOVERY ITEMS */
+.discovery { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1.25rem 1.5rem; }
+.discovery-title { font-family: var(--mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--blue); margin-bottom: 0.75rem; }
+.discovery-item { font-size: 0.8rem; color: var(--dim); line-height: 1.5; padding: 0.3rem 0; }
+
+/* PROFILE EDITOR MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 6px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
+.modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-title { font-family: var(--serif); font-size: 1.1rem; }
+.modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.2rem; padding: 0.2rem; }
+.modal-body { padding: 1.25rem 1.5rem; }
+.modal-body textarea { width: 100%; min-height: 400px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 0.75rem; padding: 0.75rem; border-radius: 4px; resize: vertical; outline: none; line-height: 1.6; }
+.modal-body textarea:focus { border-color: var(--accent); }
+.modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.5rem; }
+.btn-secondary { background: none; border: 1px solid var(--border2); color: var(--dim); padding: 0.45rem 0.9rem; font-family: var(--mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; border-radius: 3px; }
+.btn-primary { background: var(--accent); border: none; color: white; padding: 0.45rem 0.9rem; font-family: var(--mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; border-radius: 3px; }
+
+@media (max-width: 640px) {
+  .profile-bar { flex-direction: column; gap: 0.75rem; align-items: flex-start; }
+  .dim-card { grid-template-columns: 1fr; }
+  .dim-right { flex-direction: row; gap: 0.5rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><div class="logo-dot"></div>Role Scorer</div>
+  <div class="api-key-row">
+    <span class="label">API Key</span>
+    <input type="password" class="api-key-input" id="api-key-input" placeholder="sk-ant-..." oninput="document.getElementById('api-key-saved').style.display='none'">
+    <button class="btn-save-key" onclick="saveApiKeyFromInput()">Save</button>
+    <span class="api-key-saved" id="api-key-saved">Saved</span>
+  </div>
+</div>
+
+<!-- PROFILE BAR -->
+<div class="container">
+  <div class="profile-bar">
+    <div class="profile-bar-left">
+      <div>
+        <div class="label">Evaluation Profile</div>
+        <div class="value" id="profile-name">Loading...</div>
+      </div>
+      <div class="profile-weights" id="profile-weights"></div>
+    </div>
+    <button class="btn-edit-profile" onclick="openProfileEditor()">Edit Profile</button>
+  </div>
+
+  <!-- INPUT -->
+  <div class="input-area">
+    <div class="section-label">Paste Job Description</div>
+    <textarea id="jd-input" placeholder="Paste the full job description here. Include the company name, role title, requirements, location policy, and any other details from the listing. The more detail you include, the more accurate the scoring will be."></textarea>
+    <div class="input-row">
+      <input id="jd-url" placeholder="LinkedIn / job URL (optional - for reference only)">
+      <input id="jd-company" placeholder="Company name (if not in JD)">
+      <button class="btn-score" id="score-btn" onclick="scoreRole()">Score This Role</button>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading" id="loading" style="display:none">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Scoring against your evaluation profile...</div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="results">
+    <div class="overall-score" id="overall-box">
+      <div class="score-label">Overall Fit Score</div>
+      <div class="score-number" id="overall-score">—</div>
+      <div class="score-verdict" id="overall-verdict"></div>
+    </div>
+
+    <div class="hard-nos-result" id="hard-nos-box">
+      <div class="hard-nos-title" id="hard-nos-title">Hard Nos Check</div>
+      <div class="hard-nos-detail" id="hard-nos-detail"></div>
+    </div>
+
+    <div class="section-label" style="margin-top:1.5rem">Dimension Breakdown</div>
+    <div class="dimensions" id="dimensions"></div>
+
+    <div class="tensions" id="tensions-box" style="display:none">
+      <div class="tensions-title">Tensions to Consider</div>
+      <div id="tensions-list"></div>
+    </div>
+
+    <div class="discovery" id="discovery-box" style="display:none">
+      <div class="discovery-title">Needs Discovery in Interview</div>
+      <div id="discovery-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE EDITOR MODAL -->
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Edit Evaluation Profile</div>
+      <button class="modal-close" onclick="closeProfileEditor()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.78rem;color:var(--dim);margin-bottom:0.75rem;line-height:1.5">This is your scoring criteria in Markdown format. Edit the weights, thresholds, hard nos, or any criteria. Changes are saved and used for all future scoring.</p>
+      <textarea id="profile-editor"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeProfileEditor()">Cancel</button>
+      <button class="btn-primary" onclick="saveProfile()">Save Profile</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var PROFILE_STORAGE_KEY = 'eval-profile';
+var API_KEY_STORAGE_KEY = 'anthropic-api-key';
+
+var currentApiKey = '';
+
+// Default profile embedded — overridden if user has saved a custom one
+var DEFAULT_PROFILE = "# Offer Evaluation Profile \u2014 Terry McCarthy\n\n_Captured 2026-04-30._\n\n## Top-line orientation\n\n- **Primary driver:** Lifestyle & balance\n- **Time horizon:** Stepping stone \u2014 next role should set me up for VP Eng / CTO within 2\u20133 years\n- **Geography:** Sydney-based or fully remote \u2014 no relocation\n- **Hybrid stance:** Open to up to 3 days office; 5-day RTO is a hard no\n\n## Compensation\n\n- **TC floor:** AUD $250k\u2013$300k (base + super + cash bonus)\n- **Cash-first.** Strong preference for high base over equity\n- **Sceptical of bonuses** \u2014 discount STI/LTI heavily\n- **Benefits that move the needle:** L&D / conference budget, generous leave\n\n## Role & scope\n\n- **Org size:** Multi-squad \u2014 15\u201340 engineers (Head of level)\n- **Time mix:** People leadership + strategy/roadmap. Not seeking hands-on coding.\n- **Domain:** Agnostic\n- **Reporting line:** Report to CTO\n\n## Company fit\n\n- **Stage:** Series B\u2013C scaleup\n- **Size:** 50\u20131,000 employees\n- **Industries (in preference order):** Healthcare / climate / impact, AI/ML-native, B2B SaaS\n- **Cultural must-haves:** High-trust low-politics, strong engineering craft, wellbeing & sustainability\n\n## Lifestyle constraints\n\n- **Office cadence:** Up to 3 days/week\n- **Commute:** 30\u201345 min one-way max\n- **Sustainable hours:** ~40 hrs/week\n- **Travel:** Minimal only \u2014 1\u20132 trips/year max\n\n## Manager, peers, growth\n\n- **Manager (CTO) attributes:** Trust + autonomy, strong technical depth, career coach\n- **Peers:** Critical \u2014 want strong engineering peers\n- **Growth wanted:** Path to VP / CTO + funded executive coaching\n\n## Hard nos\n\n- Crypto, gambling, adult, or weapons industries\n- Hero / burnout culture\n- 5-day in-office mandate\n- Founder/CEO red flags (toxic behaviour, bullying)\n\n## Scoring weights\n\n| Dimension | Weight |\n|---|---|\n| Lifestyle (hybrid, hours, commute, travel) | 25% |\n| Compensation (base, total cash, benefits) | 20% |\n| Scope & growth path (size, level, VP/CTO trajectory) | 20% |\n| People (manager fit, peer strength) | 20% |\n| Company & mission (stage, industry, culture, runway) | 15% |\n\n## Tensions to surface\n\n- Lifestyle-first vs stepping-stone ambition\n- Cash-first vs scaleup equity norms\n- Multi-squad scope vs actual org chart depth";
+
+var currentProfile = DEFAULT_PROFILE;
+
+// ── STORAGE ─────────────────────────────────────────────────────
+
+window.loadProfile = function() {
+  try {
+    window.storage.get(PROFILE_STORAGE_KEY).then(function(result) {
+      if (result && result.value) {
+        currentProfile = result.value;
+      }
+      window.renderProfileBar();
+    }).catch(function() {
+      window.renderProfileBar();
+    });
+  } catch(e) {
+    window.renderProfileBar();
+  }
+};
+
+window.saveProfileToStorage = function() {
+  try {
+    window.storage.set(PROFILE_STORAGE_KEY, currentProfile).catch(function(e) { console.warn('Profile save failed', e); });
+  } catch(e) { console.warn('Storage unavailable', e); }
+};
+
+// ── API KEY ──────────────────────────────────────────────────────
+
+window.loadApiKey = function() {
+  try {
+    return window.storage.get(API_KEY_STORAGE_KEY).then(function(result) {
+      currentApiKey = (result && result.value) ? result.value : '';
+      var el = document.getElementById('api-key-input');
+      if (el) el.value = currentApiKey;
+    }).catch(function() {
+      currentApiKey = '';
+    });
+  } catch(e) {
+    currentApiKey = '';
+    return Promise.resolve();
+  }
+};
+
+window.saveApiKey = function() {
+  try {
+    return window.storage.set(API_KEY_STORAGE_KEY, currentApiKey).catch(function(e) { console.warn('API key save failed', e); });
+  } catch(e) {
+    console.warn('Storage unavailable', e);
+    return Promise.resolve();
+  }
+};
+
+window.saveApiKeyFromInput = function() {
+  currentApiKey = document.getElementById('api-key-input').value.trim();
+  window.saveApiKey().then(function() {
+    document.getElementById('api-key-saved').style.display = 'inline';
+  });
+};
+
+// ── PROFILE BAR ─────────────────────────────────────────────────
+
+window.renderProfileBar = function() {
+  // Extract name from first heading
+  var nameMatch = currentProfile.match(/# Offer Evaluation Profile[^\\n]*/);
+  var name = nameMatch ? nameMatch[0].replace(/^# /, '').replace(/ \u2014 /, ' - ') : 'Custom Profile';
+  document.getElementById('profile-name').textContent = name;
+
+  // Extract weights
+  var weightsEl = document.getElementById('profile-weights');
+  var lines = currentProfile.split('\n');
+  var chips = '';
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (line.indexOf('|') === 0 && line.indexOf('Weight') === -1 && line.indexOf('---') === -1) {
+      var parts = line.split('|');
+      if (parts.length >= 3) {
+        var dim = parts[1].trim();
+        var weight = parts[2].trim();
+        if (dim.length > 0 && weight.length > 0) {
+          var shortDim = dim.split('(')[0].trim();
+          chips += '<span class="weight-chip">' + shortDim + ' ' + weight + '</span>';
+        }
+      }
+    }
+  }
+  weightsEl.innerHTML = chips;
+};
+
+// ── PROFILE EDITOR ──────────────────────────────────────────────
+
+window.openProfileEditor = function() {
+  document.getElementById('profile-editor').value = currentProfile;
+  document.getElementById('profile-modal').classList.add('open');
+};
+
+window.closeProfileEditor = function() {
+  document.getElementById('profile-modal').classList.remove('open');
+};
+
+window.saveProfile = function() {
+  currentProfile = document.getElementById('profile-editor').value;
+  window.saveProfileToStorage();
+  window.renderProfileBar();
+  window.closeProfileEditor();
+};
+
+// ── SCORING ─────────────────────────────────────────────────────
+
+window.scoreRole = function() {
+  if (!currentApiKey) {
+    alert('Enter your Anthropic API key in the top bar first.');
+    return;
+  }
+
+  var jdText = document.getElementById('jd-input').value.trim();
+  if (!jdText) { alert('Please paste a job description.'); return; }
+
+  var company = document.getElementById('jd-company').value.trim();
+  var url = document.getElementById('jd-url').value.trim();
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('score-btn').disabled = true;
+
+  var systemPrompt = 'You are a job offer evaluation assistant. You score job descriptions against a candidate evaluation profile.\n\n'
+    + 'Here is the candidate evaluation profile:\n\n' + currentProfile + '\n\n'
+    + 'Respond ONLY with valid JSON (no markdown fences, no preamble). Use this exact structure:\n'
+    + '{\n'
+    + '  "overall_score": <number 1-10>,\n'
+    + '  "overall_verdict": "<one sentence summary>",\n'
+    + '  "hard_nos_pass": <true/false>,\n'
+    + '  "hard_nos_detail": "<explanation if any triggered, or \'No walk-away criteria triggered\'>",\n'
+    + '  "dimensions": [\n'
+    + '    { "name": "Lifestyle", "weight": "25%", "score": <1-10>, "detail": "<2-3 sentences>" },\n'
+    + '    { "name": "Compensation", "weight": "20%", "score": <1-10>, "detail": "<2-3 sentences>" },\n'
+    + '    { "name": "Scope & Growth", "weight": "20%", "score": <1-10>, "detail": "<2-3 sentences>" },\n'
+    + '    { "name": "People", "weight": "20%", "score": <1-10>, "detail": "<2-3 sentences>" },\n'
+    + '    { "name": "Company & Mission", "weight": "15%", "score": <1-10>, "detail": "<2-3 sentences>" }\n'
+    + '  ],\n'
+    + '  "tensions": ["<tension 1>", "<tension 2>"],\n'
+    + '  "discovery_items": ["<item needing interview verification>"]\n'
+    + '}\n\n'
+    + 'Score conservatively. If information is missing from the JD, score that dimension lower and note it in discovery_items. Be specific and reference actual details from the JD.';
+
+  var userMessage = 'Score this job description';
+  if (company) userMessage += ' at ' + company;
+  userMessage += ':\n\n' + jdText;
+  if (url) userMessage += '\n\nSource URL: ' + url;
+
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': currentApiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    })
+  }).then(function(response) {
+    return response.json();
+  }).then(function(data) {
+    var text = '';
+    for (var i = 0; i < data.content.length; i++) {
+      if (data.content[i].type === 'text') text += data.content[i].text;
+    }
+    var clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    var result = JSON.parse(clean);
+    window.renderResults(result);
+  }).catch(function(err) {
+    console.error('Scoring error:', err);
+    alert('Scoring failed. Check the console for details.');
+  }).finally(function() {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('score-btn').disabled = false;
+  });
+};
+
+// ── RENDER RESULTS ──────────────────────────────────────────────
+
+window.renderResults = function(r) {
+  var results = document.getElementById('results');
+  results.style.display = 'block';
+
+  // Overall score
+  var overallBox = document.getElementById('overall-box');
+  var scoreClass = r.overall_score >= 7 ? 'score-high' : r.overall_score >= 5 ? 'score-mid' : 'score-low';
+  overallBox.className = 'overall-score ' + scoreClass;
+  document.getElementById('overall-score').textContent = r.overall_score + '/10';
+  document.getElementById('overall-verdict').textContent = r.overall_verdict || '';
+
+  // Hard nos
+  var hBox = document.getElementById('hard-nos-box');
+  hBox.className = 'hard-nos-result ' + (r.hard_nos_pass ? 'pass' : 'fail');
+  document.getElementById('hard-nos-title').textContent = r.hard_nos_pass ? 'Hard Nos: All Clear' : 'Hard No Triggered';
+  document.getElementById('hard-nos-detail').textContent = r.hard_nos_detail || '';
+
+  // Dimensions
+  var dimsHTML = '';
+  var dims = r.dimensions || [];
+  for (var i = 0; i < dims.length; i++) {
+    var d = dims[i];
+    var dClass = d.score >= 7 ? 'high' : d.score >= 5 ? 'mid' : 'low';
+    dimsHTML += '<div class="dim-card">' +
+      '<div class="dim-left"><div class="dim-header"><span class="dim-name">' + d.name + '</span><span class="dim-weight">' + d.weight + '</span></div>' +
+      '<div class="dim-detail">' + d.detail + '</div></div>' +
+      '<div class="dim-right"><div class="dim-score ' + dClass + '">' + d.score + '</div><div class="dim-max">/10</div></div>' +
+    '</div>';
+  }
+  document.getElementById('dimensions').innerHTML = dimsHTML;
+
+  // Tensions
+  var tensions = r.tensions || [];
+  if (tensions.length > 0) {
+    document.getElementById('tensions-box').style.display = 'block';
+    var tHTML = '';
+    for (var j = 0; j < tensions.length; j++) {
+      tHTML += '<div class="tension-item">' + tensions[j] + '</div>';
+    }
+    document.getElementById('tensions-list').innerHTML = tHTML;
+  } else {
+    document.getElementById('tensions-box').style.display = 'none';
+  }
+
+  // Discovery items
+  var disc = r.discovery_items || [];
+  if (disc.length > 0) {
+    document.getElementById('discovery-box').style.display = 'block';
+    var dHTML = '';
+    for (var k = 0; k < disc.length; k++) {
+      dHTML += '<div class="discovery-item">' + disc[k] + '</div>';
+    }
+    document.getElementById('discovery-list').innerHTML = dHTML;
+  } else {
+    document.getElementById('discovery-box').style.display = 'none';
+  }
+
+  // Scroll to results
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+// ── INIT ────────────────────────────────────────────────────────
+window.loadProfile();
+window.loadApiKey();
+</script>
+</body>
+</html>
