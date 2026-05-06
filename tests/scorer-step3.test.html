@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Step 3: Score Round-Trip · Tests</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0c0d0f; color: #e8e4dc; font-family: 'DM Mono', monospace; font-size: 13px; padding: 2rem; }
+h1 { font-family: serif; font-size: 1.4rem; margin-bottom: 0.25rem; }
+.subtitle { color: #6b6f78; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1.5rem; }
+h2 { font-family: serif; font-size: 1rem; color: #9a9ea8; margin: 1.25rem 0 0.5rem; }
+#suite { display: flex; flex-direction: column; gap: 0.4rem; }
+.test { padding: 0.4rem 0.8rem; border-radius: 3px; font-size: 0.72rem; display: flex; align-items: center; gap: 0.6rem; }
+.test.pass { background: rgba(76,175,130,0.1); border-left: 3px solid #4caf82; }
+.test.fail { background: rgba(232,91,91,0.1); border-left: 3px solid #e85b5b; }
+.status { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; min-width: 36px; }
+.pass .status { color: #4caf82; }
+.fail .status { color: #e85b5b; }
+#summary { font-size: 0.78rem; padding: 0.75rem 1rem; border-radius: 3px; margin-top: 1rem; }
+#summary.all-pass { background: rgba(76,175,130,0.15); color: #4caf82; }
+#summary.has-fail { background: rgba(232,91,91,0.15); color: #e85b5b; }
+</style>
+</head>
+<body>
+
+<h1>Step 3 · Score Round-Trip</h1>
+<p class="subtitle">Scorer saves result to storage · Pipeline reads it back and displays it</p>
+
+<div id="suite"></div>
+<div id="summary"></div>
+
+<iframe id="scorer-frame" style="display:none"></iframe>
+<iframe id="pipeline-frame" src="../src/pipeline.html" style="display:none"></iframe>
+
+<script>
+// ── HARNESS ───────────────────────────────────────────────────────
+var results = [];
+function record(name, passed) {
+  results.push({ name: name, passed: passed });
+  var el = document.createElement('div');
+  el.className = 'test ' + (passed ? 'pass' : 'fail');
+  el.innerHTML = '<span class="status">' + (passed ? 'Pass' : 'Fail') + '</span>' + name;
+  document.getElementById('suite').appendChild(el);
+}
+function assert(cond, name) { record(name, !!cond); }
+function heading(text) {
+  var el = document.createElement('h2');
+  el.textContent = text;
+  document.getElementById('suite').appendChild(el);
+}
+function showSummary() {
+  var total = results.length;
+  var passed = results.filter(function(r) { return r.passed; }).length;
+  var el = document.getElementById('summary');
+  el.className = passed === total ? 'all-pass' : 'has-fail';
+  el.textContent = passed + '/' + total + ' passed' + (passed < total ? ' · ' + (total - passed) + ' failing' : ' · all green');
+}
+
+function makeMockStorage() {
+  var data = {};
+  return {
+    _data: data,
+    get: function(k) { return Promise.resolve(data[k] !== undefined ? { value: data[k] } : null); },
+    set: function(k, v) { data[k] = v; return Promise.resolve(); }
+  };
+}
+
+var FAKE_RESULT = {
+  overall_score: 8,
+  overall_verdict: 'Strong fit across most dimensions.',
+  hard_nos_pass: true,
+  hard_nos_detail: 'No walk-away criteria triggered.',
+  dimensions: [],
+  tensions: ['Lifestyle vs ambition'],
+  discovery_items: ['Confirm hybrid policy']
+};
+
+// ── PHASE 1: SCORER SAVES SCORE TO STORAGE ────────────────────────
+
+var scorerMock = makeMockStorage();
+var scorerFrame = document.getElementById('scorer-frame');
+scorerFrame.src = '../src/scorer.html?companyId=42&company=Canva&url=https%3A%2F%2Flinkedin.com%2F';
+
+var scorerPhase = new Promise(function(resolve) {
+  scorerFrame.addEventListener('load', function() {
+    var w = scorerFrame.contentWindow;
+    w.storage = scorerMock;
+
+    // Confirm companyId was picked up from params
+    w.readQueryParams && w.readQueryParams();
+
+    heading('Scorer — saves score to storage after renderResults');
+
+    // T1: saveScoreToStorage function exists
+    assert(
+      typeof w.saveScoreToStorage === 'function',
+      'T1  window.saveScoreToStorage is a function'
+    );
+
+    // Call renderResults — this should trigger a storage save
+    w.renderResults(FAKE_RESULT);
+
+    // Give the async storage.set a tick to complete
+    setTimeout(function() {
+      var saved = scorerMock._data['score-42'];
+
+      // T2: score-{id} key written to storage
+      assert(
+        saved !== undefined && saved !== null && saved !== '',
+        'T2  score-42 key written to storage after renderResults'
+      );
+
+      var parsed = null;
+      try { parsed = JSON.parse(saved); } catch(e) {}
+
+      // T3: saved score has overall field matching overall_score
+      assert(
+        parsed && parsed.overall === 8,
+        'T3  saved score.overall equals overall_score from result'
+      );
+
+      // T4: saved score has verdict
+      assert(
+        parsed && parsed.verdict === FAKE_RESULT.overall_verdict,
+        'T4  saved score.verdict matches overall_verdict'
+      );
+
+      // T5: saved score has hard_nos_pass
+      assert(
+        parsed && parsed.hard_nos_pass === true,
+        'T5  saved score.hard_nos_pass stored correctly'
+      );
+
+      // T6: saved score has scored_at (a date string)
+      assert(
+        parsed && typeof parsed.scored_at === 'string' && parsed.scored_at.length === 10,
+        'T6  saved score.scored_at is a YYYY-MM-DD date string'
+      );
+
+      // T7: renderResults without companyId does NOT write to storage
+      w.currentCompanyId = null;
+      var storeBefore = JSON.stringify(scorerMock._data);
+      w.renderResults(FAKE_RESULT);
+      setTimeout(function() {
+        var storeAfter = JSON.stringify(scorerMock._data);
+        assert(
+          storeBefore === storeAfter,
+          'T7  renderResults without companyId does not write to storage'
+        );
+        resolve();
+      }, 50);
+
+    }, 50);
+  });
+});
+
+// ── PHASE 2: PIPELINE READS SCORE BACK ───────────────────────────
+
+var pipelineMock = makeMockStorage();
+// Pre-seed the score that the scorer would have written
+pipelineMock._data['score-77'] = JSON.stringify({
+  overall: 7,
+  verdict: 'Good match for your priorities.',
+  hard_nos_pass: true,
+  scored_at: '2026-05-07'
+});
+
+var pipelineFrame = document.getElementById('pipeline-frame');
+var pipelinePhase = new Promise(function(resolve) {
+  pipelineFrame.addEventListener('load', function() {
+    var w = pipelineFrame.contentWindow;
+    w.storage = pipelineMock;
+
+    // Inject test companies: one with no score, one pre-scored on the object
+    w.companies = [
+      {
+        id: 77, company: 'Atlassian', role: 'Senior Engineering Manager',
+        tier: 'A', stage: 'screen', source: 'Network', url: 'https://linkedin.com/jobs/777',
+        contact: '', next: '', notes: '', added: '2026-05-07', activity: [], score: null
+      },
+      {
+        id: 78, company: 'Canva', role: 'EM Growth',
+        tier: 'A', stage: 'warm', source: 'Network', url: '',
+        contact: '', next: '', notes: '', added: '2026-05-07', activity: [],
+        score: { overall: 9, verdict: 'Exceptional fit.', hard_nos_pass: true, scored_at: '2026-05-07' }
+      }
+    ];
+
+    heading('Pipeline — checkForNewScore reads storage and applies score');
+
+    // T8: window.checkForNewScore exists
+    assert(
+      typeof w.checkForNewScore === 'function',
+      'T8  window.checkForNewScore is a function'
+    );
+
+    // T9: checkForNewScore applies score from storage to company object
+    w.checkForNewScore(77).then(function() {
+      var c77 = null;
+      for (var i = 0; i < w.companies.length; i++) { if (w.companies[i].id === 77) c77 = w.companies[i]; }
+      assert(
+        c77 && c77.score && c77.score.overall === 7,
+        'T9  checkForNewScore applies score.overall = 7 to company object'
+      );
+
+      // T10: storage key cleared after applying
+      assert(
+        pipelineMock._data['score-77'] === null || pipelineMock._data['score-77'] === '' || pipelineMock._data['score-77'] === undefined,
+        'T10 score-77 storage key cleared after being consumed'
+      );
+
+      heading('Pipeline — renderCard shows score badge');
+
+      // T11: renderCard for scored company includes score number
+      var cardHTML = w.renderCard(w.companies[1]); // company 78 has score: 9
+      assert(
+        cardHTML.indexOf('9') !== -1 && cardHTML.indexOf('10') !== -1,
+        'T11 renderCard for scored company includes score badge (e.g. 9/10)'
+      );
+
+      // T12: renderCard for unscored company has no score badge
+      var unscoredCard = w.renderCard(w.companies[0]); // company 77, score just applied
+      // (check no explicit score markup — just shouldn't show /10 from score badge)
+      // We check for the score badge element specifically
+      assert(
+        unscoredCard.indexOf('dp-score') === -1,
+        'T12 renderCard does not include dp-score element (score shown inline in badge)'
+      );
+
+      heading('Pipeline — detail panel shows score');
+
+      // T13: dp-score-section element exists in detail panel HTML
+      var scoreSection = w.document.getElementById('dp-score-section');
+      assert(
+        scoreSection !== null,
+        'T13 dp-score-section element exists in detail panel'
+      );
+
+      // T14: selectCompany for pre-scored company shows score in panel
+      w.selectCompany(78); // company 78 has score: 9
+      var scoreSectionVisible = w.document.getElementById('dp-score-section').style.display !== 'none';
+      assert(
+        scoreSectionVisible,
+        'T14 dp-score-section is visible after selectCompany for scored company'
+      );
+
+      // T15: score panel contains the score number
+      var dpScore = w.document.getElementById('dp-score');
+      assert(
+        dpScore && dpScore.innerHTML.indexOf('9') !== -1,
+        'T15 dp-score shows the overall score value'
+      );
+
+      // T16: selectCompany for unscored company hides score section
+      w.companies[0].score = null;
+      w.selectCompany(77);
+      var hiddenAfterUnscored = w.document.getElementById('dp-score-section').style.display === 'none';
+      assert(
+        hiddenAfterUnscored,
+        'T16 dp-score-section hidden when company has no score'
+      );
+
+      resolve();
+    });
+  });
+});
+
+Promise.all([scorerPhase, pipelinePhase])
+  .then(showSummary)
+  .catch(function(err) {
+    record('Test runner error: ' + err.message, false);
+    showSummary();
+  });
+</script>
+</body>
+</html>

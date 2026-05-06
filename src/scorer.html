@@ -308,6 +308,22 @@ window.saveApiKeyFromInput = function() {
   });
 };
 
+// ── SCORE STORAGE ────────────────────────────────────────────────
+
+window.saveScoreToStorage = function(r) {
+  if (currentCompanyId === null) return;
+  var score = {
+    overall: r.overall_score,
+    verdict: r.overall_verdict,
+    hard_nos_pass: r.hard_nos_pass,
+    scored_at: new Date().toISOString().slice(0, 10)
+  };
+  try {
+    window.storage.set('score-' + currentCompanyId, JSON.stringify(score))
+      .catch(function(e) { console.warn('Score save failed', e); });
+  } catch(e) { console.warn('Storage unavailable', e); }
+};
+
 // ── PROFILE BAR ─────────────────────────────────────────────────
 
 window.renderProfileBar = function() {
@@ -492,6 +508,9 @@ window.renderResults = function(r) {
 
   // Scroll to results
   results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Persist score back to pipeline if opened from there
+  window.saveScoreToStorage(r);
 };
 
 // ── QUERY PARAMS ────────────────────────────────────────────────

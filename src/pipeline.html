@@ -904,6 +904,10 @@ tr:hover td { background: var(--surface2); }
       </div>
     </div>
     <div class="detail-body">
+      <div class="detail-section" id="dp-score-section" style="display:none">
+        <div class="detail-section-title">Role Score</div>
+        <div id="dp-score"></div>
+      </div>
       <div class="detail-section">
         <div class="detail-section-title">Contact</div>
         <div class="detail-text" id="dp-contact"></div>
@@ -1187,6 +1191,12 @@ window.renderCard = function(c) {
   if (c.url && c.url.length > 0) {
     urlTag = '<span class="tag" style="color:var(--blue)">Link</span>';
   }
+  var scoreBadge = '';
+  if (c.score && c.score.overall) {
+    var sc = c.score.overall;
+    var scColor = sc >= 7 ? 'var(--green)' : sc >= 5 ? 'var(--accent2)' : 'var(--red)';
+    scoreBadge = '<span style="font-family:var(--mono);font-size:0.62rem;color:' + scColor + ';font-weight:500">' + sc + '/10</span>';
+  }
   var nextLine = c.next ? '<div class="card-next">' + c.next + '</div>' : '';
   return '<div class="card' + (urgent ? ' card-urgent' : '') + '" onclick="selectCompany(' + c.id + ')">' +
     '<div class="card-company">' + c.company + '</div>' +
@@ -1194,7 +1204,7 @@ window.renderCard = function(c) {
     nextLine +
     '<div class="card-meta">' +
       '<span class="card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span>' +
-      '<span class="card-date">' + days + 'd ago</span>' +
+      (scoreBadge ? scoreBadge : '<span class="card-date">' + days + 'd ago</span>') +
     '</div>' +
     '<div class="card-tags"><span class="tag">' + c.source + '</span>' + contactTag + urlTag + '</div>' +
   '</div>';
@@ -1384,6 +1394,9 @@ window.selectCompany = function(id) {
   btns += '<button class="btn-advance danger" onclick="deleteCompany(' + id + ')">Delete</button>';
   document.getElementById('dp-actions').innerHTML = btns;
   document.getElementById('detail-panel').classList.add('open');
+
+  window.showScoreInPanel(c.score || null);
+  window.checkForNewScore(id);
 };
 
 window.advanceStage = function(id) {
@@ -1509,6 +1522,7 @@ window.saveCompany = function() {
       next: document.getElementById('f-next').value.trim(),
       notes: document.getElementById('f-notes').value.trim(),
       added: window.todayStr(),
+      score: null,
       activity: [{ date: window.todayLabel(), text: 'Added to pipeline' }]
     });
   }
@@ -1520,6 +1534,45 @@ window.saveCompany = function() {
 };
 
 // ── SCORER INTEGRATION ────────────────────────────────────────────
+
+window.showScoreInPanel = function(score) {
+  var section = document.getElementById('dp-score-section');
+  var el = document.getElementById('dp-score');
+  if (!section || !el) return;
+  if (!score || !score.overall) { section.style.display = 'none'; return; }
+  var scColor = score.overall >= 7 ? 'var(--green)' : score.overall >= 5 ? 'var(--accent2)' : 'var(--red)';
+  el.innerHTML =
+    '<div style="display:flex;align-items:baseline;gap:0.25rem;margin-bottom:0.4rem">' +
+      '<span style="font-family:var(--serif);font-size:2rem;line-height:1;color:' + scColor + '">' + score.overall + '</span>' +
+      '<span style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">/10</span>' +
+      (score.hard_nos_pass === false ? '<span style="font-family:var(--mono);font-size:0.58rem;color:var(--red);margin-left:0.5rem">Hard no triggered</span>' : '') +
+    '</div>' +
+    '<div style="font-size:0.78rem;color:var(--dim);font-style:italic;line-height:1.5">' + score.verdict + '</div>' +
+    '<div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-top:0.3rem">Scored ' + score.scored_at + '</div>';
+  section.style.display = 'block';
+};
+
+window.checkForNewScore = function(id) {
+  var scoreKey = 'score-' + id;
+  try {
+    return window.storage.get(scoreKey).then(function(result) {
+      if (!result || !result.value) return;
+      var score = null;
+      try { score = JSON.parse(result.value); } catch(e) { return; }
+      if (!score || !score.overall) return;
+      var c = null;
+      for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
+      if (!c) return;
+      c.score = score;
+      window.storage.set(scoreKey, null).catch(function() {});
+      window.saveToStorage();
+      window.render();
+      window.showScoreInPanel(score);
+    }).catch(function() {});
+  } catch(e) {
+    return Promise.resolve();
+  }
+};
 
 window.openScorer = function(id) {
   var c = null;
