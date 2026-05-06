@@ -1379,6 +1379,7 @@ window.selectCompany = function(id) {
   }
   btns += '<button class="btn-advance" onclick="logActivity(' + id + ')">+ Log Activity</button>';
   btns += '<button class="btn-advance" onclick="editCompany(' + id + ')">Edit</button>';
+  btns += '<button class="btn-advance" onclick="openScorer(' + id + ')" style="color:var(--blue);border-color:var(--blue)">Score Role</button>';
   btns += '<button class="btn-advance danger" onclick="closeCompany(' + id + ')">Close</button>';
   btns += '<button class="btn-advance danger" onclick="deleteCompany(' + id + ')">Delete</button>';
   document.getElementById('dp-actions').innerHTML = btns;
@@ -1516,6 +1517,18 @@ window.saveCompany = function() {
   window.saveToStorage();
   window.render();
   if (editingId !== null) window.selectCompany(editingId);
+};
+
+// ── SCORER INTEGRATION ────────────────────────────────────────────
+
+window.openScorer = function(id) {
+  var c = null;
+  for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
+  if (!c) return;
+  var base = 'scorer.html';
+  var params = 'companyId=' + c.id + '&company=' + encodeURIComponent(c.company);
+  if (c.url) params += '&url=' + encodeURIComponent(c.url);
+  window.open(base + '?' + params, '_blank');
 };
 
 // ── VIEW SWITCHING ─────────────────────────────────────────────────

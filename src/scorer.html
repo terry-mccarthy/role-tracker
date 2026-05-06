@@ -245,6 +245,7 @@ var PROFILE_STORAGE_KEY = 'eval-profile';
 var API_KEY_STORAGE_KEY = 'anthropic-api-key';
 
 var currentApiKey = '';
+var currentCompanyId = null;
 
 // Default profile embedded — overridden if user has saved a custom one
 var DEFAULT_PROFILE = "# Offer Evaluation Profile \u2014 Terry McCarthy\n\n_Captured 2026-04-30._\n\n## Top-line orientation\n\n- **Primary driver:** Lifestyle & balance\n- **Time horizon:** Stepping stone \u2014 next role should set me up for VP Eng / CTO within 2\u20133 years\n- **Geography:** Sydney-based or fully remote \u2014 no relocation\n- **Hybrid stance:** Open to up to 3 days office; 5-day RTO is a hard no\n\n## Compensation\n\n- **TC floor:** AUD $250k\u2013$300k (base + super + cash bonus)\n- **Cash-first.** Strong preference for high base over equity\n- **Sceptical of bonuses** \u2014 discount STI/LTI heavily\n- **Benefits that move the needle:** L&D / conference budget, generous leave\n\n## Role & scope\n\n- **Org size:** Multi-squad \u2014 15\u201340 engineers (Head of level)\n- **Time mix:** People leadership + strategy/roadmap. Not seeking hands-on coding.\n- **Domain:** Agnostic\n- **Reporting line:** Report to CTO\n\n## Company fit\n\n- **Stage:** Series B\u2013C scaleup\n- **Size:** 50\u20131,000 employees\n- **Industries (in preference order):** Healthcare / climate / impact, AI/ML-native, B2B SaaS\n- **Cultural must-haves:** High-trust low-politics, strong engineering craft, wellbeing & sustainability\n\n## Lifestyle constraints\n\n- **Office cadence:** Up to 3 days/week\n- **Commute:** 30\u201345 min one-way max\n- **Sustainable hours:** ~40 hrs/week\n- **Travel:** Minimal only \u2014 1\u20132 trips/year max\n\n## Manager, peers, growth\n\n- **Manager (CTO) attributes:** Trust + autonomy, strong technical depth, career coach\n- **Peers:** Critical \u2014 want strong engineering peers\n- **Growth wanted:** Path to VP / CTO + funded executive coaching\n\n## Hard nos\n\n- Crypto, gambling, adult, or weapons industries\n- Hero / burnout culture\n- 5-day in-office mandate\n- Founder/CEO red flags (toxic behaviour, bullying)\n\n## Scoring weights\n\n| Dimension | Weight |\n|---|---|\n| Lifestyle (hybrid, hours, commute, travel) | 25% |\n| Compensation (base, total cash, benefits) | 20% |\n| Scope & growth path (size, level, VP/CTO trajectory) | 20% |\n| People (manager fit, peer strength) | 20% |\n| Company & mission (stage, industry, culture, runway) | 15% |\n\n## Tensions to surface\n\n- Lifestyle-first vs stepping-stone ambition\n- Cash-first vs scaleup equity norms\n- Multi-squad scope vs actual org chart depth";
@@ -493,9 +494,23 @@ window.renderResults = function(r) {
   results.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
+// ── QUERY PARAMS ────────────────────────────────────────────────
+
+window.readQueryParams = function() {
+  var params = new URLSearchParams(window.location.search);
+  var company = params.get('company');
+  var url = params.get('url');
+  var companyId = params.get('companyId');
+
+  if (company) document.getElementById('jd-company').value = company;
+  if (url) document.getElementById('jd-url').value = url;
+  if (companyId) currentCompanyId = parseInt(companyId, 10);
+};
+
 // ── INIT ────────────────────────────────────────────────────────
 window.loadProfile();
 window.loadApiKey();
+window.readQueryParams();
 </script>
 </body>
 </html>

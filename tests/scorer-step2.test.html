@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Step 2: Pipeline → Scorer Integration · Tests</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0c0d0f; color: #e8e4dc; font-family: 'DM Mono', monospace; font-size: 13px; padding: 2rem; }
+h1 { font-family: serif; font-size: 1.4rem; margin-bottom: 0.25rem; }
+.subtitle { color: #6b6f78; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1.5rem; }
+h2 { font-family: serif; font-size: 1rem; color: #9a9ea8; margin: 1.25rem 0 0.5rem; }
+#suite { display: flex; flex-direction: column; gap: 0.4rem; }
+.test { padding: 0.4rem 0.8rem; border-radius: 3px; font-size: 0.72rem; display: flex; align-items: center; gap: 0.6rem; }
+.test.pass { background: rgba(76,175,130,0.1); border-left: 3px solid #4caf82; }
+.test.fail { background: rgba(232,91,91,0.1); border-left: 3px solid #e85b5b; }
+.status { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; min-width: 36px; }
+.pass .status { color: #4caf82; }
+.fail .status { color: #e85b5b; }
+#summary { font-size: 0.78rem; padding: 0.75rem 1rem; border-radius: 3px; margin-top: 1rem; }
+#summary.all-pass { background: rgba(76,175,130,0.15); color: #4caf82; }
+#summary.has-fail { background: rgba(232,91,91,0.15); color: #e85b5b; }
+</style>
+</head>
+<body>
+
+<h1>Step 2 · Pipeline → Scorer Integration</h1>
+<p class="subtitle">Scorer reads query params · Pipeline renders Score Role button</p>
+
+<div id="suite"></div>
+<div id="summary"></div>
+
+<!-- Scorer loaded with query params -->
+<iframe id="scorer-frame" style="display:none"></iframe>
+<!-- Pipeline loaded normally -->
+<iframe id="pipeline-frame" src="../src/pipeline.html" style="display:none"></iframe>
+
+<script>
+// ── HARNESS ───────────────────────────────────────────────────────
+var results = [];
+
+function record(name, passed, detail) {
+  results.push({ name: name, passed: passed });
+  var el = document.createElement('div');
+  el.className = 'test ' + (passed ? 'pass' : 'fail');
+  el.innerHTML = '<span class="status">' + (passed ? 'Pass' : 'Fail') + '</span>' + name +
+    (detail ? ' <span style="color:#6b6f78;font-size:0.65rem">— ' + detail + '</span>' : '');
+  document.getElementById('suite').appendChild(el);
+}
+
+function assert(cond, name, detail) { record(name, !!cond, detail); }
+
+function heading(text) {
+  var el = document.createElement('h2');
+  el.textContent = text;
+  document.getElementById('suite').appendChild(el);
+}
+
+function showSummary() {
+  var total = results.length;
+  var passed = results.filter(function(r) { return r.passed; }).length;
+  var el = document.getElementById('summary');
+  el.className = passed === total ? 'all-pass' : 'has-fail';
+  el.textContent = passed + '/' + total + ' passed' + (passed < total ? ' · ' + (total - passed) + ' failing' : ' · all green');
+}
+
+// ── MOCK STORAGE (injected into each frame) ───────────────────────
+function makeMockStorage() {
+  var data = {};
+  return {
+    _data: data,
+    get: function(k) { return Promise.resolve(data[k] !== undefined ? { value: data[k] } : null); },
+    set: function(k, v) { data[k] = v; return Promise.resolve(); }
+  };
+}
+
+// ── PHASE 1: SCORER QUERY PARAMS ─────────────────────────────────
+// Load scorer.html with ?company=Canva&url=https%3A%2F%2Flinkedin.com%2Fjobs%2F123&companyId=42
+
+var TEST_COMPANY = 'Canva';
+var TEST_URL = 'https://linkedin.com/jobs/view/123456789';
+var TEST_ID = 42;
+
+var scorerFrame = document.getElementById('scorer-frame');
+scorerFrame.src = '../src/scorer.html'
+  + '?company=' + encodeURIComponent(TEST_COMPANY)
+  + '&url=' + encodeURIComponent(TEST_URL)
+  + '&companyId=' + TEST_ID;
+
+var scorerPhaseComplete = new Promise(function(resolve) {
+  scorerFrame.addEventListener('load', function() {
+    var w = scorerFrame.contentWindow;
+    w.storage = makeMockStorage();
+
+    heading('Scorer — query param pre-fill');
+
+    // T1: jd-company pre-filled from ?company param
+    assert(
+      w.document.getElementById('jd-company').value === TEST_COMPANY,
+      'T1  jd-company input pre-filled from ?company param'
+    );
+
+    // T2: jd-url pre-filled from ?url param
+    assert(
+      w.document.getElementById('jd-url').value === TEST_URL,
+      'T2  jd-url input pre-filled from ?url param'
+    );
+
+    // T3: companyId param stored for score round-trip (Step 3)
+    assert(
+      typeof w.currentCompanyId !== 'undefined',
+      'T3  currentCompanyId variable is defined on window'
+    );
+    assert(
+      w.currentCompanyId === TEST_ID,
+      'T4  currentCompanyId set to the ?companyId param value (as number)'
+    );
+
+    resolve();
+  });
+});
+
+// ── PHASE 2: PIPELINE — SCORE ROLE BUTTON ─────────────────────────
+
+var pipelineFrame = document.getElementById('pipeline-frame');
+var pipelinePhaseComplete = new Promise(function(resolve) {
+  pipelineFrame.addEventListener('load', function() {
+    var w = pipelineFrame.contentWindow;
+    w.storage = makeMockStorage();
+
+    // Inject a test company with a URL
+    var testCompany = {
+      id: 99,
+      company: 'Atlassian',
+      role: 'Senior Engineering Manager',
+      tier: 'A',
+      stage: 'screen',
+      source: 'Network',
+      url: 'https://linkedin.com/jobs/view/999',
+      contact: '',
+      next: '',
+      notes: '',
+      added: '2026-05-07',
+      activity: []
+    };
+    w.companies = [testCompany];
+
+    // Override window.open so we can capture the call
+    var openedUrl = null;
+    var openedTarget = null;
+    w.open = function(url, target) {
+      openedUrl = url;
+      openedTarget = target;
+    };
+
+    // Select the company — this renders the detail panel actions
+    w.selectCompany(99);
+
+    heading('Pipeline — Score Role button');
+
+    // T5: detail panel actions contain a score button
+    var actionsEl = w.document.getElementById('dp-actions');
+    var actionsHTML = actionsEl ? actionsEl.innerHTML : '';
+    assert(
+      actionsHTML.toLowerCase().indexOf('score') !== -1,
+      'T5  detail panel actions include a Score Role button'
+    );
+
+    // T6: openScorer is a function on window
+    assert(
+      typeof w.openScorer === 'function',
+      'T6  window.openScorer is a function'
+    );
+
+    // T7: openScorer calls window.open with scorer.html
+    w.openScorer(99);
+    assert(
+      openedUrl !== null && openedUrl.indexOf('scorer.html') !== -1,
+      'T7  openScorer opens scorer.html'
+    );
+
+    // T8: URL includes ?company= param (encoded company name)
+    assert(
+      openedUrl !== null && openedUrl.indexOf('company=') !== -1,
+      'T8  opener URL includes company= param'
+    );
+
+    // T9: URL includes ?url= param (encoded job URL)
+    assert(
+      openedUrl !== null && openedUrl.indexOf('url=') !== -1,
+      'T9  opener URL includes url= param'
+    );
+
+    // T10: URL includes companyId= param (for Step 3 round-trip)
+    assert(
+      openedUrl !== null && openedUrl.indexOf('companyId=99') !== -1,
+      'T10 opener URL includes companyId= param'
+    );
+
+    // T11: opens in a new tab (_blank)
+    assert(
+      openedTarget === '_blank',
+      'T11 openScorer opens in a new tab (_blank)'
+    );
+
+    // T12: company without a URL still opens scorer (just without url param)
+    var noUrlCompany = {
+      id: 100, company: 'Rokt', role: 'EM', tier: 'A', stage: 'target',
+      source: 'Job Board', url: '', contact: '', next: '', notes: '',
+      added: '2026-05-07', activity: []
+    };
+    w.companies.push(noUrlCompany);
+    openedUrl = null;
+    w.openScorer(100);
+    assert(
+      openedUrl !== null && openedUrl.indexOf('scorer.html') !== -1,
+      'T12 openScorer works for companies without a URL'
+    );
+
+    resolve();
+  });
+});
+
+// ── WAIT FOR BOTH PHASES ──────────────────────────────────────────
+Promise.all([scorerPhaseComplete, pipelinePhaseComplete])
+  .then(showSummary)
+  .catch(function(err) {
+    record('Test runner error: ' + err.message, false);
+    showSummary();
+  });
+</script>
+</body>
+</html>
