@@ -34,14 +34,22 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); font
 .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 52px; }
 .logo { font-family: var(--serif); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; }
 .logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
-.api-key-row { display: flex; align-items: center; gap: 0.5rem; }
-.api-key-row .label { font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); white-space: nowrap; }
+.topbar-config { display: flex; align-items: center; gap: 1rem; }
+.provider-toggle { display: flex; align-items: center; gap: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+.provider-btn { font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.3rem 0.7rem; cursor: pointer; border: none; background: none; color: var(--muted); transition: all 0.15s; white-space: nowrap; }
+.provider-btn.active { background: var(--surface3); color: var(--text); }
+.provider-btn:hover:not(.active) { color: var(--dim); }
+.config-section { display: flex; align-items: center; gap: 0.5rem; }
+.config-section .label { font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); white-space: nowrap; }
 .api-key-input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 0.72rem; padding: 0.3rem 0.6rem; border-radius: 3px; outline: none; width: 220px; }
 .api-key-input:focus { border-color: var(--accent); }
 .api-key-input::placeholder { color: var(--muted); }
+.model-input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 0.72rem; padding: 0.3rem 0.6rem; border-radius: 3px; outline: none; width: 160px; }
+.model-input:focus { border-color: var(--green); }
 .api-key-saved { font-family: var(--mono); font-size: 0.58rem; color: var(--green); display: none; }
 .btn-save-key { font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.3rem 0.6rem; border-radius: 3px; cursor: pointer; border: 1px solid var(--border2); background: none; color: var(--dim); white-space: nowrap; }
 .btn-save-key:hover { border-color: var(--muted); color: var(--text); }
+.ollama-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 0.3rem; }
 
 .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
 
@@ -156,11 +164,24 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
 
 <div class="topbar">
   <div class="logo"><div class="logo-dot"></div>Role Scorer</div>
-  <div class="api-key-row">
-    <span class="label">API Key</span>
-    <input type="password" class="api-key-input" id="api-key-input" placeholder="sk-ant-..." oninput="document.getElementById('api-key-saved').style.display='none'">
-    <button class="btn-save-key" onclick="saveApiKeyFromInput()">Save</button>
-    <span class="api-key-saved" id="api-key-saved">Saved</span>
+  <div class="topbar-config">
+    <div class="provider-toggle">
+      <button class="provider-btn active" id="btn-provider-anthropic" onclick="setProvider('anthropic')">Anthropic</button>
+      <button class="provider-btn" id="btn-provider-ollama" onclick="setProvider('ollama')">Ollama</button>
+    </div>
+    <!-- Anthropic config -->
+    <div class="config-section" id="config-anthropic">
+      <span class="label">API Key</span>
+      <input type="password" class="api-key-input" id="api-key-input" placeholder="sk-ant-..." oninput="document.getElementById('api-key-saved').style.display='none'">
+      <button class="btn-save-key" onclick="saveApiKeyFromInput()">Save</button>
+      <span class="api-key-saved" id="api-key-saved">Saved</span>
+    </div>
+    <!-- Ollama config -->
+    <div class="config-section" id="config-ollama" style="display:none">
+      <span class="ollama-dot"></span>
+      <span class="label">Model</span>
+      <input class="model-input" id="ollama-model-input" placeholder="qwen3:27b" oninput="saveOllamaModel()">
+    </div>
   </div>
 </div>
 
@@ -243,9 +264,13 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
 <script>
 var PROFILE_STORAGE_KEY = 'eval-profile';
 var API_KEY_STORAGE_KEY = 'anthropic-api-key';
+var PROVIDER_STORAGE_KEY = 'scorer-provider';
+var OLLAMA_MODEL_STORAGE_KEY = 'ollama-model';
 
 var currentApiKey = '';
 var currentCompanyId = null;
+var currentProvider = 'anthropic';
+var currentOllamaModel = 'qwen3:27b';
 
 // Default profile embedded — overridden if user has saved a custom one
 var DEFAULT_PROFILE = "# Offer Evaluation Profile \u2014 Terry McCarthy\n\n_Captured 2026-04-30._\n\n## Top-line orientation\n\n- **Primary driver:** Lifestyle & balance\n- **Time horizon:** Stepping stone \u2014 next role should set me up for VP Eng / CTO within 2\u20133 years\n- **Geography:** Sydney-based or fully remote \u2014 no relocation\n- **Hybrid stance:** Open to up to 3 days office; 5-day RTO is a hard no\n\n## Compensation\n\n- **TC floor:** AUD $250k\u2013$300k (base + super + cash bonus)\n- **Cash-first.** Strong preference for high base over equity\n- **Sceptical of bonuses** \u2014 discount STI/LTI heavily\n- **Benefits that move the needle:** L&D / conference budget, generous leave\n\n## Role & scope\n\n- **Org size:** Multi-squad \u2014 15\u201340 engineers (Head of level)\n- **Time mix:** People leadership + strategy/roadmap. Not seeking hands-on coding.\n- **Domain:** Agnostic\n- **Reporting line:** Report to CTO\n\n## Company fit\n\n- **Stage:** Series B\u2013C scaleup\n- **Size:** 50\u20131,000 employees\n- **Industries (in preference order):** Healthcare / climate / impact, AI/ML-native, B2B SaaS\n- **Cultural must-haves:** High-trust low-politics, strong engineering craft, wellbeing & sustainability\n\n## Lifestyle constraints\n\n- **Office cadence:** Up to 3 days/week\n- **Commute:** 30\u201345 min one-way max\n- **Sustainable hours:** ~40 hrs/week\n- **Travel:** Minimal only \u2014 1\u20132 trips/year max\n\n## Manager, peers, growth\n\n- **Manager (CTO) attributes:** Trust + autonomy, strong technical depth, career coach\n- **Peers:** Critical \u2014 want strong engineering peers\n- **Growth wanted:** Path to VP / CTO + funded executive coaching\n\n## Hard nos\n\n- Crypto, gambling, adult, or weapons industries\n- Hero / burnout culture\n- 5-day in-office mandate\n- Founder/CEO red flags (toxic behaviour, bullying)\n\n## Scoring weights\n\n| Dimension | Weight |\n|---|---|\n| Lifestyle (hybrid, hours, commute, travel) | 25% |\n| Compensation (base, total cash, benefits) | 20% |\n| Scope & growth path (size, level, VP/CTO trajectory) | 20% |\n| People (manager fit, peer strength) | 20% |\n| Company & mission (stage, industry, culture, runway) | 15% |\n\n## Tensions to surface\n\n- Lifestyle-first vs stepping-stone ambition\n- Cash-first vs scaleup equity norms\n- Multi-squad scope vs actual org chart depth";
@@ -306,6 +331,51 @@ window.saveApiKeyFromInput = function() {
   window.saveApiKey().then(function() {
     document.getElementById('api-key-saved').style.display = 'inline';
   });
+};
+
+// ── PROVIDER ─────────────────────────────────────────────────────
+
+window.setProvider = function(provider) {
+  currentProvider = provider;
+  document.getElementById('btn-provider-anthropic').className = 'provider-btn' + (provider === 'anthropic' ? ' active' : '');
+  document.getElementById('btn-provider-ollama').className = 'provider-btn' + (provider === 'ollama' ? ' active' : '');
+  document.getElementById('config-anthropic').style.display = provider === 'anthropic' ? 'flex' : 'none';
+  document.getElementById('config-ollama').style.display = provider === 'ollama' ? 'flex' : 'none';
+  try {
+    window.storage.set(PROVIDER_STORAGE_KEY, provider).catch(function() {});
+  } catch(e) {}
+};
+
+window.loadProvider = function() {
+  try {
+    return window.storage.get(PROVIDER_STORAGE_KEY).then(function(result) {
+      var p = (result && result.value) ? result.value : 'anthropic';
+      window.setProvider(p);
+    }).catch(function() { window.setProvider('anthropic'); });
+  } catch(e) {
+    return Promise.resolve();
+  }
+};
+
+// ── OLLAMA MODEL ─────────────────────────────────────────────────
+
+window.saveOllamaModel = function() {
+  currentOllamaModel = document.getElementById('ollama-model-input').value.trim() || 'qwen3:27b';
+  try {
+    window.storage.set(OLLAMA_MODEL_STORAGE_KEY, currentOllamaModel).catch(function() {});
+  } catch(e) {}
+};
+
+window.loadOllamaModel = function() {
+  try {
+    return window.storage.get(OLLAMA_MODEL_STORAGE_KEY).then(function(result) {
+      currentOllamaModel = (result && result.value) ? result.value : 'qwen3:27b';
+      var el = document.getElementById('ollama-model-input');
+      if (el) el.value = currentOllamaModel;
+    }).catch(function() {});
+  } catch(e) {
+    return Promise.resolve();
+  }
 };
 
 // ── SCORE STORAGE ────────────────────────────────────────────────
@@ -373,22 +443,7 @@ window.saveProfile = function() {
 
 // ── SCORING ─────────────────────────────────────────────────────
 
-window.scoreRole = function() {
-  if (!currentApiKey) {
-    alert('Enter your Anthropic API key in the top bar first.');
-    return;
-  }
-
-  var jdText = document.getElementById('jd-input').value.trim();
-  if (!jdText) { alert('Please paste a job description.'); return; }
-
-  var company = document.getElementById('jd-company').value.trim();
-  var url = document.getElementById('jd-url').value.trim();
-
-  document.getElementById('loading').style.display = 'block';
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('score-btn').disabled = true;
-
+window.buildPrompts = function(jdText, company, url) {
   var systemPrompt = 'You are a job offer evaluation assistant. You score job descriptions against a candidate evaluation profile.\n\n'
     + 'Here is the candidate evaluation profile:\n\n' + currentProfile + '\n\n'
     + 'Respond ONLY with valid JSON (no markdown fences, no preamble). Use this exact structure:\n'
@@ -414,6 +469,10 @@ window.scoreRole = function() {
   userMessage += ':\n\n' + jdText;
   if (url) userMessage += '\n\nSource URL: ' + url;
 
+  return { system: systemPrompt, user: userMessage };
+};
+
+window.fetchAnthropic = function(prompts) {
   return fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -425,22 +484,62 @@ window.scoreRole = function() {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }]
+      system: prompts.system,
+      messages: [{ role: 'user', content: prompts.user }]
     })
-  }).then(function(response) {
-    return response.json();
-  }).then(function(data) {
+  }).then(function(res) { return res.json(); }).then(function(data) {
     var text = '';
     for (var i = 0; i < data.content.length; i++) {
       if (data.content[i].type === 'text') text += data.content[i].text;
     }
-    var clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return text;
+  });
+};
+
+window.fetchOllama = function(prompts) {
+  return fetch('http://localhost:11434/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: currentOllamaModel,
+      messages: [
+        { role: 'system', content: prompts.system },
+        { role: 'user', content: prompts.user }
+      ],
+      stream: false
+    })
+  }).then(function(res) { return res.json(); }).then(function(data) {
+    return data.choices[0].message.content;
+  });
+};
+
+window.scoreRole = function() {
+  if (currentProvider === 'anthropic' && !currentApiKey) {
+    alert('Enter your Anthropic API key in the top bar first.');
+    return;
+  }
+
+  var jdText = document.getElementById('jd-input').value.trim();
+  if (!jdText) { alert('Please paste a job description.'); return; }
+
+  var company = document.getElementById('jd-company').value.trim();
+  var url = document.getElementById('jd-url').value.trim();
+  var prompts = window.buildPrompts(jdText, company, url);
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('score-btn').disabled = true;
+
+  var fetchFn = currentProvider === 'ollama' ? window.fetchOllama : window.fetchAnthropic;
+
+  return fetchFn(prompts).then(function(text) {
+    // Strip <think>...</think> reasoning tokens (Qwen3 and other reasoning models)
+    var clean = text.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/```json/g, '').replace(/```/g, '').trim();
     var result = JSON.parse(clean);
     window.renderResults(result);
   }).catch(function(err) {
     console.error('Scoring error:', err);
-    alert('Scoring failed. Check the console for details.');
+    alert('Scoring failed. ' + (currentProvider === 'ollama' ? 'Is Ollama running? Check http://localhost:11434' : 'Check the console for details.'));
   }).finally(function() {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('score-btn').disabled = false;
@@ -529,6 +628,8 @@ window.readQueryParams = function() {
 // ── INIT ────────────────────────────────────────────────────────
 window.loadProfile();
 window.loadApiKey();
+window.loadProvider();
+window.loadOllamaModel();
 window.readQueryParams();
 </script>
 </body>
