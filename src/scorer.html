@@ -180,7 +180,7 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
     <div class="config-section" id="config-ollama" style="display:none">
       <span class="ollama-dot"></span>
       <span class="label">Model</span>
-      <input class="model-input" id="ollama-model-input" placeholder="qwen3:27b" oninput="saveOllamaModel()">
+      <input class="model-input" id="ollama-model-input" placeholder="qwen3.6:27b" oninput="saveOllamaModel()">
     </div>
   </div>
 </div>
@@ -270,7 +270,7 @@ var OLLAMA_MODEL_STORAGE_KEY = 'ollama-model';
 var currentApiKey = '';
 var currentCompanyId = null;
 var currentProvider = 'anthropic';
-var currentOllamaModel = 'qwen3:27b';
+var currentOllamaModel = 'qwen3.6:27b';
 
 // Default profile embedded — overridden if user has saved a custom one
 var DEFAULT_PROFILE = "# Offer Evaluation Profile \u2014 Terry McCarthy\n\n_Captured 2026-04-30._\n\n## Top-line orientation\n\n- **Primary driver:** Lifestyle & balance\n- **Time horizon:** Stepping stone \u2014 next role should set me up for VP Eng / CTO within 2\u20133 years\n- **Geography:** Sydney-based or fully remote \u2014 no relocation\n- **Hybrid stance:** Open to up to 3 days office; 5-day RTO is a hard no\n\n## Compensation\n\n- **TC floor:** AUD $250k\u2013$300k (base + super + cash bonus)\n- **Cash-first.** Strong preference for high base over equity\n- **Sceptical of bonuses** \u2014 discount STI/LTI heavily\n- **Benefits that move the needle:** L&D / conference budget, generous leave\n\n## Role & scope\n\n- **Org size:** Multi-squad \u2014 15\u201340 engineers (Head of level)\n- **Time mix:** People leadership + strategy/roadmap. Not seeking hands-on coding.\n- **Domain:** Agnostic\n- **Reporting line:** Report to CTO\n\n## Company fit\n\n- **Stage:** Series B\u2013C scaleup\n- **Size:** 50\u20131,000 employees\n- **Industries (in preference order):** Healthcare / climate / impact, AI/ML-native, B2B SaaS\n- **Cultural must-haves:** High-trust low-politics, strong engineering craft, wellbeing & sustainability\n\n## Lifestyle constraints\n\n- **Office cadence:** Up to 3 days/week\n- **Commute:** 30\u201345 min one-way max\n- **Sustainable hours:** ~40 hrs/week\n- **Travel:** Minimal only \u2014 1\u20132 trips/year max\n\n## Manager, peers, growth\n\n- **Manager (CTO) attributes:** Trust + autonomy, strong technical depth, career coach\n- **Peers:** Critical \u2014 want strong engineering peers\n- **Growth wanted:** Path to VP / CTO + funded executive coaching\n\n## Hard nos\n\n- Crypto, gambling, adult, or weapons industries\n- Hero / burnout culture\n- 5-day in-office mandate\n- Founder/CEO red flags (toxic behaviour, bullying)\n\n## Scoring weights\n\n| Dimension | Weight |\n|---|---|\n| Lifestyle (hybrid, hours, commute, travel) | 25% |\n| Compensation (base, total cash, benefits) | 20% |\n| Scope & growth path (size, level, VP/CTO trajectory) | 20% |\n| People (manager fit, peer strength) | 20% |\n| Company & mission (stage, industry, culture, runway) | 15% |\n\n## Tensions to surface\n\n- Lifestyle-first vs stepping-stone ambition\n- Cash-first vs scaleup equity norms\n- Multi-squad scope vs actual org chart depth";
@@ -360,7 +360,7 @@ window.loadProvider = function() {
 // ── OLLAMA MODEL ─────────────────────────────────────────────────
 
 window.saveOllamaModel = function() {
-  currentOllamaModel = document.getElementById('ollama-model-input').value.trim() || 'qwen3:27b';
+  currentOllamaModel = document.getElementById('ollama-model-input').value.trim() || 'qwen3.6:27b';
   try {
     window.storage.set(OLLAMA_MODEL_STORAGE_KEY, currentOllamaModel).catch(function() {});
   } catch(e) {}
@@ -369,7 +369,7 @@ window.saveOllamaModel = function() {
 window.loadOllamaModel = function() {
   try {
     return window.storage.get(OLLAMA_MODEL_STORAGE_KEY).then(function(result) {
-      currentOllamaModel = (result && result.value) ? result.value : 'qwen3:27b';
+      currentOllamaModel = (result && result.value) ? result.value : 'qwen3.6:27b';
       var el = document.getElementById('ollama-model-input');
       if (el) el.value = currentOllamaModel;
     }).catch(function() {});
