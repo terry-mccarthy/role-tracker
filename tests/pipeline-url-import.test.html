@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>URL Import + Scorer Integration · Tests</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0c0d0f; color: #e8e4dc; font-family: 'DM Mono', monospace; font-size: 13px; padding: 2rem; }
+h1 { font-family: serif; font-size: 1.4rem; margin-bottom: 0.25rem; }
+.subtitle { color: #6b6f78; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1.5rem; }
+h2 { font-family: serif; font-size: 1rem; color: #9a9ea8; margin: 1.25rem 0 0.5rem; }
+#suite { display: flex; flex-direction: column; gap: 0.4rem; }
+.test { padding: 0.4rem 0.8rem; border-radius: 3px; font-size: 0.72rem; display: flex; align-items: center; gap: 0.6rem; }
+.test.pass { background: rgba(76,175,130,0.1); border-left: 3px solid #4caf82; }
+.test.fail { background: rgba(232,91,91,0.1); border-left: 3px solid #e85b5b; }
+.status { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; min-width: 36px; }
+.pass .status { color: #4caf82; }
+.fail .status { color: #e85b5b; }
+#summary { font-size: 0.78rem; padding: 0.75rem 1rem; border-radius: 3px; margin-top: 1rem; }
+#summary.all-pass { background: rgba(76,175,130,0.15); color: #4caf82; }
+#summary.has-fail { background: rgba(232,91,91,0.15); color: #e85b5b; }
+</style>
+</head>
+<body>
+
+<h1>URL Import + Scorer Integration</h1>
+<p class="subtitle">LinkedIn fetch · LLM extraction · modal pre-fill · scorer hand-off</p>
+
+<div id="suite"></div>
+<div id="summary"></div>
+
+<iframe id="pipeline-frame" src="../src/pipeline.html" style="display:none"></iframe>
+<iframe id="scorer-frame" src="../src/scorer.html" style="display:none"></iframe>
+
+<script>
+// ── HARNESS ───────────────────────────────────────────────────────
+var results = [];
+function record(name, passed) {
+  results.push({ name: name, passed: passed });
+  var el = document.createElement('div');
+  el.className = 'test ' + (passed ? 'pass' : 'fail');
+  el.innerHTML = '<span class="status">' + (passed ? 'Pass' : 'Fail') + '</span>' + name;
+  document.getElementById('suite').appendChild(el);
+}
+function assert(cond, name) { record(name, !!cond); }
+function heading(text) {
+  var el = document.createElement('h2'); el.textContent = text;
+  document.getElementById('suite').appendChild(el);
+}
+function showSummary() {
+  var total = results.length;
+  var passed = results.filter(function(r) { return r.passed; }).length;
+  var el = document.getElementById('summary');
+  el.className = passed === total ? 'all-pass' : 'has-fail';
+  el.textContent = passed + '/' + total + ' passed' + (passed < total ? ' · ' + (total - passed) + ' failing' : ' · all green');
+}
+
+function makeMockStorage() {
+  var data = {};
+  return {
+    _data: data,
+    get: function(k) { return Promise.resolve(data[k] !== undefined ? { value: data[k] } : null); },
+    set: function(k, v) { data[k] = v; return Promise.resolve(); }
+  };
+}
+
+var FAKE_JINA_CONTENT = 'Title: Senior Engineering Manager at Canva | LinkedIn\n\n'
+  + '## Canva\n### Senior Engineering Manager\n\n'
+  + 'About the job\n\nWe are looking for a Senior Engineering Manager to lead our growth teams. '
+  + 'You will manage 3 squads of 5-8 engineers each, reporting to the VP Engineering. '
+  + 'Hybrid work, 2 days in Sydney office. Base salary $280k-$320k.';
+
+var FAKE_LLM_EXTRACT = JSON.stringify({
+  company_name: 'Canva',
+  job_title: 'Senior Engineering Manager',
+  job_description: 'We are looking for a Senior Engineering Manager to lead our growth teams. '
+    + 'You will manage 3 squads of 5-8 engineers each, reporting to the VP Engineering. '
+    + 'Hybrid work, 2 days in Sydney office. Base salary $280k-$320k.'
+});
+
+// ── PIPELINE FRAME TESTS ──────────────────────────────────────────
+var pipelineMock = makeMockStorage();
+// Pre-seed LLM config so pipeline knows how to call the LLM
+pipelineMock._data['scorer-provider'] = 'ollama';
+pipelineMock._data['ollama-model'] = 'qwen3.6:27b';
+
+var pipelineFrame = document.getElementById('pipeline-frame');
+var pipelinePhase = new Promise(function(resolve) {
+  pipelineFrame.addEventListener('load', function() {
+    var w = pipelineFrame.contentWindow;
+    w.storage = pipelineMock;
+
+    // Mock fetch for both Jina Reader calls and LLM calls
+    var lastFetchUrl = null;
+    w.fetch = function(url, opts) {
+      lastFetchUrl = url;
+      // Jina Reader call
+      if (url.indexOf('r.jina.ai') !== -1) {
+        return Promise.resolve({
+          ok: true,
+          json: function() {
+            return Promise.resolve({ content: FAKE_JINA_CONTENT, title: 'Senior Engineering Manager at Canva | LinkedIn' });
+          },
+          text: function() { return Promise.resolve(FAKE_JINA_CONTENT); }
+        });
+      }
+      // Ollama LLM call — return streaming SSE with extracted JSON
+      var stream = new ReadableStream({
+        start: function(controller) {
+          var chunks = [
+            'data: {"choices":[{"delta":{"content":"' + FAKE_LLM_EXTRACT.replace(/"/g, '\\"').replace(/\n/g, '\\n') + '"}}]}\n\n',
+            'data: [DONE]\n\n'
+          ];
+          for (var i = 0; i < chunks.length; i++) {
+            controller.enqueue(new TextEncoder().encode(chunks[i]));
+          }
+          controller.close();
+        }
+      });
+      return Promise.resolve({ ok: true, body: stream });
+    };
+
+    heading('Pipeline — URL fetch and extraction functions');
+
+    // T1: fetchJobFromUrl function exists
+    assert(typeof w.fetchJobFromUrl === 'function', 'T1  window.fetchJobFromUrl is a function');
+
+    // T2: callLlm function exists
+    assert(typeof w.callLlm === 'function', 'T2  window.callLlm is a function');
+
+    // T3: extractJobData function exists
+    assert(typeof w.extractJobData === 'function', 'T3  window.extractJobData is a function');
+
+    // T4: fetchAndFill function exists
+    assert(typeof w.fetchAndFill === 'function', 'T4  window.fetchAndFill is a function');
+
+    // T5: addAndScore function exists
+    assert(typeof w.addAndScore === 'function', 'T5  window.addAndScore is a function');
+
+    // T6: fetchJobFromUrl calls r.jina.ai with the job URL
+    lastFetchUrl = null;
+    w.fetchJobFromUrl('https://www.linkedin.com/jobs/view/12345/').then(function() {
+      assert(
+        lastFetchUrl !== null && lastFetchUrl.indexOf('r.jina.ai') !== -1,
+        'T6  fetchJobFromUrl calls r.jina.ai'
+      );
+      assert(
+        lastFetchUrl.indexOf('linkedin.com/jobs/view/12345') !== -1,
+        'T7  r.jina.ai URL includes the job URL'
+      );
+
+      heading('Pipeline — extractJobData parses LLM response');
+
+      // T8: extractJobData returns {company_name, job_title, job_description}
+      // Mock callLlm directly to control output
+      var origCallLlm = w.callLlm;
+      w.callLlm = function() { return Promise.resolve(FAKE_LLM_EXTRACT); };
+
+      return w.extractJobData(FAKE_JINA_CONTENT);
+    }).then(function(extracted) {
+      assert(extracted && extracted.company_name === 'Canva', 'T8  extractJobData returns company_name');
+      assert(extracted && extracted.job_title === 'Senior Engineering Manager', 'T9  extractJobData returns job_title');
+      assert(extracted && typeof extracted.job_description === 'string' && extracted.job_description.length > 10, 'T10 extractJobData returns job_description');
+
+      // T11: extractJobData strips <think> tags from response
+      var withThink = '<think>Let me analyze this carefully...</think>' + FAKE_LLM_EXTRACT;
+      w.callLlm = function() { return Promise.resolve(withThink); };
+      return w.extractJobData(FAKE_JINA_CONTENT);
+    }).then(function(extracted) {
+      assert(extracted && extracted.company_name === 'Canva', 'T11 extractJobData strips <think> tags before parsing');
+
+      heading('Pipeline — fetchAndFill populates modal fields');
+
+      // T12: f-jd textarea exists in modal
+      assert(
+        w.document.getElementById('f-jd') !== null,
+        'T12 f-jd textarea exists in modal HTML'
+      );
+
+      // T13: after fetchAndFill, modal fields populated
+      // Set URL field and call fetchAndFill
+      var urlInput = w.document.getElementById('f-url');
+      if (urlInput) urlInput.value = 'https://www.linkedin.com/jobs/view/12345/';
+
+      // Mock fetchJobFromUrl and extractJobData to return known data
+      w.fetchJobFromUrl = function() { return Promise.resolve(FAKE_JINA_CONTENT); };
+      w.extractJobData = function() {
+        return Promise.resolve({ company_name: 'Canva', job_title: 'Senior Engineering Manager', job_description: 'Manage 3 squads...' });
+      };
+
+      return w.fetchAndFill();
+    }).then(function() {
+      assert(
+        w.document.getElementById('f-company').value === 'Canva',
+        'T13 fetchAndFill populates f-company from extracted data'
+      );
+      assert(
+        w.document.getElementById('f-role').value === 'Senior Engineering Manager',
+        'T14 fetchAndFill populates f-role from extracted data'
+      );
+      assert(
+        w.document.getElementById('f-jd').value.length > 0,
+        'T15 fetchAndFill populates f-jd from extracted job description'
+      );
+
+      heading('Pipeline — addAndScore passes JD to scorer via storage');
+
+      // T16: addAndScore saves JD to pending-jd in storage before opening scorer
+      var openedUrl = null;
+      w.open = function(url) { openedUrl = url; };
+
+      // Pre-fill modal fields
+      w.document.getElementById('f-company').value = 'Canva';
+      w.document.getElementById('f-role').value = 'Senior Engineering Manager';
+      w.document.getElementById('f-jd').value = 'Manage 3 squads of engineers...';
+      w.companies = [];
+
+      return w.addAndScore();
+    }).then(function() {
+      return new Promise(function(resolve) { setTimeout(resolve, 50); });
+    }).then(function() {
+      assert(
+        pipelineMock._data['pending-jd'] && pipelineMock._data['pending-jd'].length > 0,
+        'T16 addAndScore saves JD to pending-jd in storage'
+      );
+      assert(
+        openedUrl !== null && openedUrl.indexOf('scorer.html') !== -1,
+        'T17 addAndScore opens scorer.html'
+      );
+      assert(
+        openedUrl !== null && openedUrl.indexOf('company=') !== -1,
+        'T18 addAndScore passes company name in scorer URL'
+      );
+
+      heading('Pipeline — company object includes jd field');
+
+      // T19: saved company has jd field
+      var saved = w.companies[w.companies.length - 1];
+      assert(
+        saved && typeof saved.jd === 'string',
+        'T19 saved company object includes jd field'
+      );
+
+      resolve();
+    }).catch(function(err) {
+      record('Pipeline test error: ' + err.message, false);
+      resolve();
+    });
+  });
+});
+
+// ── SCORER FRAME TESTS ────────────────────────────────────────────
+var scorerMock = makeMockStorage();
+scorerMock._data['pending-jd'] = 'We are looking for a Senior Engineering Manager...';
+
+var scorerFrame = document.getElementById('scorer-frame');
+var scorerPhase = new Promise(function(resolve) {
+  scorerFrame.addEventListener('load', function() {
+    var w = scorerFrame.contentWindow;
+    w.storage = scorerMock;
+
+    heading('Scorer — reads pending-jd from storage on load');
+
+    // T20: readPendingJd function exists
+    assert(typeof w.readPendingJd === 'function', 'T20 window.readPendingJd is a function');
+
+    // T21: readPendingJd populates jd-input textarea from storage
+    w.readPendingJd().then(function() {
+      assert(
+        w.document.getElementById('jd-input').value === 'We are looking for a Senior Engineering Manager...',
+        'T21 readPendingJd fills jd-input from pending-jd storage key'
+      );
+
+      // T22: readPendingJd clears pending-jd from storage after reading
+      assert(
+        scorerMock._data['pending-jd'] === null || scorerMock._data['pending-jd'] === '' || scorerMock._data['pending-jd'] === undefined,
+        'T22 readPendingJd clears pending-jd from storage after consuming it'
+      );
+
+      resolve();
+    }).catch(function(err) {
+      record('Scorer test error: ' + err.message, false);
+      resolve();
+    });
+  });
+});
+
+Promise.all([pipelinePhase, scorerPhase])
+  .then(showSummary)
+  .catch(function(err) {
+    record('Runner error: ' + err.message, false);
+    showSummary();
+  });
+</script>
+</body>
+</html>

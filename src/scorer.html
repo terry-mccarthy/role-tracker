@@ -160,29 +160,19 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
   .dim-right { flex-direction: row; gap: 0.5rem; }
 }
 </style>
+<script src="lib/parse.js"></script>
+<script src="lib/scoring.js"></script>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="logo"><div class="logo-dot"></div>Role Scorer</div>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <div class="logo"><div class="logo-dot"></div>Role Scorer</div>
+    <a href="pipeline.html" style="font-family:var(--mono);font-size:0.65rem;text-decoration:none;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;border:1px solid var(--border2);padding:0.3rem 0.6rem;border-radius:3px">← Back to Pipeline</a>
+  </div>
   <div class="topbar-config">
-    <div class="provider-toggle">
-      <button class="provider-btn active" id="btn-provider-anthropic" onclick="setProvider('anthropic')">Anthropic</button>
-      <button class="provider-btn" id="btn-provider-ollama" onclick="setProvider('ollama')">Ollama</button>
-    </div>
-    <!-- Anthropic config -->
-    <div class="config-section" id="config-anthropic">
-      <span class="label">API Key</span>
-      <input type="password" class="api-key-input" id="api-key-input" placeholder="sk-ant-..." oninput="document.getElementById('api-key-saved').style.display='none'">
-      <button class="btn-save-key" onclick="saveApiKeyFromInput()">Save</button>
-      <span class="api-key-saved" id="api-key-saved">Saved</span>
-    </div>
-    <!-- Ollama config -->
-    <div class="config-section" id="config-ollama" style="display:none">
-      <span class="ollama-dot"></span>
-      <span class="label">Model</span>
-      <input class="model-input" id="ollama-model-input" placeholder="qwen3.6:27b" oninput="saveOllamaModel()">
-    </div>
+    <div id="active-config-label" style="font-family:var(--mono);font-size:0.6rem;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em;margin-right:1rem"></div>
+    <button class="btn-edit-profile" onclick="openSettingsModal()">Settings</button>
   </div>
 </div>
 
@@ -263,6 +253,40 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">Settings</div>
+      <button class="modal-close" onclick="closeSettingsModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="padding:1.5rem">
+      <div style="margin-bottom:1.5rem">
+        <label style="display:block;font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.5rem">AI Scorer Provider</label>
+        <select id="settings-provider" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem;border-radius:4px;outline:none">
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="ollama">Ollama (Local)</option>
+        </select>
+      </div>
+      
+      <div id="settings-anthropic-row" style="margin-bottom:1.5rem">
+        <label style="display:block;font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.5rem">Anthropic API Key</label>
+        <input type="password" id="settings-anthropic" placeholder="sk-ant-..." style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem;border-radius:4px;outline:none">
+      </div>
+      
+      <div id="settings-ollama-row" style="margin-bottom:1.5rem">
+        <label style="display:block;font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.5rem">Ollama Model Name</label>
+        <input id="settings-ollama-model" placeholder="qwen3.6:27b" onblur="checkOllamaModel()" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem;border-radius:4px;outline:none">
+        <div id="ollama-model-status" style="font-family:var(--mono);font-size:0.6rem;margin-top:0.3rem"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeSettingsModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var PROFILE_STORAGE_KEY = 'eval-profile';
 var API_KEY_STORAGE_KEY = 'anthropic-api-key';
@@ -271,7 +295,7 @@ var OLLAMA_MODEL_STORAGE_KEY = 'ollama-model';
 
 var currentApiKey = '';
 var currentCompanyId = null;
-var currentProvider = 'anthropic';
+var currentProvider = 'ollama';
 var currentOllamaModel = 'qwen3.6:27b';
 
 // Default profile embedded — overridden if user has saved a custom one
@@ -282,17 +306,25 @@ var currentProfile = DEFAULT_PROFILE;
 // ── STORAGE ─────────────────────────────────────────────────────
 
 window.loadProfile = function() {
+  function loadFallback() {
+    try {
+      var localProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
+      if (localProfile) currentProfile = localProfile;
+    } catch(err) {}
+    window.renderProfileBar();
+  }
+
   try {
     window.storage.get(PROFILE_STORAGE_KEY).then(function(result) {
       if (result && result.value) {
         currentProfile = result.value;
+        window.renderProfileBar();
+      } else {
+        loadFallback();
       }
-      window.renderProfileBar();
-    }).catch(function() {
-      window.renderProfileBar();
-    });
+    }).catch(function() { loadFallback(); });
   } catch(e) {
-    window.renderProfileBar();
+    loadFallback();
   }
 };
 
@@ -304,78 +336,159 @@ window.saveProfileToStorage = function() {
 
 // ── API KEY ──────────────────────────────────────────────────────
 
-window.loadApiKey = function() {
+window.openSettingsModal = function() {
+  document.getElementById('settings-provider').value = currentProvider;
+  document.getElementById('settings-anthropic').value = currentApiKey;
+  document.getElementById('settings-ollama-model').value = currentOllamaModel;
+  
+  var updateRows = function() {
+    var p = document.getElementById('settings-provider').value;
+    document.getElementById('settings-anthropic-row').style.display = p === 'anthropic' ? 'block' : 'none';
+    document.getElementById('settings-ollama-row').style.display = p === 'ollama' ? 'block' : 'none';
+  };
+  document.getElementById('settings-provider').onchange = function() { updateRows(); window.checkOllamaModel(); };
+  updateRows();
+  window.checkOllamaModel();
+
+  document.getElementById('settings-modal').classList.add('open');
+};
+
+window.closeSettingsModal = function() {
+  document.getElementById('settings-modal').classList.remove('open');
+  var el = document.getElementById('ollama-model-status');
+  if (el) el.textContent = '';
+};
+
+window.checkOllamaModel = function() {
+  var el = document.getElementById('ollama-model-status');
+  var model = (document.getElementById('settings-ollama-model').value || '').trim();
+  if (!model || document.getElementById('settings-provider').value !== 'ollama') {
+    if (el) el.textContent = '';
+    return;
+  }
+  if (el) { el.style.color = 'var(--muted)'; el.textContent = 'Checking...'; }
+  fetch('http://localhost:11434/api/tags')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var models = data.models || [];
+      var found = false;
+      for (var i = 0; i < models.length; i++) {
+        if (models[i].name === model || models[i].model === model) { found = true; break; }
+      }
+      if (el) {
+        if (found) {
+          el.style.color = 'var(--green)';
+          el.textContent = '✓ Model available';
+        } else {
+          el.style.color = 'var(--red)';
+          el.textContent = '✗ Not found — run: ollama pull ' + model;
+        }
+      }
+    })
+    .catch(function() {
+      if (el) { el.style.color = 'var(--red)'; el.textContent = '✗ Ollama not reachable at localhost:11434'; }
+    });
+};
+
+window.saveSettings = function() {
+  var p = document.getElementById('settings-provider').value;
+  var a = document.getElementById('settings-anthropic').value.trim();
+  var o = document.getElementById('settings-ollama-model').value.trim();
+  
+  currentProvider = p;
+  currentApiKey = a;
+  currentOllamaModel = o || 'qwen3.6:27b';
+  
+  var keys = {};
+  keys[PROVIDER_STORAGE_KEY] = currentProvider;
+  keys[API_KEY_STORAGE_KEY] = currentApiKey;
+  keys[OLLAMA_MODEL_STORAGE_KEY] = currentOllamaModel;
+  
   try {
-    return window.storage.get(API_KEY_STORAGE_KEY).then(function(result) {
-      currentApiKey = (result && result.value) ? result.value : '';
-      var el = document.getElementById('api-key-input');
-      if (el) el.value = currentApiKey;
+    var ps = [];
+    for (var k in keys) { ps.push(window.storage.set(k, keys[k])); }
+    Promise.all(ps).then(function() {
+      window.renderConfigLabel();
+      window.closeSettingsModal();
     }).catch(function() {
-      currentApiKey = '';
+      for (var k in keys) { try { localStorage.setItem(k, keys[k]); } catch(err) {} }
+      window.renderConfigLabel();
+      window.closeSettingsModal();
     });
   } catch(e) {
-    currentApiKey = '';
-    return Promise.resolve();
+    for (var k in keys) { try { localStorage.setItem(k, keys[k]); } catch(err) {} }
+    window.renderConfigLabel();
+    window.closeSettingsModal();
   }
 };
 
-window.saveApiKey = function() {
+window.renderConfigLabel = function() {
+  var el = document.getElementById('active-config-label');
+  if (!el) return;
+  var label = currentProvider === 'ollama' ? 'Ollama: ' + currentOllamaModel : 'Anthropic (Claude)';
+  el.textContent = label;
+};
+
+// ── API KEY ──────────────────────────────────────────────────────
+
+window.loadApiKey = function() {
+  function loadFallback() {
+    try {
+      var a = localStorage.getItem(API_KEY_STORAGE_KEY);
+      currentApiKey = a || '';
+    } catch(e) {}
+  }
   try {
-    return window.storage.set(API_KEY_STORAGE_KEY, currentApiKey).catch(function(e) { console.warn('API key save failed', e); });
+    return window.storage.get(API_KEY_STORAGE_KEY).then(function(result) {
+      currentApiKey = (result && result.value) ? result.value : null;
+      if (currentApiKey === null) loadFallback();
+    }).catch(function() { loadFallback(); });
   } catch(e) {
-    console.warn('Storage unavailable', e);
+    loadFallback();
     return Promise.resolve();
   }
-};
-
-window.saveApiKeyFromInput = function() {
-  currentApiKey = document.getElementById('api-key-input').value.trim();
-  window.saveApiKey().then(function() {
-    document.getElementById('api-key-saved').style.display = 'inline';
-  });
 };
 
 // ── PROVIDER ─────────────────────────────────────────────────────
 
-window.setProvider = function(provider) {
-  currentProvider = provider;
-  document.getElementById('btn-provider-anthropic').className = 'provider-btn' + (provider === 'anthropic' ? ' active' : '');
-  document.getElementById('btn-provider-ollama').className = 'provider-btn' + (provider === 'ollama' ? ' active' : '');
-  document.getElementById('config-anthropic').style.display = provider === 'anthropic' ? 'flex' : 'none';
-  document.getElementById('config-ollama').style.display = provider === 'ollama' ? 'flex' : 'none';
-  try {
-    window.storage.set(PROVIDER_STORAGE_KEY, provider).catch(function() {});
-  } catch(e) {}
-};
-
 window.loadProvider = function() {
+  function loadFallback() {
+    try {
+      var p = localStorage.getItem(PROVIDER_STORAGE_KEY);
+      currentProvider = p || 'ollama';
+    } catch(e) {}
+    window.renderConfigLabel();
+  }
   try {
     return window.storage.get(PROVIDER_STORAGE_KEY).then(function(result) {
-      var p = (result && result.value) ? result.value : 'anthropic';
-      window.setProvider(p);
-    }).catch(function() { window.setProvider('anthropic'); });
+      currentProvider = (result && result.value) ? result.value : null;
+      if (!currentProvider) return loadFallback();
+      window.renderConfigLabel();
+    }).catch(function() { loadFallback(); });
   } catch(e) {
+    loadFallback();
     return Promise.resolve();
   }
 };
 
 // ── OLLAMA MODEL ─────────────────────────────────────────────────
 
-window.saveOllamaModel = function() {
-  currentOllamaModel = document.getElementById('ollama-model-input').value.trim() || 'qwen3.6:27b';
-  try {
-    window.storage.set(OLLAMA_MODEL_STORAGE_KEY, currentOllamaModel).catch(function() {});
-  } catch(e) {}
-};
-
 window.loadOllamaModel = function() {
+  function loadFallback() {
+    try {
+      var m = localStorage.getItem(OLLAMA_MODEL_STORAGE_KEY);
+      currentOllamaModel = m || 'qwen3.6:27b';
+    } catch(e) {}
+    window.renderConfigLabel();
+  }
   try {
     return window.storage.get(OLLAMA_MODEL_STORAGE_KEY).then(function(result) {
-      currentOllamaModel = (result && result.value) ? result.value : 'qwen3.6:27b';
-      var el = document.getElementById('ollama-model-input');
-      if (el) el.value = currentOllamaModel;
-    }).catch(function() {});
+      currentOllamaModel = (result && result.value) ? result.value : null;
+      if (!currentOllamaModel) return loadFallback();
+      window.renderConfigLabel();
+    }).catch(function() { loadFallback(); });
   } catch(e) {
+    loadFallback();
     return Promise.resolve();
   }
 };
@@ -384,16 +497,20 @@ window.loadOllamaModel = function() {
 
 window.saveScoreToStorage = function(r) {
   if (currentCompanyId === null) return;
-  var score = {
-    overall: r.overall_score,
-    verdict: r.overall_verdict,
-    hard_nos_pass: r.hard_nos_pass,
-    scored_at: new Date().toISOString().slice(0, 10)
-  };
+  // Clone r and add necessary fields for pipeline compatibility
+  var score = JSON.parse(JSON.stringify(r));
+  score.overall = r.overall_score;
+  score.verdict = r.overall_verdict;
+  score.scored_at = new Date().toISOString().slice(0, 10);
+  
   try {
     window.storage.set('score-' + currentCompanyId, JSON.stringify(score))
-      .catch(function(e) { console.warn('Score save failed', e); });
-  } catch(e) { console.warn('Storage unavailable', e); }
+      .catch(function(e) {
+        try { localStorage.setItem('score-' + currentCompanyId, JSON.stringify(score)); } catch(err) {}
+      });
+  } catch(e) {
+    try { localStorage.setItem('score-' + currentCompanyId, JSON.stringify(score)); } catch(err) {}
+  }
 };
 
 // ── PROFILE BAR ─────────────────────────────────────────────────
@@ -404,23 +521,11 @@ window.renderProfileBar = function() {
   var name = nameMatch ? nameMatch[0].replace(/^# /, '').replace(/ \u2014 /, ' - ') : 'Custom Profile';
   document.getElementById('profile-name').textContent = name;
 
-  // Extract weights
   var weightsEl = document.getElementById('profile-weights');
-  var lines = currentProfile.split('\n');
+  var weights = window.parseProfileWeights(currentProfile);
   var chips = '';
-  for (var i = 0; i < lines.length; i++) {
-    var line = lines[i].trim();
-    if (line.indexOf('|') === 0 && line.indexOf('Weight') === -1 && line.indexOf('---') === -1) {
-      var parts = line.split('|');
-      if (parts.length >= 3) {
-        var dim = parts[1].trim();
-        var weight = parts[2].trim();
-        if (dim.length > 0 && weight.length > 0) {
-          var shortDim = dim.split('(')[0].trim();
-          chips += '<span class="weight-chip">' + shortDim + ' ' + weight + '</span>';
-        }
-      }
-    }
+  for (var i = 0; i < weights.length; i++) {
+    chips += '<span class="weight-chip">' + weights[i].dim + ' ' + weights[i].weight + '</span>';
   }
   weightsEl.innerHTML = chips;
 };
@@ -437,8 +542,16 @@ window.closeProfileEditor = function() {
 };
 
 window.saveProfile = function() {
-  currentProfile = document.getElementById('profile-editor').value;
-  window.saveProfileToStorage();
+  var val = document.getElementById('profile-editor').value;
+  if (!val.trim()) return;
+  currentProfile = val;
+  try {
+    window.storage.set(PROFILE_STORAGE_KEY, val).catch(function(e) {
+      try { localStorage.setItem(PROFILE_STORAGE_KEY, val); } catch(err) {}
+    });
+  } catch(e) {
+    try { localStorage.setItem(PROFILE_STORAGE_KEY, val); } catch(err) {}
+  }
   window.renderProfileBar();
   window.closeProfileEditor();
 };
@@ -446,32 +559,7 @@ window.saveProfile = function() {
 // ── SCORING ─────────────────────────────────────────────────────
 
 window.buildPrompts = function(jdText, company, url) {
-  var systemPrompt = 'You are a job offer evaluation assistant. You score job descriptions against a candidate evaluation profile.\n\n'
-    + 'Here is the candidate evaluation profile:\n\n' + currentProfile + '\n\n'
-    + 'Respond ONLY with valid JSON (no markdown fences, no preamble). Use this exact structure:\n'
-    + '{\n'
-    + '  "overall_score": <number 1-10>,\n'
-    + '  "overall_verdict": "<one sentence summary>",\n'
-    + '  "hard_nos_pass": <true/false>,\n'
-    + '  "hard_nos_detail": "<explanation if any triggered, or \'No walk-away criteria triggered\'>",\n'
-    + '  "dimensions": [\n'
-    + '    { "name": "Lifestyle", "weight": "25%", "score": <1-10>, "detail": "<2-3 sentences>" },\n'
-    + '    { "name": "Compensation", "weight": "20%", "score": <1-10>, "detail": "<2-3 sentences>" },\n'
-    + '    { "name": "Scope & Growth", "weight": "20%", "score": <1-10>, "detail": "<2-3 sentences>" },\n'
-    + '    { "name": "People", "weight": "20%", "score": <1-10>, "detail": "<2-3 sentences>" },\n'
-    + '    { "name": "Company & Mission", "weight": "15%", "score": <1-10>, "detail": "<2-3 sentences>" }\n'
-    + '  ],\n'
-    + '  "tensions": ["<tension 1>", "<tension 2>"],\n'
-    + '  "discovery_items": ["<item needing interview verification>"]\n'
-    + '}\n\n'
-    + 'Score conservatively. If information is missing from the JD, score that dimension lower and note it in discovery_items. Be specific and reference actual details from the JD.';
-
-  var userMessage = 'Score this job description';
-  if (company) userMessage += ' at ' + company;
-  userMessage += ':\n\n' + jdText;
-  if (url) userMessage += '\n\nSource URL: ' + url;
-
-  return { system: systemPrompt, user: userMessage };
+  return window.buildScoringPrompts(currentProfile, jdText, company, url);
 };
 
 window.fetchAnthropic = function(prompts) {
@@ -490,6 +578,10 @@ window.fetchAnthropic = function(prompts) {
       messages: [{ role: 'user', content: prompts.user }]
     })
   }).then(function(res) { return res.json(); }).then(function(data) {
+    if (!data.content) {
+      var msg = (data.error && data.error.message) ? data.error.message : 'Unknown error from Anthropic API';
+      throw new Error('Anthropic API error: ' + msg + '. Check your API key in Settings.');
+    }
     var text = '';
     for (var i = 0; i < data.content.length; i++) {
       if (data.content[i].type === 'text') text += data.content[i].text;
@@ -576,9 +668,7 @@ window.scoreRole = function() {
   var fetchFn = currentProvider === 'ollama' ? window.fetchOllama : window.fetchAnthropic;
 
   return fetchFn(prompts).then(function(text) {
-    // Strip <think>...</think> reasoning tokens (Qwen3 and other reasoning models)
-    var clean = text.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/```json/g, '').replace(/```/g, '').trim();
-    var result = JSON.parse(clean);
+    var result = window.parseJsonResponse(text);
     window.renderResults(result);
   }).catch(function(err) {
     console.error('Scoring error:', err);
@@ -659,6 +749,38 @@ window.renderResults = function(r) {
   window.saveScoreToStorage(r);
 };
 
+// ── PENDING JD ──────────────────────────────────────────────────
+
+window.readPendingJd = function() {
+  function readFallback() {
+    try {
+      var localJd = localStorage.getItem('pending-jd');
+      if (localJd) {
+        var jdInput = document.getElementById('jd-input');
+        if (jdInput) jdInput.value = localJd;
+        localStorage.removeItem('pending-jd');
+      }
+    } catch(e) {}
+  }
+
+  try {
+    return window.storage.get('pending-jd').then(function(result) {
+      if (result && result.value) {
+        var jdInput = document.getElementById('jd-input');
+        if (jdInput) jdInput.value = result.value;
+        window.storage.set('pending-jd', null).catch(function() {});
+      } else {
+        readFallback();
+      }
+    }).catch(function() {
+      readFallback();
+    });
+  } catch(e) {
+    readFallback();
+    return Promise.resolve();
+  }
+};
+
 // ── QUERY PARAMS ────────────────────────────────────────────────
 
 window.readQueryParams = function() {
@@ -678,6 +800,7 @@ window.loadApiKey();
 window.loadProvider();
 window.loadOllamaModel();
 window.readQueryParams();
+window.readPendingJd();
 </script>
 </body>
 </html>

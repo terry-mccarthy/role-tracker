@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Settings TDD</title>
+</head>
+<body>
+<h1>Settings TDD</h1>
+<div id="suite"></div>
+
+<iframe id="pipeline-frame" src="../src/pipeline.html" style="display:none"></iframe>
+
+<script>
+var results = [];
+function record(name, passed) {
+  results.push({ name: name, passed: passed });
+  var el = document.createElement('div');
+  el.textContent = (passed ? 'Pass: ' : 'Fail: ') + name;
+  document.getElementById('suite').appendChild(el);
+  console.log((passed ? 'Pass: ' : 'Fail: ') + name);
+}
+
+function makeMockStorage() {
+  var data = {};
+  return {
+    _data: data,
+    get: function(k) { return Promise.resolve(data[k] !== undefined ? { value: data[k] } : null); },
+    set: function(k, v) { data[k] = v; return Promise.resolve(); }
+  };
+}
+
+var mockStorage = makeMockStorage();
+
+var frame = document.getElementById('pipeline-frame');
+frame.addEventListener('load', function() {
+  var w = frame.contentWindow;
+  w.storage = mockStorage;
+
+  // Test 1: saveSettings updates llmConfig and storage
+  w.document.getElementById('settings-tavily').value = 'tvly-123';
+  w.document.getElementById('settings-jina').value = 'jina-123';
+  w.saveSettings();
+
+  setTimeout(function() {
+    record('llmConfig.tavilyApiKey updated', w.llmConfig.tavilyApiKey === 'tvly-123');
+    record('llmConfig.jinaApiKey updated', w.llmConfig.jinaApiKey === 'jina-123');
+    record('Storage tavily-api-key updated', mockStorage._data['tavily-api-key'] === 'tvly-123');
+    
+    // Test 2: loadLlmConfig works
+    w.llmConfig.tavilyApiKey = ''; // reset
+    w.loadLlmConfig().then(function() {
+      record('loadLlmConfig populates tavilyApiKey', w.llmConfig.tavilyApiKey === 'tvly-123');
+      
+      // Test 3: fetchJobFromUrl uses Tavily if key is present
+      var lastFetchUrl = '';
+      w.fetch = function(url, options) {
+        lastFetchUrl = url;
+        return Promise.resolve({
+          ok: true,
+          json: function() { return Promise.resolve({ results: [{ raw_content: 'mock tavily content' }] }); }
+        });
+      };
+      
+      w.fetchJobFromUrl('https://linkedin.com').then(function() {
+        record('fetchJobFromUrl used tavily endpoint', lastFetchUrl === 'https://api.tavily.com/extract');
+      });
+    });
+  }, 100);
+});
+</script>
+</body>
+</html>
