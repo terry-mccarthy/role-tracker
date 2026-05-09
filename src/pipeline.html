@@ -851,7 +851,10 @@ tr:hover td { background: var(--surface2); }
   <div class="topbar-left">
     <div class="logo">
       <div class="logo-dot"></div>
-      Pipeline
+      EM Job Search
+      <button onclick="window.loadFromStorage()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:0.55rem;text-transform:uppercase;letter-spacing:0.05em;margin-left:1rem;display:flex;align-items:center;gap:0.3rem">
+        <span style="font-size:0.8rem">↻</span> Refresh
+      </button>
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchView('kanban',this)">Kanban</button>
@@ -929,6 +932,15 @@ tr:hover td { background: var(--surface2); }
       <div class="detail-section">
         <div class="detail-section-title">Notes</div>
         <textarea id="dp-notes-input" placeholder="Add notes…" oninput="window.saveNotes(this)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--sans);font-size:0.8rem;line-height:1.6;padding:0.6rem 0.75rem;resize:vertical;min-height:80px;outline:none;box-sizing:border-box;transition:border-color 0.15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+      <div class="detail-section" id="dp-linked-docs-section" style="display:none">
+        <div class="detail-section-title">Linked Documents</div>
+        <div id="dp-linked-docs"></div>
+      </div>
+      <div class="detail-section" id="dp-culture-section" style="display:none">
+        <div class="detail-section-title">Culture & Reviews <span id="dp-culture-loading" style="display:none;color:var(--muted);font-family:var(--mono);font-size:0.55rem;margin-left:0.5rem;text-transform:none">(Researching...)</span></div>
+        <div id="dp-culture-rating" style="margin-bottom:0.75rem"></div>
+        <div id="dp-culture-text" class="detail-text" style="white-space:pre-wrap;font-size:0.75rem;"></div>
       </div>
       <div class="detail-section">
         <div class="detail-section-title">Next Action</div>
@@ -1026,6 +1038,10 @@ tr:hover td { background: var(--surface2); }
         <label class="form-label">Notes</label>
         <textarea class="form-textarea" id="f-notes" placeholder="What do you know about this role? What problem are they solving?"></textarea>
       </div>
+      <div class="form-row">
+        <label class="form-label">Linked Documents</label>
+        <textarea class="form-textarea" id="f-linked-documents" placeholder="Paste URLs here, one per line"></textarea>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal()">Cancel</button>
@@ -1097,6 +1113,23 @@ tr:hover td { background: var(--surface2); }
 <script>
 var STORAGE_KEY = 'pipeline-data';
 
+(function() {
+  var oldLog = console.log;
+  var oldError = console.error;
+  var oldWarn = console.warn;
+  function sendToServer(level, args) {
+    var msg = Array.from(args).map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+    fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ level: level, message: msg })
+    }).catch(() => {});
+  }
+  console.log = function() { oldLog.apply(console, arguments); sendToServer('INFO', arguments); };
+  console.error = function() { oldError.apply(console, arguments); sendToServer('ERROR', arguments); };
+  console.warn = function() { oldWarn.apply(console, arguments); sendToServer('WARN', arguments); };
+})();
+
 var STAGES = [
   { id: 'target',    label: 'Target List',  col: 'col-target' },
   { id: 'warm',      label: 'Warming Up',   col: 'col-warm' },
@@ -1127,49 +1160,107 @@ var isLoaded = false;
 // ── STORAGE ────────────────────────────────────────────────────────
 
 window.saveToStorage = function() {
-  var data = JSON.stringify({ companies: companies, nextId: nextId });
-  try {
-    window.storage.set(STORAGE_KEY, data).catch(function(e) {
-      try { localStorage.setItem(STORAGE_KEY, data); } catch(err) {}
+  // Save nextId to DB
+  fetch('/api/kv', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: 'nextId', value: nextId.toString() })
+  });
+  
+  // NOTE: We no longer sync all companies here. 
+  // Individual companies are synced via window.syncCompanyToDb(c) when modified.
+};
+
+window.syncCompanyToDb = function(c) {
+  if (!c || !c.id) return;
+  console.log('[Pipeline] Syncing company to DB:', c.id, c.company);
+  
+  // Create a clean copy for syncing
+  var toSync = Object.assign({}, c);
+  delete toSync.data; // Ensure we don't send the raw blob back to be double-encoded
+  delete toSync.updated_at;
+
+  fetch('/api/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(toSync)
+  }).then(r => r.json())
+    .then(res => {
+      if (res.error) console.error('Sync failed for ID ' + c.id + ':', res.error);
     });
-  } catch(e) {
-    try { localStorage.setItem(STORAGE_KEY, data); } catch(err) {}
-  }
+};
+
+window.migrateToSqlite = function(localCompanies, localNextId) {
+  console.log('[Pipeline] Migrating to SQLite...');
+  fetch('/api/migrate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ companies: localCompanies, nextId: localNextId })
+  }).then(r => r.json())
+    .then(res => {
+      if (res.success) {
+        alert('Migration successful! Data is now in SQLite.');
+        window.loadFromStorage();
+      } else {
+        alert('Migration failed: ' + res.error);
+      }
+    });
 };
 
 window.loadFromStorage = function() {
-  function readFallback() {
-    try {
-      var localData = localStorage.getItem(STORAGE_KEY);
-      if (localData) {
-        var parsed = JSON.parse(localData);
-        companies = parsed.companies || [];
-        nextId = parsed.nextId || (companies.length + 1);
-      }
-    } catch(err) {}
-    isLoaded = true;
-    window.render();
-  }
-
-  try {
-    window.storage.get(STORAGE_KEY).then(function(result) {
-      if (result && result.value) {
-        var parsed = JSON.parse(result.value);
-        companies = parsed.companies || [];
-        nextId = parsed.nextId || (companies.length + 1);
+  console.log('[Pipeline] Loading data from SQLite...');
+  
+  fetch('/api/companies')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.companies && data.companies.length > 0) {
+        companies = data.companies.map(function(c) {
+          var extra = {};
+          try { extra = JSON.parse(c.data); } catch(e) {}
+          var merged = Object.assign({}, extra, c);
+          delete merged.data; // PREVENT DOUBLE ENCODING
+          
+          // AUTO-FIX: If culture_notes contains JSON but rating is missing
+          var cNotes = String(merged.culture_notes || '');
+          if (cNotes.indexOf('{') !== -1 && cNotes.indexOf('}') !== -1 && !merged.culture_rating) {
+            try {
+              var s = cNotes.trim();
+              var start = s.indexOf('{');
+              var end = s.lastIndexOf('}');
+              var d = JSON.parse(s.substring(start, end + 1));
+              if (d.rating) merged.culture_rating = d.rating;
+              if (d.summary) merged.culture_notes = String(d.summary);
+            } catch(e) {}
+          }
+          return merged;
+        });
+        nextId = data.nextId || 1;
+        console.log('[Pipeline] Loaded ' + companies.length + ' companies from SQLite');
         isLoaded = true;
         window.render();
         window.checkForAllScores();
       } else {
-        readFallback();
+        // Check for migration
+        var localData = localStorage.getItem(STORAGE_KEY);
+        if (localData) {
+          var parsed = JSON.parse(localData);
+          if (parsed.companies && parsed.companies.length > 0) {
+            if (confirm('Found existing data in browser storage. Migrate to SQLite?')) {
+              window.migrateToSqlite(parsed.companies, parsed.nextId);
+              return;
+            }
+          }
+        }
+        isLoaded = true;
+        window.render();
         window.checkForAllScores();
       }
-    }).catch(function() {
-      readFallback();
+    })
+    .catch(function(err) {
+      console.error('[Pipeline] SQLite load failed', err);
+      isLoaded = true;
+      window.render();
     });
-  } catch(e) {
-    readFallback();
-  }
 };
 
 // ── EXPORT / IMPORT ────────────────────────────────────────────────
@@ -1195,10 +1286,9 @@ window.importData = function(event) {
     try {
       var parsed = JSON.parse(e.target.result);
       if (parsed.companies && parsed.companies.length > 0) {
-        companies = parsed.companies;
-        nextId = parsed.nextId || (companies.length + 1);
-        window.saveToStorage();
-        window.render();
+        if (confirm('Importing ' + parsed.companies.length + ' companies. This will sync them to your SQLite database. Continue?')) {
+          window.migrateToSqlite(parsed.companies, parsed.nextId);
+        }
       } else {
         alert('No companies found in import file.');
       }
@@ -1291,10 +1381,14 @@ window.renderCard = function(c) {
     var scColor = sc >= 7 ? 'var(--green)' : sc >= 5 ? 'var(--accent2)' : 'var(--red)';
     scoreBadge = '<div class="card-score-badge" style="color:' + scColor + ';border:1px solid ' + scColor + '44">' + sc + '</div>';
   }
+  var cultureBadge = '';
+  if (c.culture_rating) {
+    cultureBadge = '<span style="color:var(--accent2);font-size:0.65rem;margin-left:0.4rem;font-family:var(--mono)">★' + c.culture_rating + '</span>';
+  }
   var nextLine = c.next ? '<div class="card-next">' + c.next + '</div>' : '';
   return '<div class="card' + (urgent ? ' card-urgent' : '') + '" onclick="selectCompany(' + c.id + ')">' +
     scoreBadge +
-    '<div class="card-company">' + c.company + '</div>' +
+    '<div class="card-company">' + c.company + cultureBadge + '</div>' +
     '<div class="card-role">' + c.role + '</div>' +
     nextLine +
     '<div class="card-meta">' +
@@ -1427,7 +1521,7 @@ window.renderFunnel = function() {
 window.selectCompany = function(id) {
   selectedId = id;
   var c = null;
-  for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
+  for (var i = 0; i < companies.length; i++) { if (companies[i].id == id) c = companies[i]; }
   if (!c) return;
   document.getElementById('dp-company').textContent = c.company;
   document.getElementById('dp-role').textContent = c.role;
@@ -1436,6 +1530,26 @@ window.selectCompany = function(id) {
   notesInput && notesInput.setAttribute('data-id', id);
   document.getElementById('dp-next').textContent = c.next || '';
   document.getElementById('dp-contact').textContent = c.contact || 'No contact listed';
+
+  var docsSection = document.getElementById('dp-linked-docs-section');
+  var docsContainer = document.getElementById('dp-linked-docs');
+  if (c.linked_documents && c.linked_documents.trim()) {
+    var urls = c.linked_documents.split('\n');
+    var docsHtml = '<div style="display:flex;flex-direction:column;gap:0.4rem;">';
+    for (var d = 0; d < urls.length; d++) {
+      var urlStr = urls[d].trim();
+      if (urlStr) {
+        docsHtml += '<a href="' + urlStr + '" target="_blank" rel="noopener" style="font-size:0.78rem;color:var(--blue);text-decoration:none;word-break:break-all;line-height:1.4;">' + urlStr + '</a>';
+      }
+    }
+    docsHtml += '</div>';
+    docsContainer.innerHTML = docsHtml;
+    docsSection.style.display = 'block';
+  } else {
+    docsSection.style.display = 'none';
+  }
+
+  // Culture section visibility is handled by renderCulture(c) at the end of this function
 
   // Interview notes log
   var interviewNotes = c.interviewNotes || [];
@@ -1486,12 +1600,19 @@ window.selectCompany = function(id) {
   btns += '<button class="btn-advance" onclick="logActivity(' + id + ')">+ Log Activity</button>';
   btns += '<button class="btn-advance" onclick="editCompany(' + id + ')">Edit</button>';
   btns += '<button class="btn-advance" onclick="openScorer(' + id + ')" style="color:var(--blue);border-color:var(--blue)">Score Role</button>';
+  btns += '<button class="btn-advance" onclick="researchCulture(' + id + ')" style="color:var(--purple);border-color:var(--purple)">Research Culture</button>';
   btns += '<button class="btn-advance danger" onclick="closeCompany(' + id + ')">Close</button>';
   btns += '<button class="btn-advance danger" onclick="deleteCompany(' + id + ')">Delete</button>';
   document.getElementById('dp-actions').innerHTML = btns;
   document.getElementById('detail-panel').classList.add('open');
 
   window.showScoreInPanel(c.score || null);
+  window.renderCulture(c);
+  if (c.culture_notes) {
+    document.getElementById('dp-culture-section').style.display = 'block';
+  } else {
+    document.getElementById('dp-culture-section').style.display = 'none';
+  }
   window.checkForNewScore(id);
 };
 
@@ -1506,9 +1627,178 @@ window.advanceStage = function(id) {
     c.stage = ns.id;
     c.activity.unshift({ date: window.todayLabel(), text: 'Advanced to ' + ns.label });
   }
-  window.saveToStorage();
+  window.syncCompanyToDb(c);
   window.render();
   window.selectCompany(id);
+};
+
+window.researchCulture = function(id) {
+  var c = null;
+  for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
+  if (!c) return;
+
+  if (!llmConfig.tavilyApiKey) {
+    alert('Please set your Tavily API key in Settings first.');
+    return;
+  }
+
+  var section = document.getElementById('dp-culture-section');
+  var textEl = document.getElementById('dp-culture-text');
+  var loadingEl = document.getElementById('dp-culture-loading');
+  section.style.display = 'block';
+  loadingEl.style.display = 'inline';
+  textEl.textContent = 'Searching web for ' + c.company + ' employee reviews...';
+
+  fetch('/proxy/tavily-search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      apiKey: llmConfig.tavilyApiKey,
+      query: c.company + ' employee reviews culture working conditions glassdoor'
+    })
+  })
+  .then(function(res) {
+    if (!res.ok) throw new Error('Tavily search failed');
+    return res.json();
+  })
+  .then(function(data) {
+    if (!data.results || data.results.length === 0) {
+      throw new Error('No search results found for ' + c.company);
+    }
+    var context = 'Search Results for ' + c.company + ':\n\n';
+    for (var j = 0; j < data.results.length; j++) {
+      context += '- ' + data.results[j].title + '\n  ' + data.results[j].content + '\n\n';
+    }
+
+    textEl.textContent = 'Summarizing reviews with LLM...';
+    
+    var system = "You are an expert career advisor. Summarize the following web search snippets about a company's culture, work-life balance, management, and compensation.\n\n" +
+                 "IMPORTANT: You must respond ONLY with a JSON object. Use double quotes for all keys and string values. Do NOT use backticks for multiline strings; use \\n instead.\n" +
+                 "Format:\n" +
+                 "{\n" +
+                 "  \"rating\": <number 1-5 based on sentiment>,\n" +
+                 "  \"summary\": \"<concise summary with bullet points>\"\n" +
+                 "}";
+    var user = "Company: " + c.company + "\n\n" + context;
+    
+    return window.callLlm(system, user, null);
+  })
+  .then(function(response) {
+    try {
+      var jsonStr = response.trim();
+      var start = jsonStr.indexOf('{');
+      var end = jsonStr.lastIndexOf('}');
+      if (start !== -1 && end !== -1) {
+        jsonStr = jsonStr.substring(start, end + 1);
+        var data = JSON.parse(jsonStr);
+        c.culture_notes = data.summary || response;
+        c.culture_rating = data.rating || 0;
+      } else {
+        throw new Error('No JSON found');
+      }
+    } catch(e) {
+      console.warn('Failed to parse culture JSON:', e);
+      c.culture_notes = response;
+      c.culture_rating = 0;
+    }
+
+    c.activity.unshift({ date: window.todayLabel(), text: 'Researched company culture' });
+    window.syncCompanyToDb(c);
+    
+    if (selectedId === id) {
+      window.renderCulture(c);
+      loadingEl.style.display = 'none';
+      window.render();
+    }
+  })
+  .catch(function(err) {
+    console.error('Culture research error:', err);
+    if (selectedId === id) {
+      textEl.textContent = 'Failed to research culture: ' + (err.message || 'Unknown error');
+      loadingEl.style.display = 'none';
+    }
+  });
+};
+
+window.renderCulture = function(c) {
+  var textEl = document.getElementById('dp-culture-text');
+  var ratingEl = document.getElementById('dp-culture-rating');
+  if (!textEl || !ratingEl) return;
+
+  var notesRaw = c.culture_notes || '';
+  var notes = typeof notesRaw === 'string' ? notesRaw : (notesRaw.summary || notesRaw.text || JSON.stringify(notesRaw));
+  if (notes === '[object Object]') notes = ''; // Fallback for empty/weird objects
+  var rating = c.culture_rating || 0;
+  
+  // AUTO-FIX: If notes is actually a JSON string or malformed JSON
+  if (notes.indexOf('{') !== -1 && notes.indexOf('}') !== -1) {
+    try {
+      var s = notes.trim();
+      var start = s.indexOf('{');
+      var end = s.lastIndexOf('}');
+      var jsonStr = s.substring(start, end + 1);
+      
+      // Try standard parse first
+      var d = null;
+      try {
+        d = JSON.parse(jsonStr);
+      } catch(e) {
+        // Fallback: Regex extraction for common malformed patterns (like backticks in screenshot)
+        var rMatch = jsonStr.match(/"rating":\s*(\d+)/);
+        var sMatch = jsonStr.match(/"summary":\s*[`"]([\s\S]*?)[`"]\s*[},]/);
+        if (rMatch || sMatch) {
+          d = {
+            rating: rMatch ? parseInt(rMatch[1]) : 0,
+            summary: sMatch ? sMatch[1].trim() : ""
+          };
+        }
+      }
+
+      if (d && (d.rating || d.summary)) {
+        if (d.rating) { rating = d.rating; c.culture_rating = d.rating; }
+        if (d.summary) { notes = d.summary; c.culture_notes = d.summary; }
+        // Save the fixed version back to DB
+        window.syncCompanyToDb(c);
+        window.render(); // Update stars on card
+      }
+    } catch(e) {
+      console.warn('Ultimate fix failed:', e);
+    }
+  }
+
+  textEl.textContent = notes;
+  
+  if (rating) {
+    var rColor = rating >= 4 ? 'var(--green)' : rating >= 3 ? 'var(--accent2)' : 'var(--red)';
+    var stars = '';
+    for (var i = 1; i <= 5; i++) {
+      stars += '<span style="font-size:0.9rem;margin-right:0.05rem;color:' + (i <= rating ? rColor : 'var(--border2)') + '">★</span>';
+    }
+    
+    ratingEl.innerHTML = 
+      '<div style="background:var(--surface2);padding:0.75rem 1rem;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">' +
+        '<div>' +
+          '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.3rem;letter-spacing:0.05em">Cultural Sentiment</div>' +
+          '<div style="display:flex;align-items:center;gap:0.5rem">' +
+            '<span style="font-family:var(--serif);font-size:1.4rem;font-weight:600;color:' + rColor + '">' + rating + '</span>' +
+            '<span style="font-family:var(--mono);font-size:0.6rem;color:var(--dim);margin-top:0.3rem">/ 5</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="text-align:right">' +
+          '<div style="margin-bottom:0.2rem">' + stars + '</div>' +
+          '<div style="font-size:0.55rem;color:var(--dim);font-family:var(--mono);text-transform:uppercase">' + (rating >= 4 ? 'Positive' : rating >= 3 ? 'Neutral' : 'Negative') + '</div>' +
+        '</div>' +
+      '</div>';
+  } else {
+    ratingEl.innerHTML = '';
+  }
+
+  var cultureSection = document.getElementById('dp-culture-section');
+  if (notes || rating) {
+    if (cultureSection) cultureSection.style.display = 'block';
+  } else {
+    if (cultureSection) cultureSection.style.display = 'none';
+  }
 };
 
 window.closeCompany = function(id) {
@@ -1517,7 +1807,7 @@ window.closeCompany = function(id) {
   if (!c) return;
   c.stage = 'closed';
   c.activity.unshift({ date: window.todayLabel(), text: 'Marked as closed' });
-  window.saveToStorage();
+  window.syncCompanyToDb(c);
   window.render();
   document.getElementById('detail-panel').classList.remove('open');
   selectedId = null;
@@ -1525,8 +1815,15 @@ window.closeCompany = function(id) {
 
 window.deleteCompany = function(id) {
   if (!confirm('Delete this company from the pipeline?')) return;
+  
+  fetch('/api/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id })
+  });
+
   for (var i = 0; i < companies.length; i++) {
-    if (companies[i].id === id) { companies.splice(i, 1); break; }
+    if (companies[i].id == id) { companies.splice(i, 1); break; }
   }
   window.saveToStorage();
   window.render();
@@ -1541,7 +1838,7 @@ window.logActivity = function(id) {
   for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
   if (!c) return;
   c.activity.unshift({ date: window.todayLabel(), text: text });
-  window.saveToStorage();
+  window.syncCompanyToDb(c);
   window.render();
   window.selectCompany(id);
 };
@@ -1572,6 +1869,8 @@ window.editCompany = function(id) {
   document.getElementById('f-contact').value = c.contact || '';
   document.getElementById('f-next').value = c.next || '';
   document.getElementById('f-notes').value = c.notes || '';
+  var ldEl = document.getElementById('f-linked-documents');
+  if (ldEl) ldEl.value = c.linked_documents || '';
   var jdEl = document.getElementById('f-jd');
   if (jdEl) jdEl.value = c.jd || '';
   document.getElementById('modal').classList.add('open');
@@ -1580,8 +1879,8 @@ window.editCompany = function(id) {
 window.closeModal = function() {
   editingId = null;
   document.getElementById('modal').classList.remove('open');
-  var fields = ['f-company','f-role','f-url','f-contact','f-next','f-notes','f-jd'];
-  for (var i = 0; i < fields.length; i++) { document.getElementById(fields[i]).value = ''; }
+  var fields = ['f-company','f-role','f-url','f-contact','f-next','f-notes','f-linked-documents','f-jd'];
+  for (var i = 0; i < fields.length; i++) { var el = document.getElementById(fields[i]); if(el) el.value = ''; }
   document.getElementById('f-tier').value = 'A';
   document.getElementById('f-stage').value = 'target';
   document.getElementById('f-source').value = 'Network';
@@ -1619,7 +1918,7 @@ window.checkOllamaModel = function() {
     return;
   }
   if (el) { el.style.color = 'var(--muted)'; el.textContent = 'Checking...'; }
-  fetch('http://localhost:11434/api/tags')
+  fetch('/proxy/ollama/api/tags')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var models = data.models || [];
@@ -1638,7 +1937,7 @@ window.checkOllamaModel = function() {
       }
     })
     .catch(function() {
-      if (el) { el.style.color = 'var(--red)'; el.textContent = '✗ Ollama not reachable at localhost:11434'; }
+      if (el) { el.style.color = 'var(--red)'; el.textContent = '✗ Ollama not reachable via proxy'; }
     });
 };
 
@@ -1681,6 +1980,7 @@ window.saveCompany = function() {
   if (!company || !role) { alert('Company and role are required.'); return; }
 
   var jdEl = document.getElementById('f-jd');
+  var savedCompany = null;
   if (editingId !== null) {
     // Update existing
     var c = null;
@@ -1695,11 +1995,15 @@ window.saveCompany = function() {
       c.contact = document.getElementById('f-contact').value.trim();
       c.next = document.getElementById('f-next').value.trim();
       c.notes = document.getElementById('f-notes').value.trim();
+      var ldEl = document.getElementById('f-linked-documents');
+      c.linked_documents = ldEl ? ldEl.value.trim() : '';
       c.jd = jdEl ? jdEl.value.trim() : '';
       c.activity.unshift({ date: window.todayLabel(), text: 'Updated details' });
+      savedCompany = c;
     }
   } else {
-    companies.push(window.createCompanyRecord({
+    var ldEl = document.getElementById('f-linked-documents');
+    savedCompany = window.createCompanyRecord({
       company: company, role: role,
       tier: document.getElementById('f-tier').value,
       stage: document.getElementById('f-stage').value,
@@ -1708,12 +2012,15 @@ window.saveCompany = function() {
       contact: document.getElementById('f-contact').value.trim(),
       next: document.getElementById('f-next').value.trim(),
       notes: document.getElementById('f-notes').value.trim(),
+      linked_documents: ldEl ? ldEl.value.trim() : '',
       jd: jdEl ? jdEl.value.trim() : ''
-    }, nextId++, window.todayStr(), window.todayLabel()));
+    }, nextId++, window.todayStr(), window.todayLabel());
+    companies.push(savedCompany);
   }
 
   window.closeModal();
-  window.saveToStorage();
+  window.saveToStorage(); // Still call this for nextId
+  if (savedCompany) window.syncCompanyToDb(savedCompany);
   window.render();
   if (editingId !== null) window.selectCompany(editingId);
 };
@@ -1760,7 +2067,7 @@ window.loadLlmConfig = function() {
 
 window.callLlm = function(system, user, onToken) {
   if (llmConfig.provider === 'ollama') {
-    return fetch('http://localhost:11434/v1/chat/completions', {
+    return fetch('/proxy/ollama/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1940,7 +2247,7 @@ window.addAndScore = function() {
   var jd = jdEl ? jdEl.value.trim() : '';
   var urlVal = document.getElementById('f-url').value.trim();
   var id = nextId++;
-  companies.push(window.createCompanyRecord({
+  var newRecord = window.createCompanyRecord({
     company: company, role: role,
     tier: document.getElementById('f-tier').value,
     stage: document.getElementById('f-stage').value,
@@ -1949,9 +2256,13 @@ window.addAndScore = function() {
     contact: document.getElementById('f-contact').value.trim(),
     next: document.getElementById('f-next').value.trim(),
     notes: document.getElementById('f-notes').value.trim(),
+    linked_documents: document.getElementById('f-linked-documents') ? document.getElementById('f-linked-documents').value.trim() : '',
     jd: jd
-  }, id, window.todayStr(), window.todayLabel()));
+  }, id, window.todayStr(), window.todayLabel());
+  
+  companies.push(newRecord);
   window.saveToStorage();
+  window.syncCompanyToDb(newRecord);
   window.render();
   window.closeModal();
   var params = 'companyId=' + id + '&company=' + encodeURIComponent(company);
@@ -2026,18 +2337,24 @@ window.showScoreInPanel = function(score) {
 
 window.checkForAllScores = function() {
   if (!isLoaded || companies.length === 0) return;
+  console.log('[Pipeline] Checking for new scores for IDs:', companies.map(function(c) { return c.id; }));
   var changed = false;
   var processed = 0;
+  var total = companies.length;
   
-  function finish() {
+  function finish(changedCompany) {
     processed++;
-    if (processed === companies.length && changed) {
-      window.saveToStorage();
+    if (changedCompany) {
+      window.syncCompanyToDb(changedCompany);
+      changed = true;
+    }
+    if (processed === total && (changed || changedCompany)) {
+      window.saveToStorage(); // for nextId if it changed
       window.render();
       if (selectedId) {
-        var c = null;
-        for (var k = 0; k < companies.length; k++) { if (companies[k].id === selectedId) c = companies[k]; }
-        if (c) window.showScoreInPanel(c.score);
+        var sc = null;
+        for (var k = 0; k < companies.length; k++) { if (companies[k].id == selectedId) sc = companies[k].score; }
+        window.showScoreInPanel(sc);
       }
     }
   }
@@ -2052,31 +2369,48 @@ window.checkForAllScores = function() {
         if (ls) {
           var score = JSON.parse(ls);
           if (score && (score.overall || score.overall_score)) {
+            var val = score.overall || score.overall_score;
             c.score = score;
-            c.score.overall = score.overall || score.overall_score; 
+            c.score.overall = val;
+            if (score.jd) c.jd = score.jd;
+            // Auto-update Tier (Rank) based on score
+            if (val >= 8) c.tier = 'A';
+            else if (val >= 6) c.tier = 'B';
+            else if (val >= 4) c.tier = 'C';
+            else c.tier = 'D';
+            
             localStorage.removeItem(scoreKey);
-            changed = true;
-            found = true;
+            console.log('[Pipeline] Found and applied score from localStorage for ID:', c.id);
+            finish(c);
+            return;
           }
         }
-      } catch(e) {}
+      } catch(e) { console.warn('Local check failed', e); }
       
-      if (found) { finish(); return; }
-
       try {
         window.storage.get(scoreKey).then(function(res) {
           if (res && res.value) {
             var score = JSON.parse(res.value);
             if (score && (score.overall || score.overall_score)) {
+              var val = score.overall || score.overall_score;
               c.score = score;
-              c.score.overall = score.overall || score.overall_score;
+              c.score.overall = val;
+              if (score.jd) c.jd = score.jd;
+              // Auto-update Tier (Rank) based on score
+              if (val >= 8) c.tier = 'A';
+              else if (val >= 6) c.tier = 'B';
+              else if (val >= 4) c.tier = 'C';
+              else c.tier = 'D';
+              
               window.storage.set(scoreKey, null).catch(function() {});
-              changed = true;
+              console.log('[Pipeline] Found and applied score from window.storage for ID:', c.id);
+              finish(c);
+              return;
             }
           }
-          finish();
-        }).catch(function() { finish(); });
-      } catch(e) { finish(); }
+          finish(null);
+        }).catch(function() { finish(null); });
+      } catch(e) { finish(null); }
     })(companies[i]);
   }
 };
@@ -2086,27 +2420,36 @@ window.checkForNewScore = function(id) {
 };
 
 window.addEventListener('focus', function() {
-  if (isLoaded) window.checkForAllScores();
+  if (isLoaded) window.loadFromStorage();
 });
 
 window.openScorer = function(id) {
   var c = null;
-  for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
+  for (var i = 0; i < companies.length; i++) { if (companies[i].id == id) c = companies[i]; }
   if (!c) return;
   var params = 'companyId=' + c.id + '&company=' + encodeURIComponent(c.company);
   if (c.url) params += '&url=' + encodeURIComponent(c.url);
   
+  var targetUrl = 'scorer.html?' + params;
+  console.log('[Pipeline] Opening Scorer with URL:', targetUrl);
+  
   var jd = c.jd || '';
   try {
-    window.storage.set('pending-jd', jd).then(function() {
-      window.open('scorer.html?' + params, '_blank');
-    }).catch(function() {
-      try { localStorage.setItem('pending-jd', jd); } catch(e) {}
-      window.open('scorer.html?' + params, '_blank');
-    });
+    if (window.storage && window.storage.set) {
+      window.storage.set('pending-jd', jd).then(function() {
+        console.log('[Pipeline] Opening Scorer (async storage set):', targetUrl);
+        window.open(targetUrl, '_blank');
+      }).catch(function() {
+        try { localStorage.setItem('pending-jd', jd); } catch(e) {}
+        window.open(targetUrl, '_blank');
+      });
+    } else {
+      localStorage.setItem('pending-jd', jd);
+      window.open(targetUrl, '_blank');
+    }
   } catch(e) {
-    try { localStorage.setItem('pending-jd', jd); } catch(e) {}
-    window.open('scorer.html?' + params, '_blank');
+    localStorage.setItem('pending-jd', jd);
+    window.open(targetUrl, '_blank');
   }
 };
 

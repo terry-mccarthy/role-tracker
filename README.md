@@ -12,6 +12,9 @@ job-pipeline/
 │   ├── pipeline.html            # Main tracker app (Kanban + Table + Funnel)
 │   ├── scorer.html              # Role scorer — paste a JD, get a scored breakdown
 │   └── shared.css               # Shared design tokens
+├── server.js                    # Node.js server & API proxy
+├── database.js                  # SQLite database interface
+├── pipeline.db                  # Persistent SQLite database
 ├── docs/
 │   └── scoring-methodology.md   # How the AI scoring works
 ├── CLAUDE.md                    # Claude Code project instructions
@@ -22,12 +25,14 @@ job-pipeline/
 ## Quick start
 
 ```bash
-# No build step needed — these are standalone HTML files.
-# Open directly in a browser or serve locally:
-npx serve public/
+# Install dependencies
+npm install
 
-# Or use Claude Code:
-claude "Add a new scoring dimension for team tech stack"
+# Start the server (SQLite backend + AI proxies)
+npm run serve
+
+# Open in your browser:
+# http://localhost:3000
 ```
 
 ## How it works
@@ -35,8 +40,8 @@ claude "Add a new scoring dimension for team tech stack"
 ### Pipeline tracker (`src/pipeline.html`)
 - Kanban board with 6 stages: Target → Warming Up → Screen → Interviewing → Offer → Closed
 - Table view and funnel analytics with conversion benchmarks
-- Persistent storage via `window.storage` API (Claude artifacts) or localStorage (standalone)
-- Export/import as JSON for backups and device transfer
+- Persistent storage via SQLite (`pipeline.db`) via the `/api` endpoints
+- Local logging and multi-tab synchronization
 
 ### Role scorer (`src/scorer.html`)
 - Paste a job description or LinkedIn URL content
@@ -62,7 +67,10 @@ claude "Add a new scoring dimension for DEI maturity"
 claude "Build a weekly review summary that emails me pipeline stats"
 ```
 
-## Data
+Pipeline data is stored in a local SQLite database (`pipeline.db`).
+The frontend communicates with the backend via REST APIs defined in `server.js`.
+The server also provides proxies for:
+- **Ollama**: Local AI scoring (port 11434)
+- **Tavily**: External search and content extraction
 
-Pipeline data is stored in browser persistent storage (key: `pipeline-data`).
-Export regularly via the Export button — the JSON file is your backup.
+Backup the `pipeline.db` file regularly.

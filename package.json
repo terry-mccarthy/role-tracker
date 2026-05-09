@@ -6,5 +6,8 @@
   "scripts": {
     "serve": "node server.js",
     "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0"
   }
 }

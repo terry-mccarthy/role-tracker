@@ -13,6 +13,8 @@
       contact: fields.contact || '',
       next: fields.next || '',
       notes: fields.notes || '',
+      culture_notes: fields.culture_notes || '',
+      linked_documents: fields.linked_documents || '',
       jd: fields.jd || '',
       added: todayStr,
       score: null,

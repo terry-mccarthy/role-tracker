@@ -171,6 +171,7 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
     <a href="pipeline.html" style="font-family:var(--mono);font-size:0.65rem;text-decoration:none;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;border:1px solid var(--border2);padding:0.3rem 0.6rem;border-radius:3px">← Back to Pipeline</a>
   </div>
   <div class="topbar-config">
+    <div id="link-warning" style="display:none;background:rgba(255,166,0,0.15);color:#ffa600;font-family:var(--mono);font-size:0.6rem;padding:0.2rem 0.5rem;border-radius:3px;margin-right:1rem;border:1px solid rgba(255,166,0,0.3)">⚠️ Not linked to Pipeline</div>
     <div id="active-config-label" style="font-family:var(--mono);font-size:0.6rem;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em;margin-right:1rem"></div>
     <button class="btn-edit-profile" onclick="openSettingsModal()">Settings</button>
   </div>
@@ -289,6 +290,23 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
 
 <script>
 var PROFILE_STORAGE_KEY = 'eval-profile';
+
+(function() {
+  var oldLog = console.log;
+  var oldError = console.error;
+  var oldWarn = console.warn;
+  function sendToServer(level, args) {
+    var msg = Array.from(args).map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+    fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ level: level, message: msg })
+    }).catch(() => {});
+  }
+  console.log = function() { oldLog.apply(console, arguments); sendToServer('INFO', arguments); };
+  console.error = function() { oldError.apply(console, arguments); sendToServer('ERROR', arguments); };
+  console.warn = function() { oldWarn.apply(console, arguments); sendToServer('WARN', arguments); };
+})();
 var API_KEY_STORAGE_KEY = 'anthropic-api-key';
 var PROVIDER_STORAGE_KEY = 'scorer-provider';
 var OLLAMA_MODEL_STORAGE_KEY = 'ollama-model';
@@ -367,7 +385,7 @@ window.checkOllamaModel = function() {
     return;
   }
   if (el) { el.style.color = 'var(--muted)'; el.textContent = 'Checking...'; }
-  fetch('http://localhost:11434/api/tags')
+  fetch('/proxy/ollama/api/tags')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var models = data.models || [];
@@ -386,7 +404,7 @@ window.checkOllamaModel = function() {
       }
     })
     .catch(function() {
-      if (el) { el.style.color = 'var(--red)'; el.textContent = '✗ Ollama not reachable at localhost:11434'; }
+      if (el) { el.style.color = 'var(--red)'; el.textContent = '✗ Ollama not reachable via proxy'; }
     });
 };
 
@@ -497,20 +515,34 @@ window.loadOllamaModel = function() {
 
 window.saveScoreToStorage = function(r) {
   if (currentCompanyId === null) return;
-  // Clone r and add necessary fields for pipeline compatibility
+  
   var score = JSON.parse(JSON.stringify(r));
   score.overall = r.overall_score;
   score.verdict = r.overall_verdict;
   score.scored_at = new Date().toISOString().slice(0, 10);
   
-  try {
-    window.storage.set('score-' + currentCompanyId, JSON.stringify(score))
-      .catch(function(e) {
-        try { localStorage.setItem('score-' + currentCompanyId, JSON.stringify(score)); } catch(err) {}
-      });
-  } catch(e) {
-    try { localStorage.setItem('score-' + currentCompanyId, JSON.stringify(score)); } catch(err) {}
-  }
+  var jdInput = document.getElementById('jd-input');
+  if (jdInput) score.jd = jdInput.value.trim();
+  
+  console.log('[Scorer] Saving score to SQLite for company ID:', currentCompanyId);
+  
+  fetch('/api/save-score', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: currentCompanyId, score: score })
+  }).then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.success) {
+        console.log('[Scorer] Score saved to SQLite successfully');
+      } else {
+        console.error('[Scorer] SQLite save failed:', data.error);
+        // Fallback to localStorage just in case
+        localStorage.setItem('score-' + currentCompanyId, JSON.stringify(score));
+      }
+    }).catch(function(err) {
+      console.error('[Scorer] API call failed:', err);
+      localStorage.setItem('score-' + currentCompanyId, JSON.stringify(score));
+    });
 };
 
 // ── PROFILE BAR ─────────────────────────────────────────────────
@@ -595,7 +627,7 @@ window.fetchOllama = function(prompts) {
   var textEl = document.getElementById('loading-text');
   if (textEl) textEl.textContent = 'Generating with ' + currentOllamaModel + '...';
 
-  return fetch('http://localhost:11434/v1/chat/completions', {
+  return fetch('/proxy/ollama/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -689,7 +721,26 @@ window.renderResults = function(r) {
   var results = document.getElementById('results');
   results.style.display = 'block';
 
-  // Overall score
+  // Calculate weighted average overall score to ensure accuracy
+  var calculatedScore = 0;
+  var totalWeight = 0;
+  var dims = r.dimensions || [];
+  for (var i = 0; i < dims.length; i++) {
+    var d = dims[i];
+    var weightPercent = parseInt(d.weight || '0', 10);
+    calculatedScore += (d.score || 0) * (weightPercent / 100);
+    totalWeight += weightPercent;
+  }
+  
+  // If weights don't sum to 100, normalize the score
+  if (totalWeight > 0 && totalWeight !== 100) {
+    calculatedScore = (calculatedScore / totalWeight) * 100;
+  }
+  
+  // Update r.overall_score with the more accurate calculated value
+  r.overall_score = Math.round(calculatedScore);
+
+  // Overall score rendering
   var overallBox = document.getElementById('overall-box');
   var scoreClass = r.overall_score >= 7 ? 'score-high' : r.overall_score >= 5 ? 'score-mid' : 'score-low';
   overallBox.className = 'overall-score ' + scoreClass;
@@ -788,10 +839,16 @@ window.readQueryParams = function() {
   var company = params.get('company');
   var url = params.get('url');
   var companyId = params.get('companyId');
+  
+  console.log('[Scorer] Full URL:', window.location.href);
+  console.log('[Scorer] URL Params - companyId:', companyId, 'company:', company);
 
   if (company) document.getElementById('jd-company').value = company;
   if (url) document.getElementById('jd-url').value = url;
-  if (companyId) currentCompanyId = parseInt(companyId, 10);
+  if (companyId) {
+    currentCompanyId = parseInt(companyId, 10);
+    console.log('[Scorer] Set currentCompanyId to:', currentCompanyId);
+  }
 };
 
 // ── INIT ────────────────────────────────────────────────────────

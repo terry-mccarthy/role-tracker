@@ -2,7 +2,7 @@
 
 ## Project overview
 
-This is a personal job search pipeline tool for a senior engineering manager. It consists of standalone HTML files with no build step, using vanilla JS with all functions on `window.*` for sandboxed iframe compatibility.
+This is a personal job search pipeline tool for a senior engineering manager. It uses a Node.js server with a SQLite backend for persistent storage and proxies for AI services. The frontend consists of HTML files in `src/` using vanilla JS with strict compatibility constraints.
 
 ## Critical constraints
 
@@ -16,11 +16,14 @@ This is a personal job search pipeline tool for a senior engineering manager. It
 - **Reason**: The app renders in a sandboxed iframe where `const`/`let`/`function` declarations don't attach to `window`. Inline `onclick` handlers need global access.
 
 ### Storage
-- Use `window.storage.get(key)` / `window.storage.set(key, value)` for persistence
-- These return Promises — always use `.then()` / `.catch()` (not async/await)
-- Fallback: if `window.storage` is unavailable, the app should still work (data just won't persist)
-- Storage key for pipeline data: `pipeline-data`
-- Storage key for evaluation profile overrides: `eval-profile`
+- Data is persisted in a local SQLite database (`pipeline.db`) via the Node.js backend.
+- Frontend uses `fetch()` to call `/api` endpoints:
+  - `GET /api/companies`: Retrieve all companies.
+  - `POST /api/save`: Create or update a company.
+  - `POST /api/delete`: Delete a company.
+  - `POST /api/save-score`: Update a company's AI score.
+  - `POST /api/kv`: Generic key-value storage (e.g., `nextId`).
+- Use `.then()` / `.catch()` for promises to maintain compatibility with the sandboxed environment constraints.
 
 ### Styling
 - Dark theme with CSS custom properties (see `:root` in pipeline.html)
@@ -65,9 +68,10 @@ The profile in `config/evaluation-profile.md` follows a specific structure:
 
 ## Testing
 
-No test framework. Manual testing:
-1. Open the HTML file in a browser
-2. Open DevTools console — should be zero errors
-3. Test: add company, edit, advance stage, close, delete, export, import
-4. Refresh — data should persist
-5. For scorer: paste a sample JD, verify score breakdown renders
+- **Backend tests**: Run `npm test` to execute SQLite and API tests.
+- **Manual testing**:
+  1. Start the server: `npm run serve`
+  2. Open `http://localhost:3000`
+  3. Verify CRUD operations: add company, edit, advance stage, delete.
+  4. Verify scoring: paste JD, run scorer, check if score is saved to the company card.
+  5. Check `pipeline.log` for server-side and proxied frontend logs.

@@ -2,6 +2,7 @@ var http = require('http');
 var https = require('https');
 var fs = require('fs');
 var path = require('path');
+var db = require('./database');
 
 var MIME = {
   '.html': 'text/html',
@@ -14,8 +15,19 @@ var MIME = {
 };
 
 var PORT = 3000;
+var LOG_FILE = path.join(__dirname, 'pipeline.log');
+
+function logToFile(msg) {
+  var timestamp = new Date().toISOString();
+  var line = '[' + timestamp + '] ' + msg + '\n';
+  fs.appendFileSync(LOG_FILE, line);
+  console.log(line.trim());
+}
+
+logToFile('--- Server Starting ---');
 
 http.createServer(function(req, res) {
+  logToFile(req.method + ' ' + req.url);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -71,9 +83,206 @@ http.createServer(function(req, res) {
     return;
   }
 
+  if (req.url === '/proxy/tavily-search' && req.method === 'POST') {
+    var body = '';
+    req.on('data', function(chunk) { body += chunk; });
+    req.on('end', function() {
+      var parsed;
+      try { parsed = JSON.parse(body); } catch(e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+
+      var apiKey = parsed.apiKey;
+      var payload = JSON.stringify({ query: parsed.query, search_depth: 'basic', max_results: 5, include_images: false });
+
+      var options = {
+        hostname: 'api.tavily.com',
+        path: '/search',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey,
+          'Content-Length': Buffer.byteLength(payload)
+        }
+      };
+
+      var proxyReq = https.request(options, function(proxyRes) {
+        var data = '';
+        proxyRes.on('data', function(chunk) { data += chunk; });
+        proxyRes.on('end', function() {
+          res.writeHead(proxyRes.statusCode, { 'Content-Type': 'application/json' });
+          res.end(data);
+        });
+      });
+
+      proxyReq.on('error', function(err) {
+        res.writeHead(502);
+        res.end(JSON.stringify({ error: err.message }));
+      });
+
+      proxyReq.write(payload);
+      proxyReq.end();
+    });
+    return;
+  }
+
+  if (req.url.startsWith('/proxy/ollama')) {
+    var ollamaPath = req.url.replace('/proxy/ollama', '');
+    if (!ollamaPath) ollamaPath = '/';
+
+    var options = {
+      hostname: 'localhost',
+      port: 11434,
+      path: ollamaPath,
+      method: req.method,
+      headers: req.headers
+    };
+
+    // Remove headers that might cause CORS or host issues
+    delete options.headers['host'];
+    delete options.headers['origin'];
+    delete options.headers['referer'];
+
+    var proxyReq = http.request(options, function(proxyRes) {
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', function(err) {
+      logToFile('Ollama Proxy Error: ' + err.message);
+      res.writeHead(502);
+      res.end(JSON.stringify({ error: 'Ollama proxy error: ' + err.message }));
+    });
+
+    req.pipe(proxyReq);
+    return;
+  }
+
+  // ── DATABASE API ────────────────────────────────────────────────
+  
+  if (req.url === '/api/companies' && req.method === 'GET') {
+    var companies = db.getAllCompanies();
+    var nextId = db.getKV('nextId') || "1";
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ companies: companies, nextId: parseInt(nextId, 10) }));
+    return;
+  }
+
+  if (req.url === '/api/save' && req.method === 'POST') {
+    var body = '';
+    req.on('data', function(chunk) { body += chunk; });
+    req.on('end', function() {
+      try {
+        var company = JSON.parse(body);
+        db.saveCompany(company);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.url === '/api/delete' && req.method === 'POST') {
+    var body = '';
+    req.on('data', function(chunk) { body += chunk; });
+    req.on('end', function() {
+      try {
+        var parsed = JSON.parse(body);
+        db.deleteCompany(parsed.id);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.url === '/api/migrate' && req.method === 'POST') {
+    var body = '';
+    req.on('data', function(chunk) { body += chunk; });
+    req.on('end', function() {
+      console.log('[Server] /api/migrate received data');
+      try {
+        var parsed = JSON.parse(body);
+        db.migrateCompanies(parsed.companies, parsed.nextId);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.url === '/api/save-score' && req.method === 'POST') {
+    var body = '';
+    req.on('data', function(chunk) { body += chunk; });
+    req.on('end', function() {
+      try {
+        var parsed = JSON.parse(body);
+        console.log('[Server] /api/save-score - id:', parsed.id, 'score:', parsed.score ? 'present' : 'null');
+        db.saveScore(parsed.id, parsed.score);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.url === '/api/kv' && req.method === 'POST') {
+    var body = '';
+    req.on('data', function(chunk) { body += chunk; });
+    req.on('end', function() {
+      try {
+        var parsed = JSON.parse(body);
+        db.setKV(parsed.key, parsed.value);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.url === '/api/log' && req.method === 'POST') {
+    var body = '';
+    req.on('data', function(chunk) { body += chunk; });
+    req.on('end', function() {
+      try {
+        var parsed = JSON.parse(body);
+        logToFile('[Frontend] ' + (parsed.level || 'INFO') + ': ' + parsed.message);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
   var filePath = req.url === '/' ? '/pipeline.html' : req.url;
   // Strip query string
   filePath = filePath.split('?')[0];
+  
+  // Auto-append .html if there is no extension
+  if (!path.extname(filePath)) {
+    filePath += '.html';
+  }
+  
   var full = path.join(__dirname, 'src', filePath);
 
   fs.readFile(full, function(err, data) {
