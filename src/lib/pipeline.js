@@ -1,6 +1,17 @@
 (function() {
   var STAGE_IDS = ['target', 'warm', 'screen', 'interview', 'offer', 'closed'];
 
+  /**
+   * Maps a numeric overall score (1-10) to a tier label.
+   * Single source of truth — used by both the DB layer and the frontend.
+   */
+  function scoreTier(val) {
+    if (val >= 8) return 'A';
+    if (val >= 6) return 'B';
+    if (val >= 4) return 'C';
+    return 'D';
+  }
+
   function createCompanyRecord(fields, id, todayStr, todayLabel) {
     return {
       id: id,
@@ -72,10 +83,12 @@
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
+      scoreTier: scoreTier,
       createCompanyRecord: createCompanyRecord,
       computeFunnelStats: computeFunnelStats
     };
   } else {
+    window.scoreTier = scoreTier;
     window.createCompanyRecord = createCompanyRecord;
     window.computeFunnelStats = computeFunnelStats;
   }

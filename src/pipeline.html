@@ -1077,23 +1077,12 @@ tr:hover td { background: var(--surface2); }
     </div>
     <div class="modal-body">
       <div class="form-row">
-        <label class="form-label">Tavily API Key</label>
-        <input class="form-input" id="settings-tavily" placeholder="tvly-..." type="password">
-        <div style="font-size:0.65rem;color:var(--dim);margin-top:0.3rem">Required for URL fetching. Works with LinkedIn and bot-protected pages.</div>
-      </div>
-      
-      <hr style="border:none;border-top:1px solid var(--border);margin:1.5rem 0">
-      
-      <div class="form-row">
         <label class="form-label">AI Scorer Provider</label>
         <select class="form-input" id="settings-provider">
           <option value="anthropic">Anthropic (Claude)</option>
           <option value="ollama">Ollama (Local)</option>
         </select>
-      </div>
-      <div class="form-row" id="settings-anthropic-row" style="margin-top: 1rem">
-        <label class="form-label">Anthropic API Key</label>
-        <input class="form-input" id="settings-anthropic" placeholder="sk-ant-..." type="password">
+        <div style="font-size:0.65rem;color:var(--dim);margin-top:0.3rem">API keys are configured server-side in <code>.env</code> — no key entry needed here.</div>
       </div>
       <div class="form-row" id="settings-ollama-row" style="margin-top: 1rem">
         <label class="form-label">Ollama Model Name</label>
@@ -1307,13 +1296,20 @@ window.resetData = function() {
 };
 
 window.confirmReset = function() {
-  companies = [];
-  nextId = 1;
-  selectedId = null;
-  document.getElementById('detail-panel').classList.remove('open');
-  document.getElementById('confirm-modal').classList.remove('open');
-  window.saveToStorage();
-  window.render();
+  fetch('/api/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+    .then(function() {
+      companies = [];
+      nextId = 1;
+      selectedId = null;
+      document.getElementById('detail-panel').classList.remove('open');
+      document.getElementById('confirm-modal').classList.remove('open');
+      window.saveToStorage();
+      window.render();
+    })
+    .catch(function(err) {
+      console.error('[Pipeline] Reset failed:', err);
+      alert('Reset failed. Please try again.');
+    });
 };
 
 // ── UTILITY ────────────────────────────────────────────────────────
@@ -1336,6 +1332,10 @@ window.todayLabel = function() {
 };
 
 // ── RENDER ─────────────────────────────────────────────────────────
+
+window.esc = function(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+};
 
 window.render = function() {
   window.renderStats();
@@ -1369,7 +1369,7 @@ window.renderCard = function(c) {
   var urgent = (c.stage === 'interview' || c.stage === 'warm') && days > 5;
   var contactTag = '';
   if (c.contact && c.contact.length > 0) {
-    contactTag = '<span class="tag">' + c.contact.split('(')[0].trim() + '</span>';
+    contactTag = '<span class="tag">' + window.esc(c.contact.split('(')[0].trim()) + '</span>';
   }
   var urlTag = '';
   if (c.url && c.url.length > 0) {
@@ -1385,17 +1385,17 @@ window.renderCard = function(c) {
   if (c.culture_rating) {
     cultureBadge = '<span style="color:var(--accent2);font-size:0.65rem;margin-left:0.4rem;font-family:var(--mono)">★' + c.culture_rating + '</span>';
   }
-  var nextLine = c.next ? '<div class="card-next">' + c.next + '</div>' : '';
+  var nextLine = c.next ? '<div class="card-next">' + window.esc(c.next) + '</div>' : '';
   return '<div class="card' + (urgent ? ' card-urgent' : '') + '" onclick="selectCompany(' + c.id + ')">' +
     scoreBadge +
-    '<div class="card-company">' + c.company + cultureBadge + '</div>' +
-    '<div class="card-role">' + c.role + '</div>' +
+    '<div class="card-company">' + window.esc(c.company) + cultureBadge + '</div>' +
+    '<div class="card-role">' + window.esc(c.role) + '</div>' +
     nextLine +
     '<div class="card-meta">' +
       '<span class="card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span>' +
       '<span class="card-date">' + days + 'd ago</span>' +
     '</div>' +
-    '<div class="card-tags"><span class="tag">' + c.source + '</span>' + contactTag + urlTag + '</div>' +
+    '<div class="card-tags"><span class="tag">' + window.esc(c.source) + '</span>' + contactTag + urlTag + '</div>' +
   '</div>';
 };
 
@@ -1441,13 +1441,13 @@ window.renderTable = function() {
     var sl = '';
     for (var j = 0; j < STAGES.length; j++) { if (STAGES[j].id === c.stage) sl = STAGES[j].label; }
     html += '<tr onclick="selectCompany(' + c.id + ')" style="cursor:pointer">' +
-      '<td style="font-weight:600">' + c.company + '</td>' +
-      '<td style="color:var(--dim)">' + c.role + '</td>' +
+      '<td style="font-weight:600">' + window.esc(c.company) + '</td>' +
+      '<td style="color:var(--dim)">' + window.esc(c.role) + '</td>' +
       '<td><span class="card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span></td>' +
       '<td><span class="stage-pill stage-' + c.stage + '">' + sl + '</span></td>' +
-      '<td style="color:var(--dim)">' + c.source + '</td>' +
+      '<td style="color:var(--dim)">' + window.esc(c.source) + '</td>' +
       '<td style="color:var(--dim);font-family:var(--mono);font-size:0.7rem">' + window.daysSince(c.added) + 'd ago</td>' +
-      '<td style="color:var(--accent2);font-style:italic;font-size:0.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (c.next || '') + '</td></tr>';
+      '<td style="color:var(--accent2);font-style:italic;font-size:0.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + window.esc(c.next || '') + '</td></tr>';
   }
   tbody.innerHTML = html;
 };
@@ -1560,7 +1560,7 @@ window.selectCompany = function(id) {
     } else {
       var inHTML = '';
       for (var n = 0; n < interviewNotes.length; n++) {
-        inHTML += '<div class="activity-item"><div class="activity-dot" style="background:var(--accent2)"></div><div class="activity-content"><div style="font-size:0.8rem;line-height:1.5">' + interviewNotes[n].text + '</div><div class="activity-date">' + interviewNotes[n].date + '</div></div></div>';
+        inHTML += '<div class="activity-item"><div class="activity-dot" style="background:var(--accent2)"></div><div class="activity-content"><div style="font-size:0.8rem;line-height:1.5">' + window.esc(interviewNotes[n].text) + '</div><div class="activity-date">' + window.esc(interviewNotes[n].date) + '</div></div></div>';
       }
       inEl.innerHTML = inHTML;
     }
@@ -1586,7 +1586,7 @@ window.selectCompany = function(id) {
   var actHTML = '';
   var acts = c.activity || [];
   for (var k = 0; k < acts.length; k++) {
-    actHTML += '<div class="activity-item"><div class="activity-dot"></div><div class="activity-content"><div>' + acts[k].text + '</div><div class="activity-date">' + acts[k].date + '</div></div></div>';
+    actHTML += '<div class="activity-item"><div class="activity-dot"></div><div class="activity-content"><div>' + window.esc(acts[k].text) + '</div><div class="activity-date">' + window.esc(acts[k].date) + '</div></div></div>';
   }
   document.getElementById('dp-activity').innerHTML = actHTML || '<div class="detail-text">No activity yet.</div>';
 
@@ -1637,11 +1637,6 @@ window.researchCulture = function(id) {
   for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
   if (!c) return;
 
-  if (!llmConfig.tavilyApiKey) {
-    alert('Please set your Tavily API key in Settings first.');
-    return;
-  }
-
   var section = document.getElementById('dp-culture-section');
   var textEl = document.getElementById('dp-culture-text');
   var loadingEl = document.getElementById('dp-culture-loading');
@@ -1653,9 +1648,12 @@ window.researchCulture = function(id) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      apiKey: llmConfig.tavilyApiKey,
       query: c.company + ' employee reviews culture working conditions glassdoor'
     })
+  })
+  .then(function(res) {
+    if (res.status === 503) throw new Error('Tavily not configured on server. Add TAVILY_API_KEY to .env and restart.');
+    return res;
   })
   .then(function(res) {
     if (!res.ok) throw new Error('Tavily search failed');
@@ -1887,14 +1885,11 @@ window.closeModal = function() {
 };
 
 window.openSettingsModal = function() {
-  document.getElementById('settings-tavily').value = llmConfig.tavilyApiKey || '';
   document.getElementById('settings-provider').value = llmConfig.provider || 'ollama';
-  document.getElementById('settings-anthropic').value = llmConfig.apiKey || '';
   document.getElementById('settings-ollama-model').value = llmConfig.ollamaModel || 'qwen3.6:27b';
 
   var updateRows = function() {
     var p = document.getElementById('settings-provider').value;
-    document.getElementById('settings-anthropic-row').style.display = p === 'anthropic' ? 'block' : 'none';
     document.getElementById('settings-ollama-row').style.display = p === 'ollama' ? 'block' : 'none';
   };
   document.getElementById('settings-provider').onchange = function() { updateRows(); window.checkOllamaModel(); };
@@ -1942,36 +1937,15 @@ window.checkOllamaModel = function() {
 };
 
 window.saveSettings = function() {
-  var tKey = document.getElementById('settings-tavily').value.trim();
   var prov = document.getElementById('settings-provider').value;
-  var aKey = document.getElementById('settings-anthropic').value.trim();
   var oMod = document.getElementById('settings-ollama-model').value.trim();
 
-  llmConfig.tavilyApiKey = tKey;
   llmConfig.provider = prov;
-  llmConfig.apiKey = aKey;
   llmConfig.ollamaModel = oMod;
 
-  var keys = {
-    'tavily-api-key': tKey,
-    'scorer-provider': prov,
-    'anthropic-api-key': aKey,
-    'ollama-model': oMod
-  };
-
-  try {
-    var ps = [];
-    for (var k in keys) { ps.push(window.storage.set(k, keys[k])); }
-    Promise.all(ps).then(function() {
-      closeSettingsModal();
-    }).catch(function(e) {
-      for (var k in keys) { try { localStorage.setItem(k, keys[k]); } catch(err) {} }
-      closeSettingsModal();
-    });
-  } catch(e) {
-    for (var k in keys) { try { localStorage.setItem(k, keys[k]); } catch(err) {} }
-    closeSettingsModal();
-  }
+  try { localStorage.setItem('scorer-provider', prov); } catch(e) {}
+  try { localStorage.setItem('ollama-model', oMod); } catch(e) {}
+  closeSettingsModal();
 };
 
 window.saveCompany = function() {
@@ -2027,42 +2001,16 @@ window.saveCompany = function() {
 
 // ── LLM CONFIG ─────────────────────────────────────────────────────
 
-var llmConfig = { provider: 'ollama', ollamaModel: 'qwen3.6:27b', apiKey: '', tavilyApiKey: '' };
+var llmConfig = { provider: 'ollama', ollamaModel: 'qwen3.6:27b' };
 
 window.loadLlmConfig = function() {
-  function loadFallback() {
-    try {
-      var p = localStorage.getItem('scorer-provider');
-      var o = localStorage.getItem('ollama-model');
-      var a = localStorage.getItem('anthropic-api-key');
-      var t = localStorage.getItem('tavily-api-key');
-      if (p) llmConfig.provider = p;
-      if (o) llmConfig.ollamaModel = o;
-      if (a) llmConfig.apiKey = a;
-      if (t) llmConfig.tavilyApiKey = t;
-    } catch(e) {}
-    return Promise.resolve();
-  }
-
   try {
-    return Promise.all([
-      window.storage.get('scorer-provider'),
-      window.storage.get('ollama-model'),
-      window.storage.get('anthropic-api-key'),
-      window.storage.get('tavily-api-key')
-    ]).then(function(results) {
-      var hasAny = false;
-      for (var i=0; i<results.length; i++) { if (results[i]) hasAny = true; }
-      if (!hasAny) return loadFallback();
-
-      if (results[0] && results[0].value) llmConfig.provider = results[0].value;
-      if (results[1] && results[1].value) llmConfig.ollamaModel = results[1].value;
-      if (results[2] && results[2].value) llmConfig.apiKey = results[2].value;
-      if (results[3] && results[3].value) llmConfig.tavilyApiKey = results[3].value;
-    }).catch(function() { return loadFallback(); });
-  } catch(e) {
-    return loadFallback();
-  }
+    var p = localStorage.getItem('scorer-provider');
+    var o = localStorage.getItem('ollama-model');
+    if (p) llmConfig.provider = p;
+    if (o) llmConfig.ollamaModel = o;
+  } catch(e) {}
+  return Promise.resolve();
 };
 
 window.callLlm = function(system, user, onToken) {
@@ -2120,14 +2068,9 @@ window.callLlm = function(system, user, onToken) {
       return read();
     });
   } else {
-    return fetch('https://api.anthropic.com/v1/messages', {
+    return fetch('/proxy/anthropic', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': llmConfig.apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 512,
@@ -2137,7 +2080,7 @@ window.callLlm = function(system, user, onToken) {
     }).then(function(res) { return res.json(); }).then(function(data) {
       if (!data.content) {
         var msg = (data.error && data.error.message) ? data.error.message : 'Unknown error from Anthropic API';
-        throw new Error('Anthropic API error: ' + msg + '. Check your API key in Settings.');
+        throw new Error('Anthropic API error: ' + msg + '. Ensure ANTHROPIC_API_KEY is set in .env and restart the server.');
       }
       var text = '';
       for (var i = 0; i < data.content.length; i++) {
@@ -2151,18 +2094,12 @@ window.callLlm = function(system, user, onToken) {
 // ── URL IMPORT ─────────────────────────────────────────────────────
 
 window.fetchJobFromUrl = function(url) {
-  if (!llmConfig.tavilyApiKey) {
-    return Promise.reject(new Error('No Tavily API key configured. Add one in Settings.'));
-  }
   return fetch('/proxy/tavily', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      apiKey: llmConfig.tavilyApiKey,
-      urls: [url],
-      extract_depth: 'advanced'
-    })
+    body: JSON.stringify({ urls: [url], extract_depth: 'advanced' })
   }).then(function(res) {
+    if (res.status === 503) throw new Error('Tavily not configured on server. Add TAVILY_API_KEY to .env and restart.');
     if (!res.ok) throw new Error('Tavily fetch failed (' + res.status + ')');
     return res.json();
   }).then(function(data) {
@@ -2267,18 +2204,9 @@ window.addAndScore = function() {
   window.closeModal();
   var params = 'companyId=' + id + '&company=' + encodeURIComponent(company);
   if (urlVal) params += '&url=' + encodeURIComponent(urlVal);
-  try {
-    return window.storage.set('pending-jd', jd).then(function() {
-      window.open('scorer.html?' + params);
-    }).catch(function() {
-      try { localStorage.setItem('pending-jd', jd); } catch(e) {}
-      window.open('scorer.html?' + params);
-    });
-  } catch(e) {
-    try { localStorage.setItem('pending-jd', jd); } catch(e) {}
-    window.open('scorer.html?' + params);
-    return Promise.resolve();
-  }
+  try { localStorage.setItem('pending-jd', jd); } catch(e) {}
+  window.open('scorer.html?' + params);
+  return Promise.resolve();
 };
 
 // ── SCORER INTEGRATION ────────────────────────────────────────────
@@ -2362,8 +2290,6 @@ window.checkForAllScores = function() {
   for (var i = 0; i < companies.length; i++) {
     (function(c) {
       var scoreKey = 'score-' + c.id;
-      var found = false;
-      
       try {
         var ls = localStorage.getItem(scoreKey);
         if (ls) {
@@ -2373,44 +2299,15 @@ window.checkForAllScores = function() {
             c.score = score;
             c.score.overall = val;
             if (score.jd) c.jd = score.jd;
-            // Auto-update Tier (Rank) based on score
-            if (val >= 8) c.tier = 'A';
-            else if (val >= 6) c.tier = 'B';
-            else if (val >= 4) c.tier = 'C';
-            else c.tier = 'D';
-            
+            c.tier = window.scoreTier(val);
             localStorage.removeItem(scoreKey);
-            console.log('[Pipeline] Found and applied score from localStorage for ID:', c.id);
+            console.log('[Pipeline] Applied localStorage score for ID:', c.id);
             finish(c);
             return;
           }
         }
-      } catch(e) { console.warn('Local check failed', e); }
-      
-      try {
-        window.storage.get(scoreKey).then(function(res) {
-          if (res && res.value) {
-            var score = JSON.parse(res.value);
-            if (score && (score.overall || score.overall_score)) {
-              var val = score.overall || score.overall_score;
-              c.score = score;
-              c.score.overall = val;
-              if (score.jd) c.jd = score.jd;
-              // Auto-update Tier (Rank) based on score
-              if (val >= 8) c.tier = 'A';
-              else if (val >= 6) c.tier = 'B';
-              else if (val >= 4) c.tier = 'C';
-              else c.tier = 'D';
-              
-              window.storage.set(scoreKey, null).catch(function() {});
-              console.log('[Pipeline] Found and applied score from window.storage for ID:', c.id);
-              finish(c);
-              return;
-            }
-          }
-          finish(null);
-        }).catch(function() { finish(null); });
-      } catch(e) { finish(null); }
+      } catch(e) { console.warn('Score check failed', e); }
+      finish(null);
     })(companies[i]);
   }
 };
@@ -2419,8 +2316,11 @@ window.checkForNewScore = function(id) {
   window.checkForAllScores();
 };
 
+var focusReloadTimer = null;
 window.addEventListener('focus', function() {
-  if (isLoaded) window.loadFromStorage();
+  if (!isLoaded) return;
+  clearTimeout(focusReloadTimer);
+  focusReloadTimer = setTimeout(function() { window.loadFromStorage(); }, 500);
 });
 
 window.openScorer = function(id) {
@@ -2434,23 +2334,8 @@ window.openScorer = function(id) {
   console.log('[Pipeline] Opening Scorer with URL:', targetUrl);
   
   var jd = c.jd || '';
-  try {
-    if (window.storage && window.storage.set) {
-      window.storage.set('pending-jd', jd).then(function() {
-        console.log('[Pipeline] Opening Scorer (async storage set):', targetUrl);
-        window.open(targetUrl, '_blank');
-      }).catch(function() {
-        try { localStorage.setItem('pending-jd', jd); } catch(e) {}
-        window.open(targetUrl, '_blank');
-      });
-    } else {
-      localStorage.setItem('pending-jd', jd);
-      window.open(targetUrl, '_blank');
-    }
-  } catch(e) {
-    localStorage.setItem('pending-jd', jd);
-    window.open(targetUrl, '_blank');
-  }
+  try { localStorage.setItem('pending-jd', jd); } catch(e) {}
+  window.open(targetUrl, '_blank');
 };
 
 // ── VIEW SWITCHING ─────────────────────────────────────────────────

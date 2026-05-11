@@ -1922,3 +1922,1781 @@
 [2026-05-09T13:06:06.981Z] POST /api/log
 [2026-05-09T13:06:06.983Z] [Frontend] ERROR: Scoring error: {}
 [2026-05-09T13:06:19.216Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T13:07:02.809Z] POST /api/log
+[2026-05-09T13:07:02.811Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 8
+[2026-05-09T13:07:02.812Z] POST /api/save-score
+[2026-05-09T13:07:02.822Z] POST /api/log
+[2026-05-09T13:07:02.823Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-09T13:07:05.758Z] GET /pipeline
+[2026-05-09T13:07:05.777Z] GET /lib/parse.js
+[2026-05-09T13:07:05.778Z] GET /lib/pipeline.js
+[2026-05-09T13:07:05.787Z] POST /api/log
+[2026-05-09T13:07:05.788Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T13:07:05.789Z] GET /api/companies
+[2026-05-09T13:07:05.802Z] POST /api/log
+[2026-05-09T13:07:05.802Z] [Frontend] INFO: [Pipeline] Loaded 4 companies from SQLite
+[2026-05-09T13:07:05.803Z] POST /api/log
+[2026-05-09T13:07:05.803Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8]
+[2026-05-09T13:07:07.934Z] POST /api/log
+[2026-05-09T13:07:07.935Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8]
+[2026-05-09T13:07:12.415Z] POST /proxy/tavily-search
+[2026-05-09T13:07:13.937Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T13:07:15.618Z] POST /api/log
+[2026-05-09T13:07:15.619Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-630\",\"object\":\"chat.completion.chunk\",\"created\":1778332035,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-09T13:07:15.619Z] POST /api/log
+[2026-05-09T13:07:15.620Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T13:07:15.671Z] POST /api/log
+[2026-05-09T13:07:15.672Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-630\",\"object\":\"chat.completion.chunk\",\"created\":1778332035,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \"},\"finish_reason\":null}]}"
+[2026-05-09T13:07:15.672Z] POST /api/log
+[2026-05-09T13:07:15.672Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T13:07:15.725Z] POST /api/log
+[2026-05-09T13:07:15.725Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-630\",\"object\":\"chat.completion.chunk\",\"created\":1778332035,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-09T13:07:20.910Z] POST /api/log
+[2026-05-09T13:07:20.911Z] [Frontend] INFO: [callLlm] stream done. tokens: 102 fullText length: 386
+[2026-05-09T13:07:20.911Z] POST /api/log
+[2026-05-09T13:07:20.911Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 8 Mosh
+[2026-05-09T13:07:20.912Z] POST /api/save
+[2026-05-09T13:07:40.244Z] POST /api/kv
+[2026-05-09T13:07:40.245Z] POST /api/log
+[2026-05-09T13:07:40.245Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 8 Mosh
+[2026-05-09T13:07:40.246Z] POST /api/save
+[2026-05-09T13:07:50.338Z] POST /api/log
+[2026-05-09T13:07:50.338Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T13:07:50.338Z] GET /api/companies
+[2026-05-09T13:07:50.343Z] POST /api/log
+[2026-05-09T13:07:50.344Z] [Frontend] INFO: [Pipeline] Loaded 4 companies from SQLite
+[2026-05-09T13:07:50.344Z] POST /api/log
+[2026-05-09T13:07:50.344Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8]
+[2026-05-09T13:07:51.674Z] POST /api/log
+[2026-05-09T13:07:51.675Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T13:07:51.675Z] GET /api/companies
+[2026-05-09T13:07:51.687Z] POST /api/log
+[2026-05-09T13:07:51.688Z] [Frontend] INFO: [Pipeline] Loaded 4 companies from SQLite
+[2026-05-09T13:07:51.688Z] POST /api/log
+[2026-05-09T13:07:51.688Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8]
+[2026-05-09T22:04:41.176Z] POST /api/log
+[2026-05-09T22:04:41.177Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:04:41.178Z] GET /api/companies
+[2026-05-09T22:04:41.184Z] POST /api/log
+[2026-05-09T22:04:41.184Z] [Frontend] INFO: [Pipeline] Loaded 4 companies from SQLite
+[2026-05-09T22:04:41.185Z] POST /api/log
+[2026-05-09T22:04:41.185Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8]
+[2026-05-09T22:05:01.157Z] POST /api/log
+[2026-05-09T22:05:01.163Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:05:01.165Z] GET /api/companies
+[2026-05-09T22:05:01.176Z] POST /api/log
+[2026-05-09T22:05:01.181Z] [Frontend] INFO: [Pipeline] Loaded 4 companies from SQLite
+[2026-05-09T22:05:01.186Z] POST /api/log
+[2026-05-09T22:05:01.187Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8]
+[2026-05-09T22:05:05.612Z] POST /proxy/tavily
+[2026-05-09T22:05:06.877Z] POST /api/log
+[2026-05-09T22:05:06.878Z] [Frontend] INFO: [extractJobData] content chars: 47566 → sending: 8000
+[2026-05-09T22:05:06.878Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:05:23.263Z] POST /api/log
+[2026-05-09T22:05:23.264Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-739\",\"object\":\"chat.completion.chunk\",\"created\":1778364323,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-09T22:05:23.264Z] POST /api/log
+[2026-05-09T22:05:23.265Z] [Frontend] INFO: [onToken] count: 1
+[2026-05-09T22:05:23.266Z] POST /api/log
+[2026-05-09T22:05:23.268Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:05:23.325Z] POST /api/log
+[2026-05-09T22:05:23.325Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-739\",\"object\":\"chat.completion.chunk\",\"created\":1778364323,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"   \"},\"finish_reason\":null}]}"
+[2026-05-09T22:05:23.326Z] POST /api/log
+[2026-05-09T22:05:23.327Z] [Frontend] INFO: [onToken] count: 2
+[2026-05-09T22:05:23.328Z] POST /api/log
+[2026-05-09T22:05:23.328Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:05:23.390Z] POST /api/log
+[2026-05-09T22:05:23.391Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-739\",\"object\":\"chat.completion.chunk\",\"created\":1778364323,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-09T22:05:23.391Z] POST /api/log
+[2026-05-09T22:05:23.391Z] [Frontend] INFO: [onToken] count: 3
+[2026-05-09T22:05:23.451Z] POST /api/log
+[2026-05-09T22:05:23.451Z] [Frontend] INFO: [onToken] count: 4
+[2026-05-09T22:05:23.514Z] POST /api/log
+[2026-05-09T22:05:23.514Z] [Frontend] INFO: [onToken] count: 5
+[2026-05-09T22:05:23.579Z] POST /api/log
+[2026-05-09T22:05:23.579Z] [Frontend] INFO: [onToken] count: 6
+[2026-05-09T22:05:23.640Z] POST /api/log
+[2026-05-09T22:05:23.640Z] [Frontend] INFO: [onToken] count: 7
+[2026-05-09T22:05:23.703Z] POST /api/log
+[2026-05-09T22:05:23.704Z] [Frontend] INFO: [onToken] count: 8
+[2026-05-09T22:05:23.766Z] POST /api/log
+[2026-05-09T22:05:23.766Z] [Frontend] INFO: [onToken] count: 9
+[2026-05-09T22:05:23.835Z] POST /api/log
+[2026-05-09T22:05:23.835Z] [Frontend] INFO: [onToken] count: 10
+[2026-05-09T22:05:23.923Z] POST /api/log
+[2026-05-09T22:05:23.923Z] [Frontend] INFO: [onToken] count: 11
+[2026-05-09T22:05:23.986Z] POST /api/log
+[2026-05-09T22:05:23.987Z] [Frontend] INFO: [onToken] count: 12
+[2026-05-09T22:05:24.056Z] POST /api/log
+[2026-05-09T22:05:24.056Z] [Frontend] INFO: [onToken] count: 13
+[2026-05-09T22:05:24.117Z] POST /api/log
+[2026-05-09T22:05:24.117Z] [Frontend] INFO: [onToken] count: 14
+[2026-05-09T22:05:24.181Z] POST /api/log
+[2026-05-09T22:05:24.181Z] [Frontend] INFO: [onToken] count: 15
+[2026-05-09T22:05:24.241Z] POST /api/log
+[2026-05-09T22:05:24.241Z] [Frontend] INFO: [onToken] count: 16
+[2026-05-09T22:05:24.306Z] POST /api/log
+[2026-05-09T22:05:24.306Z] [Frontend] INFO: [onToken] count: 17
+[2026-05-09T22:05:24.366Z] POST /api/log
+[2026-05-09T22:05:24.366Z] [Frontend] INFO: [onToken] count: 18
+[2026-05-09T22:05:24.429Z] POST /api/log
+[2026-05-09T22:05:24.429Z] [Frontend] INFO: [onToken] count: 19
+[2026-05-09T22:05:24.490Z] POST /api/log
+[2026-05-09T22:05:24.490Z] [Frontend] INFO: [onToken] count: 20
+[2026-05-09T22:05:24.555Z] POST /api/log
+[2026-05-09T22:05:24.555Z] [Frontend] INFO: [callLlm] stream done. tokens: 20 fullText length: 70
+[2026-05-09T22:05:24.555Z] POST /api/log
+[2026-05-09T22:05:24.556Z] [Frontend] INFO: [extractJobData] raw response: "{\n    \"company_name\": \"Mosh\",\n    \"job_title\": \"Engineering Manager\"\n}"
+[2026-05-09T22:05:24.556Z] POST /api/log
+[2026-05-09T22:05:24.556Z] [Frontend] INFO: [extractJobData] parsed: {"company_name":"Mosh","job_title":"Engineering Manager"}
+[2026-05-09T22:05:25.844Z] POST /api/kv
+[2026-05-09T22:05:25.846Z] POST /api/log
+[2026-05-09T22:05:25.847Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 9 Mosh
+[2026-05-09T22:05:25.848Z] POST /api/save
+[2026-05-09T22:05:25.886Z] GET /scorer.html?companyId=9&company=Mosh&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4392399043
+[2026-05-09T22:05:25.907Z] GET /lib/parse.js
+[2026-05-09T22:05:25.908Z] GET /lib/scoring.js
+[2026-05-09T22:05:25.940Z] POST /api/log
+[2026-05-09T22:05:25.941Z] [Frontend] INFO: [Scorer] Full URL: http://localhost:3000/scorer.html?companyId=9&company=Mosh&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4392399043
+[2026-05-09T22:05:25.943Z] POST /api/log
+[2026-05-09T22:05:25.943Z] [Frontend] INFO: [Scorer] URL Params - companyId: 9 company: Mosh
+[2026-05-09T22:05:25.944Z] POST /api/log
+[2026-05-09T22:05:25.944Z] [Frontend] INFO: [Scorer] Set currentCompanyId to: 9
+[2026-05-09T22:05:27.437Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:06:10.951Z] POST /api/log
+[2026-05-09T22:06:10.951Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 9
+[2026-05-09T22:06:10.952Z] POST /api/save-score
+[2026-05-09T22:06:10.964Z] POST /api/log
+[2026-05-09T22:06:10.965Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-09T22:06:35.897Z] GET /pipeline
+[2026-05-09T22:06:35.922Z] GET /lib/parse.js
+[2026-05-09T22:06:35.923Z] GET /lib/pipeline.js
+[2026-05-09T22:06:35.933Z] POST /api/log
+[2026-05-09T22:06:35.933Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:06:35.934Z] GET /api/companies
+[2026-05-09T22:06:35.949Z] POST /api/log
+[2026-05-09T22:06:35.950Z] [Frontend] INFO: [Pipeline] Loaded 5 companies from SQLite
+[2026-05-09T22:06:35.950Z] POST /api/log
+[2026-05-09T22:06:35.950Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,9]
+[2026-05-09T22:06:44.183Z] POST /api/log
+[2026-05-09T22:06:44.183Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:06:44.186Z] GET /api/companies
+[2026-05-09T22:06:44.197Z] POST /api/log
+[2026-05-09T22:06:44.198Z] [Frontend] INFO: [Pipeline] Loaded 5 companies from SQLite
+[2026-05-09T22:06:44.199Z] POST /api/log
+[2026-05-09T22:06:44.201Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,9]
+[2026-05-09T22:06:49.374Z] POST /proxy/tavily
+[2026-05-09T22:06:51.347Z] POST /api/log
+[2026-05-09T22:06:51.348Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:06:51.348Z] GET /api/companies
+[2026-05-09T22:06:51.352Z] POST /api/log
+[2026-05-09T22:06:51.353Z] [Frontend] INFO: [Pipeline] Loaded 5 companies from SQLite
+[2026-05-09T22:06:51.353Z] POST /api/log
+[2026-05-09T22:06:51.354Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,9]
+[2026-05-09T22:06:53.299Z] POST /api/log
+[2026-05-09T22:06:53.299Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:06:53.300Z] GET /api/companies
+[2026-05-09T22:06:53.318Z] POST /api/log
+[2026-05-09T22:06:53.319Z] [Frontend] INFO: [Pipeline] Loaded 5 companies from SQLite
+[2026-05-09T22:06:53.320Z] POST /api/log
+[2026-05-09T22:06:53.322Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,9]
+[2026-05-09T22:06:55.270Z] POST /api/log
+[2026-05-09T22:06:55.270Z] [Frontend] INFO: [extractJobData] content chars: 25693 → sending: 8000
+[2026-05-09T22:06:55.271Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:07:06.669Z] POST /api/log
+[2026-05-09T22:07:06.670Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-656\",\"object\":\"chat.completion.chunk\",\"created\":1778364426,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-09T22:07:06.673Z] POST /api/log
+[2026-05-09T22:07:06.674Z] [Frontend] INFO: [onToken] count: 1
+[2026-05-09T22:07:06.675Z] POST /api/log
+[2026-05-09T22:07:06.677Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:07:06.732Z] POST /api/log
+[2026-05-09T22:07:06.733Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-656\",\"object\":\"chat.completion.chunk\",\"created\":1778364426,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"company\"},\"finish_reason\":null}]}"
+[2026-05-09T22:07:06.733Z] POST /api/log
+[2026-05-09T22:07:06.733Z] [Frontend] INFO: [onToken] count: 2
+[2026-05-09T22:07:06.734Z] POST /api/log
+[2026-05-09T22:07:06.734Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:07:06.796Z] POST /api/log
+[2026-05-09T22:07:06.796Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-656\",\"object\":\"chat.completion.chunk\",\"created\":1778364426,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"_name\"},\"finish_reason\":null}]}"
+[2026-05-09T22:07:06.796Z] POST /api/log
+[2026-05-09T22:07:06.797Z] [Frontend] INFO: [onToken] count: 3
+[2026-05-09T22:07:06.860Z] POST /api/log
+[2026-05-09T22:07:06.861Z] [Frontend] INFO: [onToken] count: 4
+[2026-05-09T22:07:06.920Z] POST /api/log
+[2026-05-09T22:07:06.921Z] [Frontend] INFO: [onToken] count: 5
+[2026-05-09T22:07:06.980Z] POST /api/log
+[2026-05-09T22:07:06.981Z] [Frontend] INFO: [onToken] count: 6
+[2026-05-09T22:07:07.041Z] POST /api/log
+[2026-05-09T22:07:07.041Z] [Frontend] INFO: [onToken] count: 7
+[2026-05-09T22:07:07.101Z] POST /api/log
+[2026-05-09T22:07:07.102Z] [Frontend] INFO: [onToken] count: 8
+[2026-05-09T22:07:07.175Z] POST /api/log
+[2026-05-09T22:07:07.176Z] [Frontend] INFO: [onToken] count: 9
+[2026-05-09T22:07:07.244Z] POST /api/log
+[2026-05-09T22:07:07.244Z] [Frontend] INFO: [onToken] count: 10
+[2026-05-09T22:07:07.312Z] POST /api/log
+[2026-05-09T22:07:07.312Z] [Frontend] INFO: [onToken] count: 11
+[2026-05-09T22:07:07.376Z] POST /api/log
+[2026-05-09T22:07:07.377Z] [Frontend] INFO: [onToken] count: 12
+[2026-05-09T22:07:07.439Z] POST /api/log
+[2026-05-09T22:07:07.440Z] [Frontend] INFO: [onToken] count: 13
+[2026-05-09T22:07:07.499Z] POST /api/log
+[2026-05-09T22:07:07.500Z] [Frontend] INFO: [onToken] count: 14
+[2026-05-09T22:07:07.563Z] POST /api/log
+[2026-05-09T22:07:07.563Z] [Frontend] INFO: [onToken] count: 15
+[2026-05-09T22:07:07.623Z] POST /api/log
+[2026-05-09T22:07:07.623Z] [Frontend] INFO: [onToken] count: 16
+[2026-05-09T22:07:07.684Z] POST /api/log
+[2026-05-09T22:07:07.684Z] [Frontend] INFO: [onToken] count: 17
+[2026-05-09T22:07:07.746Z] POST /api/log
+[2026-05-09T22:07:07.746Z] [Frontend] INFO: [onToken] count: 18
+[2026-05-09T22:07:07.807Z] POST /api/log
+[2026-05-09T22:07:07.807Z] [Frontend] INFO: [callLlm] stream done. tokens: 18 fullText length: 61
+[2026-05-09T22:07:07.808Z] POST /api/log
+[2026-05-09T22:07:07.808Z] [Frontend] INFO: [extractJobData] raw response: "{\ncompany_name: \"Compono\",\njob_title: \"Head of Engineering\"\n}"
+[2026-05-09T22:07:07.827Z] POST /api/log
+[2026-05-09T22:07:07.827Z] [Frontend] ERROR: [extractJobData] JSON parse error. Raw text: {
+company_name: "Compono",
+job_title: "Head of Engineering"
+}
+[2026-05-09T22:07:07.828Z] POST /api/log
+[2026-05-09T22:07:07.828Z] [Frontend] ERROR: fetchAndFill error: {}
+[2026-05-09T22:07:24.315Z] POST /api/log
+[2026-05-09T22:07:24.316Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:07:24.316Z] GET /api/companies
+[2026-05-09T22:07:24.327Z] POST /api/log
+[2026-05-09T22:07:24.328Z] [Frontend] INFO: [Pipeline] Loaded 5 companies from SQLite
+[2026-05-09T22:07:24.329Z] POST /api/log
+[2026-05-09T22:07:24.329Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,9]
+[2026-05-09T22:07:29.307Z] POST /proxy/tavily
+[2026-05-09T22:07:30.260Z] POST /api/log
+[2026-05-09T22:07:30.261Z] [Frontend] INFO: [extractJobData] content chars: 25693 → sending: 8000
+[2026-05-09T22:07:30.262Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:07:30.429Z] POST /api/log
+[2026-05-09T22:07:30.430Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-380\",\"object\":\"chat.completion.chunk\",\"created\":1778364450,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-09T22:07:30.430Z] POST /api/log
+[2026-05-09T22:07:30.430Z] [Frontend] INFO: [onToken] count: 1
+[2026-05-09T22:07:30.430Z] POST /api/log
+[2026-05-09T22:07:30.431Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:07:30.491Z] POST /api/log
+[2026-05-09T22:07:30.492Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-380\",\"object\":\"chat.completion.chunk\",\"created\":1778364450,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"   \"},\"finish_reason\":null}]}"
+[2026-05-09T22:07:30.492Z] POST /api/log
+[2026-05-09T22:07:30.492Z] [Frontend] INFO: [onToken] count: 2
+[2026-05-09T22:07:30.493Z] POST /api/log
+[2026-05-09T22:07:30.493Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:07:30.558Z] POST /api/log
+[2026-05-09T22:07:30.560Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-380\",\"object\":\"chat.completion.chunk\",\"created\":1778364450,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-09T22:07:30.561Z] POST /api/log
+[2026-05-09T22:07:30.561Z] [Frontend] INFO: [onToken] count: 3
+[2026-05-09T22:07:30.618Z] POST /api/log
+[2026-05-09T22:07:30.619Z] [Frontend] INFO: [onToken] count: 4
+[2026-05-09T22:07:30.679Z] POST /api/log
+[2026-05-09T22:07:30.679Z] [Frontend] INFO: [onToken] count: 5
+[2026-05-09T22:07:30.739Z] POST /api/log
+[2026-05-09T22:07:30.739Z] [Frontend] INFO: [onToken] count: 6
+[2026-05-09T22:07:30.799Z] POST /api/log
+[2026-05-09T22:07:30.799Z] [Frontend] INFO: [onToken] count: 7
+[2026-05-09T22:07:30.864Z] POST /api/log
+[2026-05-09T22:07:30.865Z] [Frontend] INFO: [onToken] count: 8
+[2026-05-09T22:07:30.925Z] POST /api/log
+[2026-05-09T22:07:30.925Z] [Frontend] INFO: [onToken] count: 9
+[2026-05-09T22:07:30.986Z] POST /api/log
+[2026-05-09T22:07:30.986Z] [Frontend] INFO: [onToken] count: 10
+[2026-05-09T22:07:31.047Z] POST /api/log
+[2026-05-09T22:07:31.047Z] [Frontend] INFO: [onToken] count: 11
+[2026-05-09T22:07:31.106Z] POST /api/log
+[2026-05-09T22:07:31.106Z] [Frontend] INFO: [onToken] count: 12
+[2026-05-09T22:07:31.177Z] POST /api/log
+[2026-05-09T22:07:31.177Z] [Frontend] INFO: [onToken] count: 13
+[2026-05-09T22:07:31.247Z] POST /api/log
+[2026-05-09T22:07:31.248Z] [Frontend] INFO: [onToken] count: 14
+[2026-05-09T22:07:31.318Z] POST /api/log
+[2026-05-09T22:07:31.318Z] [Frontend] INFO: [onToken] count: 15
+[2026-05-09T22:07:31.382Z] POST /api/log
+[2026-05-09T22:07:31.382Z] [Frontend] INFO: [onToken] count: 16
+[2026-05-09T22:07:31.443Z] POST /api/log
+[2026-05-09T22:07:31.444Z] [Frontend] INFO: [onToken] count: 17
+[2026-05-09T22:07:31.504Z] POST /api/log
+[2026-05-09T22:07:31.504Z] [Frontend] INFO: [onToken] count: 18
+[2026-05-09T22:07:31.567Z] POST /api/log
+[2026-05-09T22:07:31.567Z] [Frontend] INFO: [onToken] count: 19
+[2026-05-09T22:07:31.632Z] POST /api/log
+[2026-05-09T22:07:31.633Z] [Frontend] INFO: [onToken] count: 20
+[2026-05-09T22:07:31.696Z] POST /api/log
+[2026-05-09T22:07:31.697Z] [Frontend] INFO: [onToken] count: 21
+[2026-05-09T22:07:31.756Z] POST /api/log
+[2026-05-09T22:07:31.756Z] [Frontend] INFO: [onToken] count: 22
+[2026-05-09T22:07:31.821Z] POST /api/log
+[2026-05-09T22:07:31.821Z] [Frontend] INFO: [callLlm] stream done. tokens: 22 fullText length: 73
+[2026-05-09T22:07:31.822Z] POST /api/log
+[2026-05-09T22:07:31.822Z] [Frontend] INFO: [extractJobData] raw response: "{\n    \"company_name\": \"Compono\",\n    \"job_title\": \"Head of Engineering\"\n}"
+[2026-05-09T22:07:31.822Z] POST /api/log
+[2026-05-09T22:07:31.822Z] [Frontend] INFO: [extractJobData] parsed: {"company_name":"Compono","job_title":"Head of Engineering"}
+[2026-05-09T22:07:41.338Z] POST /api/kv
+[2026-05-09T22:07:41.341Z] POST /api/log
+[2026-05-09T22:07:41.341Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 10 Compono
+[2026-05-09T22:07:41.342Z] POST /api/save
+[2026-05-09T22:07:41.375Z] GET /scorer.html?companyId=10&company=Compono&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4405521004
+[2026-05-09T22:07:41.408Z] GET /lib/parse.js
+[2026-05-09T22:07:41.409Z] GET /lib/scoring.js
+[2026-05-09T22:07:41.426Z] POST /api/log
+[2026-05-09T22:07:41.428Z] [Frontend] INFO: [Scorer] Full URL: http://localhost:3000/scorer.html?companyId=10&company=Compono&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4405521004
+[2026-05-09T22:07:41.446Z] POST /api/log
+[2026-05-09T22:07:41.446Z] [Frontend] INFO: [Scorer] URL Params - companyId: 10 company: Compono
+[2026-05-09T22:07:41.451Z] POST /api/log
+[2026-05-09T22:07:41.451Z] [Frontend] INFO: [Scorer] Set currentCompanyId to: 10
+[2026-05-09T22:07:44.061Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:07:47.552Z] POST /api/log
+[2026-05-09T22:07:47.552Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:07:47.553Z] GET /api/companies
+[2026-05-09T22:07:47.562Z] POST /api/log
+[2026-05-09T22:07:47.563Z] [Frontend] INFO: [Pipeline] Loaded 6 companies from SQLite
+[2026-05-09T22:07:47.565Z] POST /api/log
+[2026-05-09T22:07:47.565Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,9,10]
+[2026-05-09T22:07:51.629Z] POST /api/log
+[2026-05-09T22:07:51.629Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,9,10]
+[2026-05-09T22:07:58.641Z] POST /api/delete
+[2026-05-09T22:07:58.643Z] POST /api/kv
+[2026-05-09T22:07:58.844Z] POST /api/log
+[2026-05-09T22:07:58.845Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:07:58.845Z] GET /api/companies
+[2026-05-09T22:07:58.851Z] POST /api/log
+[2026-05-09T22:07:58.851Z] [Frontend] INFO: [Pipeline] Loaded 5 companies from SQLite
+[2026-05-09T22:07:58.852Z] POST /api/log
+[2026-05-09T22:07:58.856Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10]
+[2026-05-09T22:08:41.438Z] POST /api/log
+[2026-05-09T22:08:41.438Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 10
+[2026-05-09T22:08:41.439Z] POST /api/save-score
+[2026-05-09T22:08:41.444Z] POST /api/log
+[2026-05-09T22:08:41.444Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-09T22:08:49.328Z] GET /pipeline
+[2026-05-09T22:08:49.348Z] GET /lib/parse.js
+[2026-05-09T22:08:49.349Z] GET /lib/pipeline.js
+[2026-05-09T22:08:49.359Z] POST /api/log
+[2026-05-09T22:08:49.361Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:08:49.362Z] GET /api/companies
+[2026-05-09T22:08:49.378Z] POST /api/log
+[2026-05-09T22:08:49.379Z] [Frontend] INFO: [Pipeline] Loaded 5 companies from SQLite
+[2026-05-09T22:08:49.380Z] POST /api/log
+[2026-05-09T22:08:49.380Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10]
+[2026-05-09T22:08:54.932Z] POST /proxy/tavily
+[2026-05-09T22:09:01.391Z] POST /api/log
+[2026-05-09T22:09:01.392Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:09:01.392Z] GET /api/companies
+[2026-05-09T22:09:01.397Z] POST /api/log
+[2026-05-09T22:09:01.398Z] [Frontend] INFO: [Pipeline] Loaded 5 companies from SQLite
+[2026-05-09T22:09:01.398Z] POST /api/log
+[2026-05-09T22:09:01.398Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10]
+[2026-05-09T22:09:01.921Z] POST /api/log
+[2026-05-09T22:09:01.921Z] [Frontend] INFO: [extractJobData] content chars: 48527 → sending: 8000
+[2026-05-09T22:09:01.922Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:09:02.063Z] POST /api/log
+[2026-05-09T22:09:02.064Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:09:02.065Z] GET /api/companies
+[2026-05-09T22:09:02.072Z] POST /api/log
+[2026-05-09T22:09:02.073Z] [Frontend] INFO: [Pipeline] Loaded 5 companies from SQLite
+[2026-05-09T22:09:02.074Z] POST /api/log
+[2026-05-09T22:09:02.075Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10]
+[2026-05-09T22:09:13.164Z] POST /api/log
+[2026-05-09T22:09:13.165Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-764\",\"object\":\"chat.completion.chunk\",\"created\":1778364553,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-09T22:09:13.168Z] POST /api/log
+[2026-05-09T22:09:13.168Z] [Frontend] INFO: [onToken] count: 1
+[2026-05-09T22:09:13.169Z] POST /api/log
+[2026-05-09T22:09:13.170Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:09:13.228Z] POST /api/log
+[2026-05-09T22:09:13.228Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-764\",\"object\":\"chat.completion.chunk\",\"created\":1778364553,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\\\"\"},\"finish_reason\":null}]}"
+[2026-05-09T22:09:13.228Z] POST /api/log
+[2026-05-09T22:09:13.228Z] [Frontend] INFO: [onToken] count: 2
+[2026-05-09T22:09:13.229Z] POST /api/log
+[2026-05-09T22:09:13.229Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:09:13.288Z] POST /api/log
+[2026-05-09T22:09:13.288Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-764\",\"object\":\"chat.completion.chunk\",\"created\":1778364553,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"company\"},\"finish_reason\":null}]}"
+[2026-05-09T22:09:13.289Z] POST /api/log
+[2026-05-09T22:09:13.289Z] [Frontend] INFO: [onToken] count: 3
+[2026-05-09T22:09:13.354Z] POST /api/log
+[2026-05-09T22:09:13.355Z] [Frontend] INFO: [onToken] count: 4
+[2026-05-09T22:09:13.414Z] POST /api/log
+[2026-05-09T22:09:13.414Z] [Frontend] INFO: [onToken] count: 5
+[2026-05-09T22:09:13.473Z] POST /api/log
+[2026-05-09T22:09:13.473Z] [Frontend] INFO: [onToken] count: 6
+[2026-05-09T22:09:13.536Z] POST /api/log
+[2026-05-09T22:09:13.536Z] [Frontend] INFO: [onToken] count: 7
+[2026-05-09T22:09:13.598Z] POST /api/log
+[2026-05-09T22:09:13.598Z] [Frontend] INFO: [onToken] count: 8
+[2026-05-09T22:09:13.658Z] POST /api/log
+[2026-05-09T22:09:13.658Z] [Frontend] INFO: [onToken] count: 9
+[2026-05-09T22:09:13.729Z] POST /api/log
+[2026-05-09T22:09:13.731Z] [Frontend] INFO: [onToken] count: 10
+[2026-05-09T22:09:13.792Z] POST /api/log
+[2026-05-09T22:09:13.793Z] [Frontend] INFO: [onToken] count: 11
+[2026-05-09T22:09:13.870Z] POST /api/log
+[2026-05-09T22:09:13.871Z] [Frontend] INFO: [onToken] count: 12
+[2026-05-09T22:09:13.932Z] POST /api/log
+[2026-05-09T22:09:13.932Z] [Frontend] INFO: [onToken] count: 13
+[2026-05-09T22:09:13.992Z] POST /api/log
+[2026-05-09T22:09:13.992Z] [Frontend] INFO: [onToken] count: 14
+[2026-05-09T22:09:14.054Z] POST /api/log
+[2026-05-09T22:09:14.054Z] [Frontend] INFO: [onToken] count: 15
+[2026-05-09T22:09:14.114Z] POST /api/log
+[2026-05-09T22:09:14.114Z] [Frontend] INFO: [onToken] count: 16
+[2026-05-09T22:09:14.178Z] POST /api/log
+[2026-05-09T22:09:14.178Z] [Frontend] INFO: [onToken] count: 17
+[2026-05-09T22:09:14.242Z] POST /api/log
+[2026-05-09T22:09:14.242Z] [Frontend] INFO: [onToken] count: 18
+[2026-05-09T22:09:14.304Z] POST /api/log
+[2026-05-09T22:09:14.304Z] [Frontend] INFO: [onToken] count: 19
+[2026-05-09T22:09:14.364Z] POST /api/log
+[2026-05-09T22:09:14.364Z] [Frontend] INFO: [onToken] count: 20
+[2026-05-09T22:09:14.437Z] POST /api/log
+[2026-05-09T22:09:14.437Z] [Frontend] INFO: [onToken] count: 21
+[2026-05-09T22:09:14.502Z] POST /api/log
+[2026-05-09T22:09:14.503Z] [Frontend] INFO: [callLlm] stream done. tokens: 21 fullText length: 86
+[2026-05-09T22:09:14.503Z] POST /api/log
+[2026-05-09T22:09:14.503Z] [Frontend] INFO: [extractJobData] raw response: "{\n\"company_name\": \"Ubank\",\n\"job_title\": \"Engineering Manager - Platform Engineering\"\n}"
+[2026-05-09T22:09:14.503Z] POST /api/log
+[2026-05-09T22:09:14.504Z] [Frontend] INFO: [extractJobData] parsed: {"company_name":"Ubank","job_title":"Engineering Manager - Platform Engineering"}
+[2026-05-09T22:09:31.217Z] POST /api/log
+[2026-05-09T22:09:31.217Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:09:31.220Z] GET /api/companies
+[2026-05-09T22:09:31.227Z] POST /api/log
+[2026-05-09T22:09:31.228Z] [Frontend] INFO: [Pipeline] Loaded 5 companies from SQLite
+[2026-05-09T22:09:31.229Z] POST /api/log
+[2026-05-09T22:09:31.231Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10]
+[2026-05-09T22:09:34.151Z] POST /api/kv
+[2026-05-09T22:09:34.154Z] POST /api/log
+[2026-05-09T22:09:34.154Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 11 Ubank
+[2026-05-09T22:09:34.155Z] POST /api/save
+[2026-05-09T22:09:34.180Z] GET /scorer.html?companyId=11&company=Ubank&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4404986432
+[2026-05-09T22:09:34.217Z] GET /lib/parse.js
+[2026-05-09T22:09:34.218Z] GET /lib/scoring.js
+[2026-05-09T22:09:34.239Z] POST /api/log
+[2026-05-09T22:09:34.240Z] [Frontend] INFO: [Scorer] Full URL: http://localhost:3000/scorer.html?companyId=11&company=Ubank&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4404986432
+[2026-05-09T22:09:34.240Z] POST /api/log
+[2026-05-09T22:09:34.241Z] [Frontend] INFO: [Scorer] URL Params - companyId: 11 company: Ubank
+[2026-05-09T22:09:34.241Z] POST /api/log
+[2026-05-09T22:09:34.241Z] [Frontend] INFO: [Scorer] Set currentCompanyId to: 11
+[2026-05-09T22:09:35.963Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:10:03.693Z] POST /api/log
+[2026-05-09T22:10:03.694Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:10:03.694Z] GET /api/companies
+[2026-05-09T22:10:03.701Z] POST /api/log
+[2026-05-09T22:10:03.702Z] [Frontend] INFO: [Pipeline] Loaded 6 companies from SQLite
+[2026-05-09T22:10:03.702Z] POST /api/log
+[2026-05-09T22:10:03.702Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11]
+[2026-05-09T22:10:11.994Z] POST /api/log
+[2026-05-09T22:10:11.995Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:10:11.996Z] GET /api/companies
+[2026-05-09T22:10:12.001Z] POST /api/log
+[2026-05-09T22:10:12.002Z] [Frontend] INFO: [Pipeline] Loaded 6 companies from SQLite
+[2026-05-09T22:10:12.003Z] POST /api/log
+[2026-05-09T22:10:12.003Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11]
+[2026-05-09T22:10:29.436Z] POST /api/log
+[2026-05-09T22:10:29.437Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 11
+[2026-05-09T22:10:29.437Z] POST /api/save-score
+[2026-05-09T22:10:29.443Z] POST /api/log
+[2026-05-09T22:10:29.443Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-09T22:10:32.213Z] GET /pipeline
+[2026-05-09T22:10:32.233Z] GET /lib/parse.js
+[2026-05-09T22:10:32.233Z] GET /lib/pipeline.js
+[2026-05-09T22:10:32.243Z] POST /api/log
+[2026-05-09T22:10:32.243Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:10:32.243Z] GET /api/companies
+[2026-05-09T22:10:32.258Z] POST /api/log
+[2026-05-09T22:10:32.259Z] [Frontend] INFO: [Pipeline] Loaded 6 companies from SQLite
+[2026-05-09T22:10:32.260Z] POST /api/log
+[2026-05-09T22:10:32.261Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11]
+[2026-05-09T22:10:33.694Z] POST /api/log
+[2026-05-09T22:10:33.694Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:10:33.695Z] GET /api/companies
+[2026-05-09T22:10:33.704Z] POST /api/log
+[2026-05-09T22:10:33.704Z] [Frontend] INFO: [Pipeline] Loaded 6 companies from SQLite
+[2026-05-09T22:10:33.707Z] POST /api/log
+[2026-05-09T22:10:33.708Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11]
+[2026-05-09T22:10:34.252Z] POST /api/log
+[2026-05-09T22:10:34.254Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:10:34.255Z] GET /api/companies
+[2026-05-09T22:10:34.263Z] POST /api/log
+[2026-05-09T22:10:34.264Z] [Frontend] INFO: [Pipeline] Loaded 6 companies from SQLite
+[2026-05-09T22:10:34.265Z] POST /api/log
+[2026-05-09T22:10:34.265Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11]
+[2026-05-09T22:10:38.167Z] POST /proxy/tavily
+[2026-05-09T22:10:58.231Z] POST /api/log
+[2026-05-09T22:10:58.232Z] [Frontend] INFO: [extractJobData] content chars: 48899 → sending: 8000
+[2026-05-09T22:10:58.233Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:11:09.368Z] POST /api/log
+[2026-05-09T22:11:09.369Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-641\",\"object\":\"chat.completion.chunk\",\"created\":1778364669,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-09T22:11:09.372Z] POST /api/log
+[2026-05-09T22:11:09.373Z] [Frontend] INFO: [onToken] count: 1
+[2026-05-09T22:11:09.374Z] POST /api/log
+[2026-05-09T22:11:09.374Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:11:09.429Z] POST /api/log
+[2026-05-09T22:11:09.429Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-641\",\"object\":\"chat.completion.chunk\",\"created\":1778364669,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\\\"\"},\"finish_reason\":null}]}"
+[2026-05-09T22:11:09.429Z] POST /api/log
+[2026-05-09T22:11:09.429Z] [Frontend] INFO: [onToken] count: 2
+[2026-05-09T22:11:09.429Z] POST /api/log
+[2026-05-09T22:11:09.429Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:11:09.489Z] POST /api/log
+[2026-05-09T22:11:09.489Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-641\",\"object\":\"chat.completion.chunk\",\"created\":1778364669,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"company\"},\"finish_reason\":null}]}"
+[2026-05-09T22:11:09.489Z] POST /api/log
+[2026-05-09T22:11:09.489Z] [Frontend] INFO: [onToken] count: 3
+[2026-05-09T22:11:09.551Z] POST /api/log
+[2026-05-09T22:11:09.551Z] [Frontend] INFO: [onToken] count: 4
+[2026-05-09T22:11:09.612Z] POST /api/log
+[2026-05-09T22:11:09.612Z] [Frontend] INFO: [onToken] count: 5
+[2026-05-09T22:11:09.673Z] POST /api/log
+[2026-05-09T22:11:09.673Z] [Frontend] INFO: [onToken] count: 6
+[2026-05-09T22:11:09.733Z] POST /api/log
+[2026-05-09T22:11:09.733Z] [Frontend] INFO: [onToken] count: 7
+[2026-05-09T22:11:09.792Z] POST /api/log
+[2026-05-09T22:11:09.792Z] [Frontend] INFO: [onToken] count: 8
+[2026-05-09T22:11:09.859Z] POST /api/log
+[2026-05-09T22:11:09.859Z] [Frontend] INFO: [onToken] count: 9
+[2026-05-09T22:11:09.918Z] POST /api/log
+[2026-05-09T22:11:09.918Z] [Frontend] INFO: [onToken] count: 10
+[2026-05-09T22:11:09.977Z] POST /api/log
+[2026-05-09T22:11:09.978Z] [Frontend] INFO: [onToken] count: 11
+[2026-05-09T22:11:10.040Z] POST /api/log
+[2026-05-09T22:11:10.040Z] [Frontend] INFO: [onToken] count: 12
+[2026-05-09T22:11:10.098Z] POST /api/log
+[2026-05-09T22:11:10.099Z] [Frontend] INFO: [onToken] count: 13
+[2026-05-09T22:11:10.163Z] POST /api/log
+[2026-05-09T22:11:10.164Z] [Frontend] INFO: [onToken] count: 14
+[2026-05-09T22:11:10.226Z] POST /api/log
+[2026-05-09T22:11:10.226Z] [Frontend] INFO: [onToken] count: 15
+[2026-05-09T22:11:10.289Z] POST /api/log
+[2026-05-09T22:11:10.289Z] [Frontend] INFO: [onToken] count: 16
+[2026-05-09T22:11:10.348Z] POST /api/log
+[2026-05-09T22:11:10.349Z] [Frontend] INFO: [onToken] count: 17
+[2026-05-09T22:11:10.410Z] POST /api/log
+[2026-05-09T22:11:10.411Z] [Frontend] INFO: [onToken] count: 18
+[2026-05-09T22:11:10.471Z] POST /api/log
+[2026-05-09T22:11:10.471Z] [Frontend] INFO: [onToken] count: 19
+[2026-05-09T22:11:10.534Z] POST /api/log
+[2026-05-09T22:11:10.535Z] [Frontend] INFO: [onToken] count: 20
+[2026-05-09T22:11:10.596Z] POST /api/log
+[2026-05-09T22:11:10.596Z] [Frontend] INFO: [callLlm] stream done. tokens: 20 fullText length: 65
+[2026-05-09T22:11:10.596Z] POST /api/log
+[2026-05-09T22:11:10.596Z] [Frontend] INFO: [extractJobData] raw response: "{\n\"company_name\": \"Prezzee\",\n\"job_title\": \"Head of Engineering\"\n}"
+[2026-05-09T22:11:10.596Z] POST /api/log
+[2026-05-09T22:11:10.596Z] [Frontend] INFO: [extractJobData] parsed: {"company_name":"Prezzee","job_title":"Head of Engineering"}
+[2026-05-09T22:11:13.631Z] POST /api/kv
+[2026-05-09T22:11:13.634Z] POST /api/log
+[2026-05-09T22:11:13.634Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 12 Prezzee
+[2026-05-09T22:11:13.634Z] POST /api/save
+[2026-05-09T22:11:13.660Z] GET /scorer.html?companyId=12&company=Prezzee&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4379564898
+[2026-05-09T22:11:13.686Z] GET /lib/parse.js
+[2026-05-09T22:11:13.687Z] GET /lib/scoring.js
+[2026-05-09T22:11:13.709Z] POST /api/log
+[2026-05-09T22:11:13.710Z] [Frontend] INFO: [Scorer] Full URL: http://localhost:3000/scorer.html?companyId=12&company=Prezzee&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4379564898
+[2026-05-09T22:11:13.711Z] POST /api/log
+[2026-05-09T22:11:13.716Z] [Frontend] INFO: [Scorer] URL Params - companyId: 12 company: Prezzee
+[2026-05-09T22:11:13.716Z] POST /api/log
+[2026-05-09T22:11:13.717Z] [Frontend] INFO: [Scorer] Set currentCompanyId to: 12
+[2026-05-09T22:11:15.358Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:11:17.326Z] POST /api/log
+[2026-05-09T22:11:17.327Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:11:17.327Z] GET /api/companies
+[2026-05-09T22:11:17.334Z] POST /api/log
+[2026-05-09T22:11:17.334Z] [Frontend] INFO: [Pipeline] Loaded 7 companies from SQLite
+[2026-05-09T22:11:17.335Z] POST /api/log
+[2026-05-09T22:11:17.336Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12]
+[2026-05-09T22:12:10.271Z] POST /api/log
+[2026-05-09T22:12:10.272Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 12
+[2026-05-09T22:12:10.272Z] POST /api/save-score
+[2026-05-09T22:12:10.276Z] POST /api/log
+[2026-05-09T22:12:10.276Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-09T22:12:51.154Z] GET /pipeline
+[2026-05-09T22:12:51.170Z] GET /lib/parse.js
+[2026-05-09T22:12:51.171Z] GET /lib/pipeline.js
+[2026-05-09T22:12:51.183Z] POST /api/log
+[2026-05-09T22:12:51.185Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:12:51.185Z] GET /api/companies
+[2026-05-09T22:12:51.201Z] POST /api/log
+[2026-05-09T22:12:51.202Z] [Frontend] INFO: [Pipeline] Loaded 7 companies from SQLite
+[2026-05-09T22:12:51.202Z] POST /api/log
+[2026-05-09T22:12:51.203Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12]
+[2026-05-09T22:12:55.550Z] POST /proxy/tavily
+[2026-05-09T22:13:03.028Z] POST /api/log
+[2026-05-09T22:13:03.029Z] [Frontend] INFO: [extractJobData] content chars: 48846 → sending: 8000
+[2026-05-09T22:13:03.029Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:13:15.459Z] POST /api/log
+[2026-05-09T22:13:15.460Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-309\",\"object\":\"chat.completion.chunk\",\"created\":1778364795,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-09T22:13:15.460Z] POST /api/log
+[2026-05-09T22:13:15.460Z] [Frontend] INFO: [onToken] count: 1
+[2026-05-09T22:13:15.461Z] POST /api/log
+[2026-05-09T22:13:15.462Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:13:15.517Z] POST /api/log
+[2026-05-09T22:13:15.518Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-309\",\"object\":\"chat.completion.chunk\",\"created\":1778364795,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\\\"\"},\"finish_reason\":null}]}"
+[2026-05-09T22:13:15.518Z] POST /api/log
+[2026-05-09T22:13:15.518Z] [Frontend] INFO: [onToken] count: 2
+[2026-05-09T22:13:15.518Z] POST /api/log
+[2026-05-09T22:13:15.518Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:13:15.580Z] POST /api/log
+[2026-05-09T22:13:15.580Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-309\",\"object\":\"chat.completion.chunk\",\"created\":1778364795,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"company\"},\"finish_reason\":null}]}"
+[2026-05-09T22:13:15.580Z] POST /api/log
+[2026-05-09T22:13:15.580Z] [Frontend] INFO: [onToken] count: 3
+[2026-05-09T22:13:15.641Z] POST /api/log
+[2026-05-09T22:13:15.641Z] [Frontend] INFO: [onToken] count: 4
+[2026-05-09T22:13:15.701Z] POST /api/log
+[2026-05-09T22:13:15.701Z] [Frontend] INFO: [onToken] count: 5
+[2026-05-09T22:13:15.761Z] POST /api/log
+[2026-05-09T22:13:15.762Z] [Frontend] INFO: [onToken] count: 6
+[2026-05-09T22:13:15.822Z] POST /api/log
+[2026-05-09T22:13:15.823Z] [Frontend] INFO: [onToken] count: 7
+[2026-05-09T22:13:15.884Z] POST /api/log
+[2026-05-09T22:13:15.884Z] [Frontend] INFO: [onToken] count: 8
+[2026-05-09T22:13:15.948Z] POST /api/log
+[2026-05-09T22:13:15.949Z] [Frontend] INFO: [onToken] count: 9
+[2026-05-09T22:13:16.020Z] POST /api/log
+[2026-05-09T22:13:16.021Z] [Frontend] INFO: [onToken] count: 10
+[2026-05-09T22:13:16.083Z] POST /api/log
+[2026-05-09T22:13:16.084Z] [Frontend] INFO: [onToken] count: 11
+[2026-05-09T22:13:16.152Z] POST /api/log
+[2026-05-09T22:13:16.153Z] [Frontend] INFO: [onToken] count: 12
+[2026-05-09T22:13:16.217Z] POST /api/log
+[2026-05-09T22:13:16.217Z] [Frontend] INFO: [onToken] count: 13
+[2026-05-09T22:13:16.277Z] POST /api/log
+[2026-05-09T22:13:16.277Z] [Frontend] INFO: [onToken] count: 14
+[2026-05-09T22:13:16.337Z] POST /api/log
+[2026-05-09T22:13:16.338Z] [Frontend] INFO: [onToken] count: 15
+[2026-05-09T22:13:16.400Z] POST /api/log
+[2026-05-09T22:13:16.400Z] [Frontend] INFO: [onToken] count: 16
+[2026-05-09T22:13:16.458Z] POST /api/log
+[2026-05-09T22:13:16.459Z] [Frontend] INFO: [onToken] count: 17
+[2026-05-09T22:13:16.521Z] POST /api/log
+[2026-05-09T22:13:16.521Z] [Frontend] INFO: [onToken] count: 18
+[2026-05-09T22:13:16.582Z] POST /api/log
+[2026-05-09T22:13:16.582Z] [Frontend] INFO: [onToken] count: 19
+[2026-05-09T22:13:16.647Z] POST /api/log
+[2026-05-09T22:13:16.647Z] [Frontend] INFO: [callLlm] stream done. tokens: 19 fullText length: 65
+[2026-05-09T22:13:16.647Z] POST /api/log
+[2026-05-09T22:13:16.647Z] [Frontend] INFO: [extractJobData] raw response: "{\n\"company_name\": \"Talenza\",\n\"job_title\": \"Engineering Manager\"\n}"
+[2026-05-09T22:13:16.647Z] POST /api/log
+[2026-05-09T22:13:16.647Z] [Frontend] INFO: [extractJobData] parsed: {"company_name":"Talenza","job_title":"Engineering Manager"}
+[2026-05-09T22:13:19.071Z] POST /api/kv
+[2026-05-09T22:13:19.074Z] POST /api/log
+[2026-05-09T22:13:19.074Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 13 Talenza
+[2026-05-09T22:13:19.075Z] POST /api/save
+[2026-05-09T22:13:19.111Z] GET /scorer.html?companyId=13&company=Talenza&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4407734647%2F
+[2026-05-09T22:13:19.134Z] GET /lib/parse.js
+[2026-05-09T22:13:19.135Z] GET /lib/scoring.js
+[2026-05-09T22:13:19.150Z] POST /api/log
+[2026-05-09T22:13:19.150Z] [Frontend] INFO: [Scorer] Full URL: http://localhost:3000/scorer.html?companyId=13&company=Talenza&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4407734647%2F
+[2026-05-09T22:13:19.152Z] POST /api/log
+[2026-05-09T22:13:19.153Z] [Frontend] INFO: [Scorer] URL Params - companyId: 13 company: Talenza
+[2026-05-09T22:13:19.154Z] POST /api/log
+[2026-05-09T22:13:19.155Z] [Frontend] INFO: [Scorer] Set currentCompanyId to: 13
+[2026-05-09T22:13:21.166Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:14:17.444Z] POST /api/log
+[2026-05-09T22:14:17.444Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 13
+[2026-05-09T22:14:17.445Z] POST /api/save-score
+[2026-05-09T22:14:17.452Z] POST /api/log
+[2026-05-09T22:14:17.453Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-09T22:18:20.809Z] GET /pipeline
+[2026-05-09T22:18:20.827Z] GET /lib/parse.js
+[2026-05-09T22:18:20.828Z] GET /lib/pipeline.js
+[2026-05-09T22:18:20.864Z] POST /api/log
+[2026-05-09T22:18:20.866Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:18:20.866Z] GET /api/companies
+[2026-05-09T22:18:20.876Z] POST /api/log
+[2026-05-09T22:18:20.877Z] [Frontend] INFO: [Pipeline] Loaded 8 companies from SQLite
+[2026-05-09T22:18:20.877Z] POST /api/log
+[2026-05-09T22:18:20.878Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-09T22:18:33.042Z] POST /api/log
+[2026-05-09T22:18:33.046Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:18:33.047Z] GET /api/companies
+[2026-05-09T22:18:33.056Z] POST /api/log
+[2026-05-09T22:18:33.056Z] [Frontend] INFO: [Pipeline] Loaded 8 companies from SQLite
+[2026-05-09T22:18:33.057Z] POST /api/log
+[2026-05-09T22:18:33.058Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-09T22:18:44.595Z] POST /api/log
+[2026-05-09T22:18:44.596Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-09T22:18:52.340Z] POST /api/log
+[2026-05-09T22:18:52.340Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-09T22:18:53.765Z] POST /proxy/tavily-search
+[2026-05-09T22:18:56.197Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:18:58.063Z] POST /api/log
+[2026-05-09T22:18:58.064Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-222\",\"object\":\"chat.completion.chunk\",\"created\":1778365138,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-09T22:18:58.064Z] POST /api/log
+[2026-05-09T22:18:58.065Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:18:58.125Z] POST /api/log
+[2026-05-09T22:18:58.125Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-222\",\"object\":\"chat.completion.chunk\",\"created\":1778365138,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \"},\"finish_reason\":null}]}"
+[2026-05-09T22:18:58.126Z] POST /api/log
+[2026-05-09T22:18:58.126Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:18:58.183Z] POST /api/log
+[2026-05-09T22:18:58.184Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-222\",\"object\":\"chat.completion.chunk\",\"created\":1778365138,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-09T22:19:04.147Z] POST /api/log
+[2026-05-09T22:19:04.148Z] [Frontend] INFO: [callLlm] stream done. tokens: 108 fullText length: 441
+[2026-05-09T22:19:04.148Z] POST /api/log
+[2026-05-09T22:19:04.148Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 11 Ubank
+[2026-05-09T22:19:04.149Z] POST /api/save
+[2026-05-09T22:20:19.568Z] POST /api/log
+[2026-05-09T22:20:19.569Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:20:19.572Z] GET /api/companies
+[2026-05-09T22:20:19.587Z] POST /api/log
+[2026-05-09T22:20:19.587Z] [Frontend] INFO: [Pipeline] Loaded 8 companies from SQLite
+[2026-05-09T22:20:19.589Z] POST /api/log
+[2026-05-09T22:20:19.590Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-09T22:20:21.139Z] POST /api/log
+[2026-05-09T22:20:21.139Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:20:21.140Z] GET /api/companies
+[2026-05-09T22:20:21.148Z] POST /api/log
+[2026-05-09T22:20:21.150Z] [Frontend] INFO: [Pipeline] Loaded 8 companies from SQLite
+[2026-05-09T22:20:21.151Z] POST /api/log
+[2026-05-09T22:20:21.152Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-09T22:20:21.574Z] POST /api/log
+[2026-05-09T22:20:21.575Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-09T22:20:21.575Z] GET /api/companies
+[2026-05-09T22:20:21.588Z] POST /api/log
+[2026-05-09T22:20:21.588Z] [Frontend] INFO: [Pipeline] Loaded 8 companies from SQLite
+[2026-05-09T22:20:21.589Z] POST /api/log
+[2026-05-09T22:20:21.589Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-09T22:21:02.950Z] POST /api/log
+[2026-05-09T22:21:02.950Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-09T22:21:07.162Z] POST /api/log
+[2026-05-09T22:21:07.162Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-09T22:21:42.726Z] POST /api/log
+[2026-05-09T22:21:42.727Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-09T22:21:44.325Z] POST /proxy/tavily-search
+[2026-05-09T22:21:45.997Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-09T22:21:47.302Z] POST /api/log
+[2026-05-09T22:21:47.303Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-426\",\"object\":\"chat.completion.chunk\",\"created\":1778365307,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-09T22:21:47.303Z] POST /api/log
+[2026-05-09T22:21:47.303Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:21:47.359Z] POST /api/log
+[2026-05-09T22:21:47.360Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-426\",\"object\":\"chat.completion.chunk\",\"created\":1778365307,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \"},\"finish_reason\":null}]}"
+[2026-05-09T22:21:47.360Z] POST /api/log
+[2026-05-09T22:21:47.360Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-09T22:21:47.416Z] POST /api/log
+[2026-05-09T22:21:47.416Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-426\",\"object\":\"chat.completion.chunk\",\"created\":1778365307,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-09T22:21:51.093Z] POST /api/log
+[2026-05-09T22:21:51.093Z] [Frontend] INFO: [callLlm] stream done. tokens: 69 fullText length: 298
+[2026-05-09T22:21:51.094Z] POST /api/log
+[2026-05-09T22:21:51.095Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 12 Prezzee
+[2026-05-09T22:21:51.095Z] POST /api/save
+[2026-05-10T02:05:45.657Z] POST /api/log
+[2026-05-10T02:05:45.701Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T02:05:45.704Z] GET /api/companies
+[2026-05-10T02:05:45.748Z] POST /api/log
+[2026-05-10T02:05:45.749Z] [Frontend] INFO: [Pipeline] Loaded 8 companies from SQLite
+[2026-05-10T02:05:45.751Z] POST /api/log
+[2026-05-10T02:05:45.751Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:05:51.000Z] POST /api/log
+[2026-05-10T02:05:51.000Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:06:12.505Z] POST /api/kv
+[2026-05-10T02:06:12.506Z] POST /api/log
+[2026-05-10T02:06:12.506Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 8 Mosh
+[2026-05-10T02:06:12.507Z] POST /api/save
+[2026-05-10T02:06:18.927Z] POST /api/log
+[2026-05-10T02:06:18.928Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:06:21.227Z] POST /api/log
+[2026-05-10T02:06:21.228Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:06:46.741Z] POST /api/kv
+[2026-05-10T02:06:46.742Z] POST /api/log
+[2026-05-10T02:06:46.743Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 5 EdStart
+[2026-05-10T02:06:46.743Z] POST /api/save
+[2026-05-10T02:06:48.368Z] POST /api/log
+[2026-05-10T02:06:48.369Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:06:55.517Z] POST /api/kv
+[2026-05-10T02:06:55.519Z] POST /api/log
+[2026-05-10T02:06:55.520Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 7 Entsia
+[2026-05-10T02:06:55.521Z] POST /api/save
+[2026-05-10T02:06:56.960Z] POST /api/log
+[2026-05-10T02:06:56.961Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:06:58.375Z] POST /api/log
+[2026-05-10T02:06:58.376Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:07:01.340Z] POST /api/log
+[2026-05-10T02:07:01.340Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 10 Compono
+[2026-05-10T02:07:01.341Z] POST /api/save
+[2026-05-10T02:07:01.344Z] POST /api/log
+[2026-05-10T02:07:01.345Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:07:04.020Z] POST /api/log
+[2026-05-10T02:07:04.020Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:07:05.981Z] POST /api/log
+[2026-05-10T02:07:05.982Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 12 Prezzee
+[2026-05-10T02:07:05.983Z] POST /api/save
+[2026-05-10T02:07:05.987Z] POST /api/log
+[2026-05-10T02:07:05.988Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:07:09.696Z] POST /api/log
+[2026-05-10T02:07:09.696Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:07:22.960Z] POST /api/log
+[2026-05-10T02:07:22.961Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T02:07:22.963Z] GET /api/companies
+[2026-05-10T02:07:22.975Z] POST /api/log
+[2026-05-10T02:07:22.976Z] [Frontend] INFO: [Pipeline] Loaded 8 companies from SQLite
+[2026-05-10T02:07:22.977Z] POST /api/log
+[2026-05-10T02:07:22.978Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:07:33.690Z] POST /api/log
+[2026-05-10T02:07:33.690Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T02:07:33.691Z] GET /api/companies
+[2026-05-10T02:07:33.703Z] POST /api/log
+[2026-05-10T02:07:33.703Z] [Frontend] INFO: [Pipeline] Loaded 8 companies from SQLite
+[2026-05-10T02:07:33.705Z] POST /api/log
+[2026-05-10T02:07:33.706Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13]
+[2026-05-10T02:07:37.046Z] POST /proxy/tavily
+[2026-05-10T02:07:42.977Z] POST /api/log
+[2026-05-10T02:07:42.978Z] [Frontend] INFO: [extractJobData] content chars: 49649 → sending: 8000
+[2026-05-10T02:07:42.979Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T02:07:58.824Z] POST /api/log
+[2026-05-10T02:07:58.824Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-250\",\"object\":\"chat.completion.chunk\",\"created\":1778378878,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-10T02:07:58.825Z] POST /api/log
+[2026-05-10T02:07:58.826Z] [Frontend] INFO: [onToken] count: 1
+[2026-05-10T02:07:58.827Z] POST /api/log
+[2026-05-10T02:07:58.828Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T02:07:58.893Z] POST /api/log
+[2026-05-10T02:07:58.893Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-250\",\"object\":\"chat.completion.chunk\",\"created\":1778378878,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\\\"\"},\"finish_reason\":null}]}"
+[2026-05-10T02:07:58.893Z] POST /api/log
+[2026-05-10T02:07:58.893Z] [Frontend] INFO: [onToken] count: 2
+[2026-05-10T02:07:58.893Z] POST /api/log
+[2026-05-10T02:07:58.893Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T02:07:58.953Z] POST /api/log
+[2026-05-10T02:07:58.954Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-250\",\"object\":\"chat.completion.chunk\",\"created\":1778378878,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"company\"},\"finish_reason\":null}]}"
+[2026-05-10T02:07:58.954Z] POST /api/log
+[2026-05-10T02:07:58.954Z] [Frontend] INFO: [onToken] count: 3
+[2026-05-10T02:07:59.013Z] POST /api/log
+[2026-05-10T02:07:59.013Z] [Frontend] INFO: [onToken] count: 4
+[2026-05-10T02:07:59.074Z] POST /api/log
+[2026-05-10T02:07:59.075Z] [Frontend] INFO: [onToken] count: 5
+[2026-05-10T02:07:59.138Z] POST /api/log
+[2026-05-10T02:07:59.138Z] [Frontend] INFO: [onToken] count: 6
+[2026-05-10T02:07:59.199Z] POST /api/log
+[2026-05-10T02:07:59.200Z] [Frontend] INFO: [onToken] count: 7
+[2026-05-10T02:07:59.259Z] POST /api/log
+[2026-05-10T02:07:59.259Z] [Frontend] INFO: [onToken] count: 8
+[2026-05-10T02:07:59.319Z] POST /api/log
+[2026-05-10T02:07:59.319Z] [Frontend] INFO: [onToken] count: 9
+[2026-05-10T02:07:59.379Z] POST /api/log
+[2026-05-10T02:07:59.379Z] [Frontend] INFO: [onToken] count: 10
+[2026-05-10T02:07:59.441Z] POST /api/log
+[2026-05-10T02:07:59.442Z] [Frontend] INFO: [onToken] count: 11
+[2026-05-10T02:07:59.506Z] POST /api/log
+[2026-05-10T02:07:59.507Z] [Frontend] INFO: [onToken] count: 12
+[2026-05-10T02:07:59.567Z] POST /api/log
+[2026-05-10T02:07:59.567Z] [Frontend] INFO: [onToken] count: 13
+[2026-05-10T02:07:59.631Z] POST /api/log
+[2026-05-10T02:07:59.631Z] [Frontend] INFO: [onToken] count: 14
+[2026-05-10T02:07:59.701Z] POST /api/log
+[2026-05-10T02:07:59.701Z] [Frontend] INFO: [onToken] count: 15
+[2026-05-10T02:07:59.773Z] POST /api/log
+[2026-05-10T02:07:59.773Z] [Frontend] INFO: [onToken] count: 16
+[2026-05-10T02:07:59.845Z] POST /api/log
+[2026-05-10T02:07:59.851Z] [Frontend] INFO: [onToken] count: 17
+[2026-05-10T02:07:59.925Z] POST /api/log
+[2026-05-10T02:07:59.926Z] [Frontend] INFO: [onToken] count: 18
+[2026-05-10T02:07:59.990Z] POST /api/log
+[2026-05-10T02:07:59.990Z] [Frontend] INFO: [callLlm] stream done. tokens: 18 fullText length: 63
+[2026-05-10T02:07:59.990Z] POST /api/log
+[2026-05-10T02:07:59.990Z] [Frontend] INFO: [extractJobData] raw response: "{\n\"company_name\": \"DISCO\",\n\"job_title\": \"Engineering Manager\"\n}"
+[2026-05-10T02:07:59.990Z] POST /api/log
+[2026-05-10T02:07:59.990Z] [Frontend] INFO: [extractJobData] parsed: {"company_name":"DISCO","job_title":"Engineering Manager"}
+[2026-05-10T02:08:27.091Z] POST /api/kv
+[2026-05-10T02:08:27.093Z] POST /api/log
+[2026-05-10T02:08:27.094Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 14 DISCO
+[2026-05-10T02:08:27.095Z] POST /api/save
+[2026-05-10T02:08:27.137Z] GET /scorer.html?companyId=14&company=DISCO&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4411436011%2F
+[2026-05-10T02:08:27.169Z] GET /lib/parse.js
+[2026-05-10T02:08:27.170Z] GET /lib/scoring.js
+[2026-05-10T02:08:27.203Z] POST /api/log
+[2026-05-10T02:08:27.204Z] [Frontend] INFO: [Scorer] Full URL: http://localhost:3000/scorer.html?companyId=14&company=DISCO&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4411436011%2F
+[2026-05-10T02:08:27.205Z] POST /api/log
+[2026-05-10T02:08:27.206Z] [Frontend] INFO: [Scorer] URL Params - companyId: 14 company: DISCO
+[2026-05-10T02:08:27.207Z] POST /api/log
+[2026-05-10T02:08:27.208Z] [Frontend] INFO: [Scorer] Set currentCompanyId to: 14
+[2026-05-10T02:08:30.063Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T02:09:21.546Z] POST /api/log
+[2026-05-10T02:09:21.547Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 14
+[2026-05-10T02:09:21.548Z] POST /api/save-score
+[2026-05-10T02:09:21.554Z] POST /api/log
+[2026-05-10T02:09:21.554Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-10T05:23:04.007Z] GET /pipeline
+[2026-05-10T05:23:04.026Z] GET /lib/parse.js
+[2026-05-10T05:23:04.027Z] GET /lib/pipeline.js
+[2026-05-10T05:23:04.062Z] POST /api/log
+[2026-05-10T05:23:04.063Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T05:23:04.064Z] GET /api/companies
+[2026-05-10T05:23:04.073Z] POST /api/log
+[2026-05-10T05:23:04.075Z] [Frontend] INFO: [Pipeline] Loaded 9 companies from SQLite
+[2026-05-10T05:23:04.075Z] POST /api/log
+[2026-05-10T05:23:04.075Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14]
+[2026-05-10T05:24:07.917Z] POST /api/log
+[2026-05-10T05:24:07.918Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T05:24:07.920Z] GET /api/companies
+[2026-05-10T05:24:07.932Z] POST /api/log
+[2026-05-10T05:24:07.933Z] [Frontend] INFO: [Pipeline] Loaded 9 companies from SQLite
+[2026-05-10T05:24:07.933Z] POST /api/log
+[2026-05-10T05:24:07.934Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14]
+[2026-05-10T05:24:15.317Z] POST /api/log
+[2026-05-10T05:24:15.321Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T05:24:15.323Z] GET /api/companies
+[2026-05-10T05:24:15.330Z] POST /api/log
+[2026-05-10T05:24:15.331Z] [Frontend] INFO: [Pipeline] Loaded 9 companies from SQLite
+[2026-05-10T05:24:15.332Z] POST /api/log
+[2026-05-10T05:24:15.332Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14]
+[2026-05-10T05:24:36.937Z] POST /api/log
+[2026-05-10T05:24:36.937Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T05:24:36.939Z] GET /api/companies
+[2026-05-10T05:24:36.958Z] POST /api/log
+[2026-05-10T05:24:36.958Z] [Frontend] INFO: [Pipeline] Loaded 9 companies from SQLite
+[2026-05-10T05:24:36.959Z] POST /api/log
+[2026-05-10T05:24:36.959Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14]
+[2026-05-10T21:44:38.203Z] POST /api/log
+[2026-05-10T21:44:38.209Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T21:54:19.824Z] --- Server Starting ---
+[2026-05-10T21:54:23.259Z] GET /pipeline
+[2026-05-10T21:54:23.275Z] GET /lib/parse.js
+[2026-05-10T21:54:23.276Z] GET /lib/pipeline.js
+[2026-05-10T21:54:23.289Z] POST /api/log
+[2026-05-10T21:54:23.290Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T21:54:23.291Z] GET /api/companies
+[2026-05-10T21:54:23.319Z] POST /api/log
+[2026-05-10T21:54:23.319Z] [Frontend] INFO: [Pipeline] Loaded 9 companies from SQLite
+[2026-05-10T21:54:23.320Z] POST /api/log
+[2026-05-10T21:54:23.320Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14]
+[2026-05-10T21:54:28.422Z] POST /proxy/tavily
+[2026-05-10T21:54:35.592Z] POST /api/log
+[2026-05-10T21:54:35.593Z] [Frontend] INFO: [extractJobData] content chars: 52817 → sending: 8000
+[2026-05-10T21:54:35.595Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T21:54:54.224Z] POST /api/log
+[2026-05-10T21:54:54.225Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-169\",\"object\":\"chat.completion.chunk\",\"created\":1778450094,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-10T21:54:54.226Z] POST /api/log
+[2026-05-10T21:54:54.227Z] [Frontend] INFO: [onToken] count: 1
+[2026-05-10T21:54:54.229Z] POST /api/log
+[2026-05-10T21:54:54.230Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T21:54:54.294Z] POST /api/log
+[2026-05-10T21:54:54.295Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-169\",\"object\":\"chat.completion.chunk\",\"created\":1778450094,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \"},\"finish_reason\":null}]}"
+[2026-05-10T21:54:54.296Z] POST /api/log
+[2026-05-10T21:54:54.297Z] [Frontend] INFO: [onToken] count: 2
+[2026-05-10T21:54:54.298Z] POST /api/log
+[2026-05-10T21:54:54.300Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T21:54:54.368Z] POST /api/log
+[2026-05-10T21:54:54.369Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-169\",\"object\":\"chat.completion.chunk\",\"created\":1778450094,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-10T21:54:54.371Z] POST /api/log
+[2026-05-10T21:54:54.371Z] [Frontend] INFO: [onToken] count: 3
+[2026-05-10T21:54:54.437Z] POST /api/log
+[2026-05-10T21:54:54.438Z] [Frontend] INFO: [onToken] count: 4
+[2026-05-10T21:54:54.508Z] POST /api/log
+[2026-05-10T21:54:54.509Z] [Frontend] INFO: [onToken] count: 5
+[2026-05-10T21:54:54.577Z] POST /api/log
+[2026-05-10T21:54:54.577Z] [Frontend] INFO: [onToken] count: 6
+[2026-05-10T21:54:54.647Z] POST /api/log
+[2026-05-10T21:54:54.648Z] [Frontend] INFO: [onToken] count: 7
+[2026-05-10T21:54:54.716Z] POST /api/log
+[2026-05-10T21:54:54.717Z] [Frontend] INFO: [onToken] count: 8
+[2026-05-10T21:54:54.786Z] POST /api/log
+[2026-05-10T21:54:54.787Z] [Frontend] INFO: [onToken] count: 9
+[2026-05-10T21:54:54.861Z] POST /api/log
+[2026-05-10T21:54:54.863Z] [Frontend] INFO: [onToken] count: 10
+[2026-05-10T21:54:54.930Z] POST /api/log
+[2026-05-10T21:54:54.931Z] [Frontend] INFO: [onToken] count: 11
+[2026-05-10T21:54:55.012Z] POST /api/log
+[2026-05-10T21:54:55.012Z] [Frontend] INFO: [onToken] count: 12
+[2026-05-10T21:54:55.089Z] POST /api/log
+[2026-05-10T21:54:55.090Z] [Frontend] INFO: [onToken] count: 13
+[2026-05-10T21:54:55.159Z] POST /api/log
+[2026-05-10T21:54:55.159Z] [Frontend] INFO: [onToken] count: 14
+[2026-05-10T21:54:55.236Z] POST /api/log
+[2026-05-10T21:54:55.236Z] [Frontend] INFO: [onToken] count: 15
+[2026-05-10T21:54:55.308Z] POST /api/log
+[2026-05-10T21:54:55.309Z] [Frontend] INFO: [onToken] count: 16
+[2026-05-10T21:54:55.385Z] POST /api/log
+[2026-05-10T21:54:55.385Z] [Frontend] INFO: [onToken] count: 17
+[2026-05-10T21:54:55.468Z] POST /api/log
+[2026-05-10T21:54:55.469Z] [Frontend] INFO: [onToken] count: 18
+[2026-05-10T21:54:55.541Z] POST /api/log
+[2026-05-10T21:54:55.542Z] [Frontend] INFO: [onToken] count: 19
+[2026-05-10T21:54:55.614Z] POST /api/log
+[2026-05-10T21:54:55.614Z] [Frontend] INFO: [onToken] count: 20
+[2026-05-10T21:54:55.687Z] POST /api/log
+[2026-05-10T21:54:55.688Z] [Frontend] INFO: [onToken] count: 21
+[2026-05-10T21:54:55.767Z] POST /api/log
+[2026-05-10T21:54:55.768Z] [Frontend] INFO: [onToken] count: 22
+[2026-05-10T21:54:55.836Z] POST /api/log
+[2026-05-10T21:54:55.837Z] [Frontend] INFO: [onToken] count: 23
+[2026-05-10T21:54:55.909Z] POST /api/log
+[2026-05-10T21:54:55.909Z] [Frontend] INFO: [onToken] count: 24
+[2026-05-10T21:54:55.990Z] POST /api/log
+[2026-05-10T21:54:55.991Z] [Frontend] INFO: [onToken] count: 25
+[2026-05-10T21:54:56.062Z] POST /api/log
+[2026-05-10T21:54:56.063Z] [Frontend] INFO: [onToken] count: 26
+[2026-05-10T21:54:56.144Z] POST /api/log
+[2026-05-10T21:54:56.145Z] [Frontend] INFO: [callLlm] stream done. tokens: 26 fullText length: 101
+[2026-05-10T21:54:56.146Z] POST /api/log
+[2026-05-10T21:54:56.146Z] [Frontend] INFO: [extractJobData] raw response: "{\n  \"company_name\": \"Humanforce\",\n  \"job_title\": \"Head of Engineering - Workforce Management Tribe\"\n}"
+[2026-05-10T21:54:56.147Z] POST /api/log
+[2026-05-10T21:54:56.148Z] [Frontend] INFO: [extractJobData] parsed: {"company_name":"Humanforce","job_title":"Head of Engineering - Workforce Management Tribe"}
+[2026-05-10T21:56:43.099Z] POST /api/log
+[2026-05-10T21:56:43.101Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T21:56:43.102Z] GET /api/companies
+[2026-05-10T21:56:43.141Z] POST /api/log
+[2026-05-10T21:56:43.142Z] [Frontend] INFO: [Pipeline] Loaded 9 companies from SQLite
+[2026-05-10T21:56:43.142Z] POST /api/log
+[2026-05-10T21:56:43.142Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14]
+[2026-05-10T21:56:47.572Z] POST /api/kv
+[2026-05-10T21:56:47.579Z] POST /api/log
+[2026-05-10T21:56:47.579Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 15 Humanforce
+[2026-05-10T21:56:47.580Z] POST /api/save
+[2026-05-10T21:56:47.605Z] GET /scorer.html?companyId=15&company=Humanforce&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4399587486
+[2026-05-10T21:56:47.629Z] GET /lib/parse.js
+[2026-05-10T21:56:47.631Z] GET /lib/scoring.js
+[2026-05-10T21:56:47.643Z] POST /api/log
+[2026-05-10T21:56:47.646Z] [Frontend] INFO: [Scorer] Full URL: http://localhost:3000/scorer.html?companyId=15&company=Humanforce&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4399587486
+[2026-05-10T21:56:47.649Z] POST /api/log
+[2026-05-10T21:56:47.654Z] [Frontend] INFO: [Scorer] URL Params - companyId: 15 company: Humanforce
+[2026-05-10T21:56:47.655Z] POST /api/log
+[2026-05-10T21:56:47.656Z] [Frontend] INFO: [Scorer] Set currentCompanyId to: 15
+[2026-05-10T21:56:49.989Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T21:57:45.679Z] POST /api/log
+[2026-05-10T21:57:45.680Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 15
+[2026-05-10T21:57:45.685Z] POST /api/save-score
+[2026-05-10T21:57:45.692Z] POST /api/log
+[2026-05-10T21:57:45.693Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-10T21:59:18.793Z] GET /pipeline
+[2026-05-10T21:59:18.816Z] GET /lib/parse.js
+[2026-05-10T21:59:18.816Z] GET /lib/pipeline.js
+[2026-05-10T21:59:18.823Z] POST /api/log
+[2026-05-10T21:59:18.824Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T21:59:18.825Z] GET /api/companies
+[2026-05-10T21:59:18.838Z] POST /api/log
+[2026-05-10T21:59:18.838Z] [Frontend] INFO: [Pipeline] Loaded 10 companies from SQLite
+[2026-05-10T21:59:18.841Z] POST /api/log
+[2026-05-10T21:59:18.841Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T21:59:26.491Z] POST /api/log
+[2026-05-10T21:59:26.492Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T21:59:31.085Z] POST /proxy/tavily-search
+[2026-05-10T21:59:32.612Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T21:59:34.372Z] POST /api/log
+[2026-05-10T21:59:34.373Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-883\",\"object\":\"chat.completion.chunk\",\"created\":1778450374,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-10T21:59:34.373Z] POST /api/log
+[2026-05-10T21:59:34.374Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T21:59:34.438Z] POST /api/log
+[2026-05-10T21:59:34.438Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-883\",\"object\":\"chat.completion.chunk\",\"created\":1778450374,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \"},\"finish_reason\":null}]}"
+[2026-05-10T21:59:34.439Z] POST /api/log
+[2026-05-10T21:59:34.440Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T21:59:34.503Z] POST /api/log
+[2026-05-10T21:59:34.504Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-883\",\"object\":\"chat.completion.chunk\",\"created\":1778450374,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-10T21:59:39.711Z] POST /api/log
+[2026-05-10T21:59:39.711Z] [Frontend] INFO: [callLlm] stream done. tokens: 94 fullText length: 420
+[2026-05-10T21:59:39.712Z] POST /api/log
+[2026-05-10T21:59:39.713Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 15 Humanforce
+[2026-05-10T21:59:39.714Z] POST /api/save
+[2026-05-10T22:00:00.998Z] POST /api/log
+[2026-05-10T22:00:00.998Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:00:00.999Z] GET /api/companies
+[2026-05-10T22:00:01.015Z] POST /api/log
+[2026-05-10T22:00:01.016Z] [Frontend] INFO: [Pipeline] Loaded 10 companies from SQLite
+[2026-05-10T22:00:01.016Z] POST /api/log
+[2026-05-10T22:00:01.018Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T22:22:12.560Z] POST /api/log
+[2026-05-10T22:22:12.562Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:22:12.563Z] GET /api/companies
+[2026-05-10T22:22:12.574Z] POST /api/log
+[2026-05-10T22:22:12.576Z] [Frontend] INFO: [Pipeline] Loaded 10 companies from SQLite
+[2026-05-10T22:22:12.579Z] POST /api/log
+[2026-05-10T22:22:12.580Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T22:22:14.412Z] POST /api/log
+[2026-05-10T22:22:14.414Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:22:14.415Z] GET /api/companies
+[2026-05-10T22:22:14.448Z] POST /api/log
+[2026-05-10T22:22:14.448Z] [Frontend] INFO: [Pipeline] Loaded 10 companies from SQLite
+[2026-05-10T22:22:14.449Z] POST /api/log
+[2026-05-10T22:22:14.449Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T22:27:31.623Z] POST /api/log
+[2026-05-10T22:27:31.625Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:27:31.626Z] GET /api/companies
+[2026-05-10T22:27:31.635Z] POST /api/log
+[2026-05-10T22:27:31.636Z] [Frontend] INFO: [Pipeline] Loaded 10 companies from SQLite
+[2026-05-10T22:27:31.636Z] POST /api/log
+[2026-05-10T22:27:31.637Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T22:27:34.324Z] POST /api/log
+[2026-05-10T22:27:34.324Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T22:27:41.909Z] POST /api/kv
+[2026-05-10T22:27:41.910Z] POST /api/log
+[2026-05-10T22:27:41.910Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 15 Humanforce
+[2026-05-10T22:27:41.910Z] POST /api/save
+[2026-05-10T22:28:03.694Z] POST /api/kv
+[2026-05-10T22:28:03.696Z] POST /api/log
+[2026-05-10T22:28:03.697Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 15 Humanforce
+[2026-05-10T22:28:03.698Z] POST /api/save
+[2026-05-10T22:28:14.335Z] POST /api/log
+[2026-05-10T22:28:14.336Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:28:14.338Z] GET /api/companies
+[2026-05-10T22:28:14.372Z] POST /api/log
+[2026-05-10T22:28:14.372Z] [Frontend] INFO: [Pipeline] Loaded 10 companies from SQLite
+[2026-05-10T22:28:14.373Z] POST /api/log
+[2026-05-10T22:28:14.373Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T22:32:25.029Z] POST /api/log
+[2026-05-10T22:32:25.029Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:32:25.030Z] GET /api/companies
+[2026-05-10T22:32:25.039Z] POST /api/log
+[2026-05-10T22:32:25.040Z] [Frontend] INFO: [Pipeline] Loaded 10 companies from SQLite
+[2026-05-10T22:32:25.041Z] POST /api/log
+[2026-05-10T22:32:25.041Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T22:32:33.867Z] POST /api/log
+[2026-05-10T22:32:33.867Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:32:33.869Z] GET /api/companies
+[2026-05-10T22:32:33.902Z] POST /api/log
+[2026-05-10T22:32:33.906Z] [Frontend] INFO: [Pipeline] Loaded 10 companies from SQLite
+[2026-05-10T22:32:33.908Z] POST /api/log
+[2026-05-10T22:32:33.910Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T22:32:41.945Z] POST /api/log
+[2026-05-10T22:32:41.946Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:32:41.947Z] GET /api/companies
+[2026-05-10T22:32:41.960Z] POST /api/log
+[2026-05-10T22:32:41.961Z] [Frontend] INFO: [Pipeline] Loaded 10 companies from SQLite
+[2026-05-10T22:32:41.962Z] POST /api/log
+[2026-05-10T22:32:41.964Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T22:33:11.006Z] POST /api/log
+[2026-05-10T22:33:11.007Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:33:11.008Z] GET /api/companies
+[2026-05-10T22:33:11.035Z] POST /api/log
+[2026-05-10T22:33:11.036Z] [Frontend] INFO: [Pipeline] Loaded 10 companies from SQLite
+[2026-05-10T22:33:11.037Z] POST /api/log
+[2026-05-10T22:33:11.039Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15]
+[2026-05-10T22:33:16.599Z] POST /api/kv
+[2026-05-10T22:33:16.601Z] POST /api/log
+[2026-05-10T22:33:16.602Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 16 Macquarie Bank
+[2026-05-10T22:33:16.602Z] POST /api/save
+[2026-05-10T22:33:16.618Z] GET /scorer.html?companyId=16&company=Macquarie%20Bank
+[2026-05-10T22:33:16.634Z] GET /lib/parse.js
+[2026-05-10T22:33:16.634Z] GET /lib/scoring.js
+[2026-05-10T22:33:16.644Z] POST /api/log
+[2026-05-10T22:33:16.645Z] [Frontend] INFO: [Scorer] Full URL: http://localhost:3000/scorer.html?companyId=16&company=Macquarie%20Bank
+[2026-05-10T22:33:16.646Z] POST /api/log
+[2026-05-10T22:33:16.647Z] [Frontend] INFO: [Scorer] URL Params - companyId: 16 company: Macquarie Bank
+[2026-05-10T22:33:16.648Z] POST /api/log
+[2026-05-10T22:33:16.649Z] [Frontend] INFO: [Scorer] Set currentCompanyId to: 16
+[2026-05-10T22:33:19.054Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T22:34:00.131Z] POST /api/log
+[2026-05-10T22:34:00.132Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 16
+[2026-05-10T22:34:00.132Z] POST /api/save-score
+[2026-05-10T22:34:00.138Z] POST /api/log
+[2026-05-10T22:34:00.139Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-10T22:34:09.596Z] GET /pipeline
+[2026-05-10T22:34:09.614Z] GET /lib/parse.js
+[2026-05-10T22:34:09.615Z] GET /lib/pipeline.js
+[2026-05-10T22:34:09.626Z] POST /api/log
+[2026-05-10T22:34:09.626Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:34:09.627Z] GET /api/companies
+[2026-05-10T22:34:09.640Z] POST /api/log
+[2026-05-10T22:34:09.641Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:34:09.642Z] POST /api/log
+[2026-05-10T22:34:09.643Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:34:10.917Z] POST /api/log
+[2026-05-10T22:34:10.918Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:34:10.919Z] GET /api/companies
+[2026-05-10T22:34:10.928Z] POST /api/log
+[2026-05-10T22:34:10.930Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:34:10.931Z] POST /api/log
+[2026-05-10T22:34:10.932Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:34:11.388Z] POST /api/log
+[2026-05-10T22:34:11.388Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:34:11.389Z] GET /api/companies
+[2026-05-10T22:34:11.396Z] POST /api/log
+[2026-05-10T22:34:11.396Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:34:11.397Z] POST /api/log
+[2026-05-10T22:34:11.398Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:34:11.776Z] POST /api/log
+[2026-05-10T22:34:11.777Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:34:11.778Z] GET /api/companies
+[2026-05-10T22:34:11.790Z] POST /api/log
+[2026-05-10T22:34:11.790Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:34:11.791Z] POST /api/log
+[2026-05-10T22:34:11.791Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:34:12.678Z] POST /api/log
+[2026-05-10T22:34:12.679Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:34:12.679Z] GET /api/companies
+[2026-05-10T22:34:12.688Z] POST /api/log
+[2026-05-10T22:34:12.688Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:34:12.689Z] POST /api/log
+[2026-05-10T22:34:12.689Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:41:23.602Z] POST /api/log
+[2026-05-10T22:41:23.603Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:41:23.605Z] GET /api/companies
+[2026-05-10T22:41:23.617Z] POST /api/log
+[2026-05-10T22:41:23.618Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:41:23.619Z] POST /api/log
+[2026-05-10T22:41:23.619Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:41:25.661Z] POST /api/log
+[2026-05-10T22:41:25.662Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:41:53.081Z] POST /api/log
+[2026-05-10T22:41:53.082Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:41:53.082Z] GET /api/companies
+[2026-05-10T22:41:53.089Z] POST /api/log
+[2026-05-10T22:41:53.089Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:41:53.090Z] POST /api/log
+[2026-05-10T22:41:53.090Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:45:46.652Z] POST /api/log
+[2026-05-10T22:45:46.652Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:45:46.652Z] GET /api/companies
+[2026-05-10T22:45:46.683Z] POST /api/log
+[2026-05-10T22:45:46.684Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:45:46.685Z] POST /api/log
+[2026-05-10T22:45:46.687Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:45:52.706Z] POST /proxy/tavily
+[2026-05-10T22:45:53.542Z] POST /api/log
+[2026-05-10T22:45:53.542Z] [Frontend] ERROR: fetchAndFill error: {}
+[2026-05-10T22:45:56.406Z] POST /api/log
+[2026-05-10T22:45:56.406Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:45:56.407Z] GET /api/companies
+[2026-05-10T22:45:56.418Z] POST /api/log
+[2026-05-10T22:45:56.419Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:45:56.422Z] POST /api/log
+[2026-05-10T22:45:56.422Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:46:00.251Z] GET /.well-known/appspecific/com.chrome.devtools.json
+[2026-05-10T22:46:28.772Z] --- Server Starting ---
+[2026-05-10T22:46:28.777Z] WARNING: TAVILY_API_KEY not set — URL fetching and culture research will be disabled.
+[2026-05-10T22:46:28.777Z] WARNING: ANTHROPIC_API_KEY not set — Anthropic provider will be disabled (Ollama still works).
+[2026-05-10T22:46:28.777Z] Serving on http://localhost:3000
+[2026-05-10T22:47:46.564Z] --- Server Starting ---
+[2026-05-10T22:47:46.569Z] WARNING: TAVILY_API_KEY not set — URL fetching and culture research will be disabled.
+[2026-05-10T22:47:46.569Z] WARNING: ANTHROPIC_API_KEY not set — Anthropic provider will be disabled (Ollama still works).
+[2026-05-10T22:47:46.570Z] Serving on http://localhost:3000
+[2026-05-10T22:47:50.560Z] GET /pipeline
+[2026-05-10T22:47:50.579Z] GET /lib/parse.js
+[2026-05-10T22:47:50.579Z] GET /lib/pipeline.js
+[2026-05-10T22:47:50.601Z] POST /api/log
+[2026-05-10T22:47:50.604Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:47:50.607Z] GET /api/companies
+[2026-05-10T22:47:50.640Z] POST /api/log
+[2026-05-10T22:47:50.641Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:47:50.643Z] POST /api/log
+[2026-05-10T22:47:50.644Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:49:19.153Z] --- Server Starting ---
+[2026-05-10T22:49:19.159Z] WARNING: ANTHROPIC_API_KEY not set — Anthropic provider will be disabled (Ollama still works).
+[2026-05-10T22:49:19.159Z] Serving on http://localhost:3000
+[2026-05-10T22:49:51.854Z] POST /api/log
+[2026-05-10T22:49:51.856Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:49:51.858Z] GET /api/companies
+[2026-05-10T22:49:51.867Z] POST /api/log
+[2026-05-10T22:49:51.867Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:49:51.868Z] POST /api/log
+[2026-05-10T22:49:51.869Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:49:52.982Z] GET /pipeline
+[2026-05-10T22:49:52.996Z] GET /lib/parse.js
+[2026-05-10T22:49:52.997Z] GET /lib/pipeline.js
+[2026-05-10T22:49:53.007Z] POST /api/log
+[2026-05-10T22:49:53.007Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:49:53.008Z] GET /api/companies
+[2026-05-10T22:49:53.025Z] POST /api/log
+[2026-05-10T22:49:53.026Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:49:53.026Z] POST /api/log
+[2026-05-10T22:49:53.026Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:50:08.242Z] POST /api/log
+[2026-05-10T22:50:08.243Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:50:08.243Z] GET /api/companies
+[2026-05-10T22:50:08.250Z] POST /api/log
+[2026-05-10T22:50:08.250Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:50:08.251Z] POST /api/log
+[2026-05-10T22:50:08.251Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:50:09.368Z] POST /proxy/tavily
+[2026-05-10T22:50:29.247Z] POST /api/log
+[2026-05-10T22:50:29.249Z] [Frontend] INFO: [extractJobData] content chars: 54598 → sending: 8000
+[2026-05-10T22:50:29.250Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T22:50:44.278Z] POST /api/log
+[2026-05-10T22:50:44.279Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-493\",\"object\":\"chat.completion.chunk\",\"created\":1778453444,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-10T22:50:44.281Z] POST /api/log
+[2026-05-10T22:50:44.281Z] [Frontend] INFO: [onToken] count: 1
+[2026-05-10T22:50:44.282Z] POST /api/log
+[2026-05-10T22:50:44.283Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T22:50:44.342Z] POST /api/log
+[2026-05-10T22:50:44.343Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-493\",\"object\":\"chat.completion.chunk\",\"created\":1778453444,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \"},\"finish_reason\":null}]}"
+[2026-05-10T22:50:44.345Z] POST /api/log
+[2026-05-10T22:50:44.346Z] [Frontend] INFO: [onToken] count: 2
+[2026-05-10T22:50:44.347Z] POST /api/log
+[2026-05-10T22:50:44.347Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T22:50:44.417Z] POST /api/log
+[2026-05-10T22:50:44.419Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-493\",\"object\":\"chat.completion.chunk\",\"created\":1778453444,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-10T22:50:44.421Z] POST /api/log
+[2026-05-10T22:50:44.421Z] [Frontend] INFO: [onToken] count: 3
+[2026-05-10T22:50:44.481Z] POST /api/log
+[2026-05-10T22:50:44.482Z] [Frontend] INFO: [onToken] count: 4
+[2026-05-10T22:50:44.543Z] POST /api/log
+[2026-05-10T22:50:44.543Z] [Frontend] INFO: [onToken] count: 5
+[2026-05-10T22:50:44.605Z] POST /api/log
+[2026-05-10T22:50:44.606Z] [Frontend] INFO: [onToken] count: 6
+[2026-05-10T22:50:44.674Z] POST /api/log
+[2026-05-10T22:50:44.674Z] [Frontend] INFO: [onToken] count: 7
+[2026-05-10T22:50:44.740Z] POST /api/log
+[2026-05-10T22:50:44.741Z] [Frontend] INFO: [onToken] count: 8
+[2026-05-10T22:50:44.803Z] POST /api/log
+[2026-05-10T22:50:44.804Z] [Frontend] INFO: [onToken] count: 9
+[2026-05-10T22:50:44.862Z] POST /api/log
+[2026-05-10T22:50:44.863Z] [Frontend] INFO: [onToken] count: 10
+[2026-05-10T22:50:44.925Z] POST /api/log
+[2026-05-10T22:50:44.925Z] [Frontend] INFO: [onToken] count: 11
+[2026-05-10T22:50:44.988Z] POST /api/log
+[2026-05-10T22:50:44.988Z] [Frontend] INFO: [onToken] count: 12
+[2026-05-10T22:50:45.054Z] POST /api/log
+[2026-05-10T22:50:45.054Z] [Frontend] INFO: [onToken] count: 13
+[2026-05-10T22:50:45.119Z] POST /api/log
+[2026-05-10T22:50:45.120Z] [Frontend] INFO: [onToken] count: 14
+[2026-05-10T22:50:45.182Z] POST /api/log
+[2026-05-10T22:50:45.182Z] [Frontend] INFO: [onToken] count: 15
+[2026-05-10T22:50:45.248Z] POST /api/log
+[2026-05-10T22:50:45.248Z] [Frontend] INFO: [onToken] count: 16
+[2026-05-10T22:50:45.314Z] POST /api/log
+[2026-05-10T22:50:45.315Z] [Frontend] INFO: [onToken] count: 17
+[2026-05-10T22:50:45.379Z] POST /api/log
+[2026-05-10T22:50:45.380Z] [Frontend] INFO: [onToken] count: 18
+[2026-05-10T22:50:45.444Z] POST /api/log
+[2026-05-10T22:50:45.444Z] [Frontend] INFO: [onToken] count: 19
+[2026-05-10T22:50:45.508Z] POST /api/log
+[2026-05-10T22:50:45.509Z] [Frontend] INFO: [onToken] count: 20
+[2026-05-10T22:50:45.571Z] POST /api/log
+[2026-05-10T22:50:45.572Z] [Frontend] INFO: [onToken] count: 21
+[2026-05-10T22:50:45.634Z] POST /api/log
+[2026-05-10T22:50:45.634Z] [Frontend] INFO: [onToken] count: 22
+[2026-05-10T22:50:45.697Z] POST /api/log
+[2026-05-10T22:50:45.697Z] [Frontend] INFO: [onToken] count: 23
+[2026-05-10T22:50:45.759Z] POST /api/log
+[2026-05-10T22:50:45.760Z] [Frontend] INFO: [callLlm] stream done. tokens: 23 fullText length: 96
+[2026-05-10T22:50:45.761Z] POST /api/log
+[2026-05-10T22:50:45.761Z] [Frontend] INFO: [extractJobData] raw response: "{\n  \"company_name\": \"Cover Genius\",\n  \"job_title\": \"Engineering Manager, Developer Experience\"\n}"
+[2026-05-10T22:50:45.761Z] POST /api/log
+[2026-05-10T22:50:45.761Z] [Frontend] INFO: [extractJobData] parsed: {"company_name":"Cover Genius","job_title":"Engineering Manager, Developer Experience"}
+[2026-05-10T22:51:45.386Z] POST /api/log
+[2026-05-10T22:51:45.387Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:51:45.388Z] GET /api/companies
+[2026-05-10T22:51:45.398Z] POST /api/log
+[2026-05-10T22:51:45.400Z] [Frontend] INFO: [Pipeline] Loaded 11 companies from SQLite
+[2026-05-10T22:51:45.401Z] POST /api/log
+[2026-05-10T22:51:45.403Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16]
+[2026-05-10T22:51:51.292Z] POST /api/kv
+[2026-05-10T22:51:51.295Z] POST /api/log
+[2026-05-10T22:51:51.295Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 17 Cover Genius
+[2026-05-10T22:51:51.296Z] POST /api/save
+[2026-05-10T22:51:51.320Z] GET /scorer.html?companyId=17&company=Cover%20Genius&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4382125696
+[2026-05-10T22:51:51.345Z] GET /lib/parse.js
+[2026-05-10T22:51:51.347Z] GET /lib/scoring.js
+[2026-05-10T22:51:51.354Z] POST /api/log
+[2026-05-10T22:51:51.356Z] [Frontend] INFO: [Scorer] Full URL: http://localhost:3000/scorer.html?companyId=17&company=Cover%20Genius&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4382125696
+[2026-05-10T22:51:51.358Z] POST /api/log
+[2026-05-10T22:51:51.358Z] [Frontend] INFO: [Scorer] URL Params - companyId: 17 company: Cover Genius
+[2026-05-10T22:51:51.360Z] POST /api/log
+[2026-05-10T22:51:51.361Z] [Frontend] INFO: [Scorer] Set currentCompanyId to: 17
+[2026-05-10T22:51:53.080Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T22:52:45.339Z] POST /api/log
+[2026-05-10T22:52:45.340Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 17
+[2026-05-10T22:52:45.341Z] POST /api/save-score
+[2026-05-10T22:52:45.342Z] [Server] /api/save-score - id: 17 score: present
+[2026-05-10T22:52:45.350Z] POST /api/log
+[2026-05-10T22:52:45.350Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-10T22:59:24.464Z] GET /pipeline
+[2026-05-10T22:59:24.480Z] GET /lib/parse.js
+[2026-05-10T22:59:24.481Z] GET /lib/pipeline.js
+[2026-05-10T22:59:24.492Z] POST /api/log
+[2026-05-10T22:59:24.492Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T22:59:24.493Z] GET /api/companies
+[2026-05-10T22:59:24.523Z] POST /api/log
+[2026-05-10T22:59:24.523Z] [Frontend] INFO: [Pipeline] Loaded 12 companies from SQLite
+[2026-05-10T22:59:24.523Z] POST /api/log
+[2026-05-10T22:59:24.523Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17]
+[2026-05-10T22:59:26.635Z] POST /api/log
+[2026-05-10T22:59:26.636Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17]
+[2026-05-10T22:59:28.979Z] POST /proxy/tavily-search
+[2026-05-10T22:59:30.642Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T22:59:33.406Z] POST /api/log
+[2026-05-10T22:59:33.407Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-509\",\"object\":\"chat.completion.chunk\",\"created\":1778453973,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-10T22:59:33.407Z] POST /api/log
+[2026-05-10T22:59:33.408Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T22:59:33.460Z] POST /api/log
+[2026-05-10T22:59:33.461Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-509\",\"object\":\"chat.completion.chunk\",\"created\":1778453973,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \"},\"finish_reason\":null}]}"
+[2026-05-10T22:59:33.462Z] POST /api/log
+[2026-05-10T22:59:33.462Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T22:59:33.517Z] POST /api/log
+[2026-05-10T22:59:33.517Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-509\",\"object\":\"chat.completion.chunk\",\"created\":1778453973,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-10T22:59:37.749Z] POST /api/log
+[2026-05-10T22:59:37.749Z] [Frontend] INFO: [callLlm] stream done. tokens: 81 fullText length: 334
+[2026-05-10T22:59:37.750Z] POST /api/log
+[2026-05-10T22:59:37.750Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 17 Cover Genius
+[2026-05-10T22:59:37.752Z] POST /api/save
+[2026-05-10T22:59:45.248Z] POST /api/log
+[2026-05-10T22:59:45.249Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 17 Cover Genius
+[2026-05-10T22:59:45.250Z] POST /api/save
+[2026-05-10T22:59:46.710Z] POST /api/log
+[2026-05-10T22:59:46.710Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17]
+[2026-05-10T22:59:55.159Z] POST /api/kv
+[2026-05-10T22:59:55.160Z] POST /api/log
+[2026-05-10T22:59:55.160Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 17 Cover Genius
+[2026-05-10T22:59:55.161Z] POST /api/save
+[2026-05-10T22:59:57.055Z] POST /api/log
+[2026-05-10T22:59:57.056Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17]
+[2026-05-10T23:00:04.433Z] POST /api/kv
+[2026-05-10T23:00:04.434Z] POST /api/log
+[2026-05-10T23:00:04.435Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 11 Ubank
+[2026-05-10T23:00:04.436Z] POST /api/save
+[2026-05-10T23:00:29.889Z] POST /api/log
+[2026-05-10T23:00:29.889Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:00:29.890Z] GET /api/companies
+[2026-05-10T23:00:29.902Z] POST /api/log
+[2026-05-10T23:00:29.902Z] [Frontend] INFO: [Pipeline] Loaded 12 companies from SQLite
+[2026-05-10T23:00:29.902Z] POST /api/log
+[2026-05-10T23:00:29.903Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17]
+[2026-05-10T23:05:25.445Z] POST /api/log
+[2026-05-10T23:05:25.445Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:05:25.446Z] GET /api/companies
+[2026-05-10T23:05:25.457Z] POST /api/log
+[2026-05-10T23:05:25.457Z] [Frontend] INFO: [Pipeline] Loaded 12 companies from SQLite
+[2026-05-10T23:05:25.458Z] POST /api/log
+[2026-05-10T23:05:25.458Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17]
+[2026-05-10T23:06:45.856Z] POST /api/log
+[2026-05-10T23:06:45.857Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:06:45.857Z] GET /api/companies
+[2026-05-10T23:06:45.869Z] POST /api/log
+[2026-05-10T23:06:45.871Z] [Frontend] INFO: [Pipeline] Loaded 12 companies from SQLite
+[2026-05-10T23:06:45.872Z] POST /api/log
+[2026-05-10T23:06:45.873Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17]
+[2026-05-10T23:06:50.282Z] POST /proxy/tavily
+[2026-05-10T23:06:51.330Z] POST /api/log
+[2026-05-10T23:06:51.331Z] [Frontend] INFO: [extractJobData] content chars: 36988 → sending: 8000
+[2026-05-10T23:06:51.331Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T23:07:05.576Z] POST /api/log
+[2026-05-10T23:07:05.577Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-809\",\"object\":\"chat.completion.chunk\",\"created\":1778454425,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-10T23:07:05.577Z] POST /api/log
+[2026-05-10T23:07:05.578Z] [Frontend] INFO: [onToken] count: 1
+[2026-05-10T23:07:05.578Z] POST /api/log
+[2026-05-10T23:07:05.579Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T23:07:05.642Z] POST /api/log
+[2026-05-10T23:07:05.643Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-809\",\"object\":\"chat.completion.chunk\",\"created\":1778454425,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\\\"\"},\"finish_reason\":null}]}"
+[2026-05-10T23:07:05.644Z] POST /api/log
+[2026-05-10T23:07:05.644Z] [Frontend] INFO: [onToken] count: 2
+[2026-05-10T23:07:05.645Z] POST /api/log
+[2026-05-10T23:07:05.645Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T23:07:05.721Z] POST /api/log
+[2026-05-10T23:07:05.722Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-809\",\"object\":\"chat.completion.chunk\",\"created\":1778454425,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"company\"},\"finish_reason\":null}]}"
+[2026-05-10T23:07:05.723Z] POST /api/log
+[2026-05-10T23:07:05.724Z] [Frontend] INFO: [onToken] count: 3
+[2026-05-10T23:07:05.776Z] POST /api/log
+[2026-05-10T23:07:05.776Z] [Frontend] INFO: [onToken] count: 4
+[2026-05-10T23:07:05.837Z] POST /api/log
+[2026-05-10T23:07:05.838Z] [Frontend] INFO: [onToken] count: 5
+[2026-05-10T23:07:05.897Z] POST /api/log
+[2026-05-10T23:07:05.897Z] [Frontend] INFO: [onToken] count: 6
+[2026-05-10T23:07:05.964Z] POST /api/log
+[2026-05-10T23:07:05.964Z] [Frontend] INFO: [onToken] count: 7
+[2026-05-10T23:07:06.026Z] POST /api/log
+[2026-05-10T23:07:06.027Z] [Frontend] INFO: [onToken] count: 8
+[2026-05-10T23:07:06.088Z] POST /api/log
+[2026-05-10T23:07:06.088Z] [Frontend] INFO: [onToken] count: 9
+[2026-05-10T23:07:06.151Z] POST /api/log
+[2026-05-10T23:07:06.152Z] [Frontend] INFO: [onToken] count: 10
+[2026-05-10T23:07:06.215Z] POST /api/log
+[2026-05-10T23:07:06.216Z] [Frontend] INFO: [onToken] count: 11
+[2026-05-10T23:07:06.279Z] POST /api/log
+[2026-05-10T23:07:06.280Z] [Frontend] INFO: [onToken] count: 12
+[2026-05-10T23:07:06.339Z] POST /api/log
+[2026-05-10T23:07:06.340Z] [Frontend] INFO: [onToken] count: 13
+[2026-05-10T23:07:06.399Z] POST /api/log
+[2026-05-10T23:07:06.399Z] [Frontend] INFO: [onToken] count: 14
+[2026-05-10T23:07:06.457Z] POST /api/log
+[2026-05-10T23:07:06.458Z] [Frontend] INFO: [onToken] count: 15
+[2026-05-10T23:07:06.518Z] POST /api/log
+[2026-05-10T23:07:06.519Z] [Frontend] INFO: [onToken] count: 16
+[2026-05-10T23:07:06.578Z] POST /api/log
+[2026-05-10T23:07:06.579Z] [Frontend] INFO: [onToken] count: 17
+[2026-05-10T23:07:06.640Z] POST /api/log
+[2026-05-10T23:07:06.641Z] [Frontend] INFO: [onToken] count: 18
+[2026-05-10T23:07:06.701Z] POST /api/log
+[2026-05-10T23:07:06.701Z] [Frontend] INFO: [onToken] count: 19
+[2026-05-10T23:07:06.781Z] POST /api/log
+[2026-05-10T23:07:06.782Z] [Frontend] INFO: [onToken] count: 20
+[2026-05-10T23:07:06.829Z] POST /api/log
+[2026-05-10T23:07:06.829Z] [Frontend] INFO: [callLlm] stream done. tokens: 20 fullText length: 68
+[2026-05-10T23:07:06.830Z] POST /api/log
+[2026-05-10T23:07:06.830Z] [Frontend] INFO: [extractJobData] raw response: "{\n\"company_name\": \"ProcurePro\",\n\"job_title\": \"Head of Engineering\"\n}"
+[2026-05-10T23:07:06.830Z] POST /api/log
+[2026-05-10T23:07:06.830Z] [Frontend] INFO: [extractJobData] parsed: {"company_name":"ProcurePro","job_title":"Head of Engineering"}
+[2026-05-10T23:26:36.762Z] POST /api/log
+[2026-05-10T23:26:36.763Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:26:36.763Z] GET /api/companies
+[2026-05-10T23:26:36.773Z] POST /api/log
+[2026-05-10T23:26:36.773Z] [Frontend] INFO: [Pipeline] Loaded 12 companies from SQLite
+[2026-05-10T23:26:36.774Z] POST /api/log
+[2026-05-10T23:26:36.774Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17]
+[2026-05-10T23:26:45.970Z] POST /api/kv
+[2026-05-10T23:26:45.973Z] POST /api/log
+[2026-05-10T23:26:45.973Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 18 ProcurePro
+[2026-05-10T23:26:45.973Z] POST /api/save
+[2026-05-10T23:26:45.990Z] GET /scorer.html?companyId=18&company=ProcurePro&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4394727188
+[2026-05-10T23:26:46.010Z] GET /lib/parse.js
+[2026-05-10T23:26:46.013Z] GET /lib/scoring.js
+[2026-05-10T23:26:46.047Z] POST /api/log
+[2026-05-10T23:26:46.047Z] [Frontend] INFO: [Scorer] Full URL: http://localhost:3000/scorer.html?companyId=18&company=ProcurePro&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4394727188
+[2026-05-10T23:26:46.048Z] POST /api/log
+[2026-05-10T23:26:46.048Z] [Frontend] INFO: [Scorer] URL Params - companyId: 18 company: ProcurePro
+[2026-05-10T23:26:46.049Z] POST /api/log
+[2026-05-10T23:26:46.050Z] [Frontend] INFO: [Scorer] Set currentCompanyId to: 18
+[2026-05-10T23:26:47.261Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T23:26:55.159Z] POST /api/log
+[2026-05-10T23:26:55.160Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:26:55.160Z] GET /api/companies
+[2026-05-10T23:26:55.170Z] POST /api/log
+[2026-05-10T23:26:55.171Z] [Frontend] INFO: [Pipeline] Loaded 13 companies from SQLite
+[2026-05-10T23:26:55.172Z] POST /api/log
+[2026-05-10T23:26:55.173Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18]
+[2026-05-10T23:27:14.475Z] POST /api/log
+[2026-05-10T23:27:14.476Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18]
+[2026-05-10T23:27:52.582Z] POST /api/log
+[2026-05-10T23:27:52.583Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 18
+[2026-05-10T23:27:52.584Z] POST /api/save-score
+[2026-05-10T23:27:52.585Z] [Server] /api/save-score - id: 18 score: present
+[2026-05-10T23:27:52.592Z] POST /api/log
+[2026-05-10T23:27:52.593Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-10T23:30:44.214Z] POST /api/log
+[2026-05-10T23:30:44.216Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:30:44.218Z] GET /api/companies
+[2026-05-10T23:30:44.231Z] POST /api/log
+[2026-05-10T23:30:44.232Z] [Frontend] INFO: [Pipeline] Loaded 13 companies from SQLite
+[2026-05-10T23:30:44.232Z] POST /api/log
+[2026-05-10T23:30:44.232Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18]
+[2026-05-10T23:30:44.902Z] POST /api/log
+[2026-05-10T23:30:44.903Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:30:44.905Z] GET /api/companies
+[2026-05-10T23:30:44.918Z] POST /api/log
+[2026-05-10T23:30:44.919Z] [Frontend] INFO: [Pipeline] Loaded 13 companies from SQLite
+[2026-05-10T23:30:44.921Z] POST /api/log
+[2026-05-10T23:30:44.922Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18]
+[2026-05-10T23:30:46.999Z] GET /pipeline
+[2026-05-10T23:30:47.012Z] GET /lib/parse.js
+[2026-05-10T23:30:47.012Z] GET /lib/pipeline.js
+[2026-05-10T23:30:47.025Z] POST /api/log
+[2026-05-10T23:30:47.026Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:30:47.027Z] GET /api/companies
+[2026-05-10T23:30:47.059Z] POST /api/log
+[2026-05-10T23:30:47.061Z] [Frontend] INFO: [Pipeline] Loaded 13 companies from SQLite
+[2026-05-10T23:30:47.062Z] POST /api/log
+[2026-05-10T23:30:47.063Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18]
+[2026-05-10T23:30:54.425Z] GET /pipeline
+[2026-05-10T23:30:54.441Z] GET /lib/parse.js
+[2026-05-10T23:30:54.441Z] GET /lib/pipeline.js
+[2026-05-10T23:30:54.449Z] POST /api/log
+[2026-05-10T23:30:54.450Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:30:54.450Z] GET /api/companies
+[2026-05-10T23:30:54.463Z] POST /api/log
+[2026-05-10T23:30:54.463Z] [Frontend] INFO: [Pipeline] Loaded 13 companies from SQLite
+[2026-05-10T23:30:54.464Z] POST /api/log
+[2026-05-10T23:30:54.465Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18]
+[2026-05-10T23:31:03.331Z] POST /api/log
+[2026-05-10T23:31:03.332Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18]
+[2026-05-10T23:31:11.102Z] POST /proxy/tavily-search
+[2026-05-10T23:31:12.770Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T23:31:16.588Z] POST /api/log
+[2026-05-10T23:31:16.589Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-323\",\"object\":\"chat.completion.chunk\",\"created\":1778455876,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-10T23:31:16.589Z] POST /api/log
+[2026-05-10T23:31:16.589Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T23:31:16.647Z] POST /api/log
+[2026-05-10T23:31:16.648Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-323\",\"object\":\"chat.completion.chunk\",\"created\":1778455876,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \"},\"finish_reason\":null}]}"
+[2026-05-10T23:31:16.649Z] POST /api/log
+[2026-05-10T23:31:16.649Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T23:31:16.703Z] POST /api/log
+[2026-05-10T23:31:16.703Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-323\",\"object\":\"chat.completion.chunk\",\"created\":1778455876,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-10T23:31:20.675Z] POST /api/log
+[2026-05-10T23:31:20.676Z] [Frontend] INFO: [callLlm] stream done. tokens: 75 fullText length: 367
+[2026-05-10T23:31:20.676Z] POST /api/log
+[2026-05-10T23:31:20.676Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 18 ProcurePro
+[2026-05-10T23:31:20.676Z] POST /api/save
+[2026-05-10T23:31:38.972Z] POST /api/log
+[2026-05-10T23:31:38.972Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18]
+[2026-05-10T23:44:58.774Z] POST /api/log
+[2026-05-10T23:44:58.774Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:44:58.774Z] GET /api/companies
+[2026-05-10T23:44:58.783Z] POST /api/log
+[2026-05-10T23:44:58.784Z] [Frontend] INFO: [Pipeline] Loaded 13 companies from SQLite
+[2026-05-10T23:44:58.785Z] POST /api/log
+[2026-05-10T23:44:58.785Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18]
+[2026-05-10T23:45:03.435Z] POST /proxy/tavily
+[2026-05-10T23:45:11.225Z] POST /api/log
+[2026-05-10T23:45:11.225Z] [Frontend] INFO: [extractJobData] content chars: 49809 → sending: 8000
+[2026-05-10T23:45:11.226Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T23:45:25.298Z] POST /api/log
+[2026-05-10T23:45:25.299Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-167\",\"object\":\"chat.completion.chunk\",\"created\":1778456725,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-10T23:45:25.300Z] POST /api/log
+[2026-05-10T23:45:25.300Z] [Frontend] INFO: [onToken] count: 1
+[2026-05-10T23:45:25.301Z] POST /api/log
+[2026-05-10T23:45:25.303Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T23:45:25.357Z] POST /api/log
+[2026-05-10T23:45:25.358Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-167\",\"object\":\"chat.completion.chunk\",\"created\":1778456725,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \"},\"finish_reason\":null}]}"
+[2026-05-10T23:45:25.361Z] POST /api/log
+[2026-05-10T23:45:25.362Z] [Frontend] INFO: [onToken] count: 2
+[2026-05-10T23:45:25.363Z] POST /api/log
+[2026-05-10T23:45:25.363Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T23:45:25.417Z] POST /api/log
+[2026-05-10T23:45:25.417Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-167\",\"object\":\"chat.completion.chunk\",\"created\":1778456725,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-10T23:45:25.418Z] POST /api/log
+[2026-05-10T23:45:25.419Z] [Frontend] INFO: [onToken] count: 3
+[2026-05-10T23:45:25.476Z] POST /api/log
+[2026-05-10T23:45:25.477Z] [Frontend] INFO: [onToken] count: 4
+[2026-05-10T23:45:25.538Z] POST /api/log
+[2026-05-10T23:45:25.539Z] [Frontend] INFO: [onToken] count: 5
+[2026-05-10T23:45:25.602Z] POST /api/log
+[2026-05-10T23:45:25.603Z] [Frontend] INFO: [onToken] count: 6
+[2026-05-10T23:45:25.665Z] POST /api/log
+[2026-05-10T23:45:25.666Z] [Frontend] INFO: [onToken] count: 7
+[2026-05-10T23:45:25.725Z] POST /api/log
+[2026-05-10T23:45:25.727Z] [Frontend] INFO: [onToken] count: 8
+[2026-05-10T23:45:25.785Z] POST /api/log
+[2026-05-10T23:45:25.786Z] [Frontend] INFO: [onToken] count: 9
+[2026-05-10T23:45:25.844Z] POST /api/log
+[2026-05-10T23:45:25.845Z] [Frontend] INFO: [onToken] count: 10
+[2026-05-10T23:45:25.911Z] POST /api/log
+[2026-05-10T23:45:25.912Z] [Frontend] INFO: [onToken] count: 11
+[2026-05-10T23:45:25.973Z] POST /api/log
+[2026-05-10T23:45:25.973Z] [Frontend] INFO: [onToken] count: 12
+[2026-05-10T23:45:26.035Z] POST /api/log
+[2026-05-10T23:45:26.036Z] [Frontend] INFO: [onToken] count: 13
+[2026-05-10T23:45:26.095Z] POST /api/log
+[2026-05-10T23:45:26.096Z] [Frontend] INFO: [onToken] count: 14
+[2026-05-10T23:45:26.157Z] POST /api/log
+[2026-05-10T23:45:26.158Z] [Frontend] INFO: [onToken] count: 15
+[2026-05-10T23:45:26.219Z] POST /api/log
+[2026-05-10T23:45:26.219Z] [Frontend] INFO: [onToken] count: 16
+[2026-05-10T23:45:26.282Z] POST /api/log
+[2026-05-10T23:45:26.283Z] [Frontend] INFO: [onToken] count: 17
+[2026-05-10T23:45:26.344Z] POST /api/log
+[2026-05-10T23:45:26.345Z] [Frontend] INFO: [onToken] count: 18
+[2026-05-10T23:45:26.407Z] POST /api/log
+[2026-05-10T23:45:26.408Z] [Frontend] INFO: [onToken] count: 19
+[2026-05-10T23:45:26.467Z] POST /api/log
+[2026-05-10T23:45:26.467Z] [Frontend] INFO: [onToken] count: 20
+[2026-05-10T23:45:26.533Z] POST /api/log
+[2026-05-10T23:45:26.534Z] [Frontend] INFO: [callLlm] stream done. tokens: 20 fullText length: 71
+[2026-05-10T23:45:26.535Z] POST /api/log
+[2026-05-10T23:45:26.535Z] [Frontend] INFO: [extractJobData] raw response: "{\n  \"company_name\": \"Propeller\",\n  \"job_title\": \"Engineering Manager\"\n}"
+[2026-05-10T23:45:26.536Z] POST /api/log
+[2026-05-10T23:45:26.536Z] [Frontend] INFO: [extractJobData] parsed: {"company_name":"Propeller","job_title":"Engineering Manager"}
+[2026-05-10T23:45:54.605Z] POST /api/log
+[2026-05-10T23:45:54.605Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:45:54.605Z] GET /api/companies
+[2026-05-10T23:45:54.616Z] POST /api/log
+[2026-05-10T23:45:54.617Z] [Frontend] INFO: [Pipeline] Loaded 13 companies from SQLite
+[2026-05-10T23:45:54.617Z] POST /api/log
+[2026-05-10T23:45:54.618Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18]
+[2026-05-10T23:45:59.927Z] POST /api/kv
+[2026-05-10T23:45:59.930Z] POST /api/log
+[2026-05-10T23:45:59.931Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 19 Propeller
+[2026-05-10T23:45:59.931Z] POST /api/save
+[2026-05-10T23:45:59.958Z] GET /scorer.html?companyId=19&company=Propeller&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4397759189
+[2026-05-10T23:45:59.978Z] GET /lib/parse.js
+[2026-05-10T23:45:59.979Z] GET /lib/scoring.js
+[2026-05-10T23:45:59.988Z] POST /api/log
+[2026-05-10T23:45:59.988Z] [Frontend] INFO: [Scorer] Full URL: http://localhost:3000/scorer.html?companyId=19&company=Propeller&url=https%3A%2F%2Fwww.linkedin.com%2Fjobs%2Fview%2F4397759189
+[2026-05-10T23:45:59.990Z] POST /api/log
+[2026-05-10T23:45:59.990Z] [Frontend] INFO: [Scorer] URL Params - companyId: 19 company: Propeller
+[2026-05-10T23:45:59.991Z] POST /api/log
+[2026-05-10T23:45:59.992Z] [Frontend] INFO: [Scorer] Set currentCompanyId to: 19
+[2026-05-10T23:46:01.265Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T23:46:54.907Z] POST /api/log
+[2026-05-10T23:46:54.908Z] [Frontend] INFO: [Scorer] Saving score to SQLite for company ID: 19
+[2026-05-10T23:46:54.908Z] POST /api/save-score
+[2026-05-10T23:46:54.908Z] [Server] /api/save-score - id: 19 score: present
+[2026-05-10T23:46:54.914Z] POST /api/log
+[2026-05-10T23:46:54.914Z] [Frontend] INFO: [Scorer] Score saved to SQLite successfully
+[2026-05-10T23:47:26.117Z] GET /pipeline
+[2026-05-10T23:47:26.135Z] GET /lib/parse.js
+[2026-05-10T23:47:26.136Z] GET /lib/pipeline.js
+[2026-05-10T23:47:26.145Z] POST /api/log
+[2026-05-10T23:47:26.148Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:47:26.152Z] GET /api/companies
+[2026-05-10T23:47:26.166Z] POST /api/log
+[2026-05-10T23:47:26.167Z] [Frontend] INFO: [Pipeline] Loaded 14 companies from SQLite
+[2026-05-10T23:47:26.167Z] POST /api/log
+[2026-05-10T23:47:26.167Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-10T23:49:00.351Z] POST /api/log
+[2026-05-10T23:49:00.352Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:49:00.352Z] GET /api/companies
+[2026-05-10T23:49:00.362Z] POST /api/log
+[2026-05-10T23:49:00.363Z] [Frontend] INFO: [Pipeline] Loaded 14 companies from SQLite
+[2026-05-10T23:49:00.364Z] POST /api/log
+[2026-05-10T23:49:00.364Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-10T23:49:00.554Z] POST /api/log
+[2026-05-10T23:49:00.555Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-10T23:49:07.873Z] POST /proxy/tavily-search
+[2026-05-10T23:49:09.585Z] POST /proxy/ollama/v1/chat/completions
+[2026-05-10T23:49:11.026Z] POST /api/log
+[2026-05-10T23:49:11.027Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-10T23:49:11.027Z] GET /api/companies
+[2026-05-10T23:49:11.035Z] POST /api/log
+[2026-05-10T23:49:11.036Z] [Frontend] INFO: [Pipeline] Loaded 14 companies from SQLite
+[2026-05-10T23:49:11.036Z] POST /api/log
+[2026-05-10T23:49:11.037Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-10T23:49:11.295Z] POST /api/log
+[2026-05-10T23:49:11.295Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-600\",\"object\":\"chat.completion.chunk\",\"created\":1778456951,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"{\\n\"},\"finish_reason\":null}]}"
+[2026-05-10T23:49:11.296Z] POST /api/log
+[2026-05-10T23:49:11.296Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T23:49:11.359Z] POST /api/log
+[2026-05-10T23:49:11.360Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-600\",\"object\":\"chat.completion.chunk\",\"created\":1778456951,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \"},\"finish_reason\":null}]}"
+[2026-05-10T23:49:11.360Z] POST /api/log
+[2026-05-10T23:49:11.360Z] [Frontend] INFO: [callLlm] raw line: ""
+[2026-05-10T23:49:11.421Z] POST /api/log
+[2026-05-10T23:49:11.421Z] [Frontend] INFO: [callLlm] raw line: "data: {\"id\":\"chatcmpl-600\",\"object\":\"chat.completion.chunk\",\"created\":1778456951,\"model\":\"llama3.1:latest\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" \\\"\"},\"finish_reason\":null}]}"
+[2026-05-10T23:49:17.146Z] POST /api/log
+[2026-05-10T23:49:17.147Z] [Frontend] INFO: [callLlm] stream done. tokens: 104 fullText length: 448
+[2026-05-10T23:49:17.147Z] POST /api/log
+[2026-05-10T23:49:17.148Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 19 Propeller
+[2026-05-10T23:49:17.148Z] POST /api/save
+[2026-05-11T00:05:13.984Z] POST /api/log
+[2026-05-11T00:05:13.985Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-11T00:05:13.985Z] GET /api/companies
+[2026-05-11T00:05:13.994Z] POST /api/log
+[2026-05-11T00:05:13.995Z] [Frontend] INFO: [Pipeline] Loaded 14 companies from SQLite
+[2026-05-11T00:05:13.995Z] POST /api/log
+[2026-05-11T00:05:13.995Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-11T00:05:22.593Z] POST /api/log
+[2026-05-11T00:05:22.593Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-11T00:05:22.594Z] GET /api/companies
+[2026-05-11T00:05:22.606Z] POST /api/log
+[2026-05-11T00:05:22.606Z] [Frontend] INFO: [Pipeline] Loaded 14 companies from SQLite
+[2026-05-11T00:05:22.607Z] POST /api/log
+[2026-05-11T00:05:22.607Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-11T00:07:57.988Z] POST /api/log
+[2026-05-11T00:07:57.988Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-11T00:07:57.989Z] GET /api/companies
+[2026-05-11T00:07:58.000Z] POST /api/log
+[2026-05-11T00:07:58.000Z] [Frontend] INFO: [Pipeline] Loaded 14 companies from SQLite
+[2026-05-11T00:07:58.001Z] POST /api/log
+[2026-05-11T00:07:58.001Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-11T00:08:10.100Z] POST /api/log
+[2026-05-11T00:08:10.101Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-11T00:08:10.101Z] GET /api/companies
+[2026-05-11T00:08:10.124Z] POST /api/log
+[2026-05-11T00:08:10.125Z] [Frontend] INFO: [Pipeline] Loaded 14 companies from SQLite
+[2026-05-11T00:08:10.126Z] POST /api/log
+[2026-05-11T00:08:10.127Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-11T00:11:57.755Z] POST /api/log
+[2026-05-11T00:11:57.755Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-11T00:11:57.756Z] GET /api/companies
+[2026-05-11T00:11:57.770Z] POST /api/log
+[2026-05-11T00:11:57.771Z] [Frontend] INFO: [Pipeline] Loaded 14 companies from SQLite
+[2026-05-11T00:11:57.771Z] POST /api/log
+[2026-05-11T00:11:57.771Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-11T00:11:59.644Z] POST /api/log
+[2026-05-11T00:11:59.645Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-11T00:12:17.021Z] POST /api/kv
+[2026-05-11T00:12:17.022Z] POST /api/log
+[2026-05-11T00:12:17.023Z] [Frontend] INFO: [Pipeline] Syncing company to DB: 19 Propeller
+[2026-05-11T00:12:17.023Z] POST /api/save
+[2026-05-11T00:12:22.207Z] POST /api/log
+[2026-05-11T00:12:22.208Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-11T00:12:27.691Z] POST /api/log
+[2026-05-11T00:12:27.691Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-11T00:12:42.563Z] POST /api/log
+[2026-05-11T00:12:42.563Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-11T00:12:42.563Z] GET /api/companies
+[2026-05-11T00:12:42.575Z] POST /api/log
+[2026-05-11T00:12:42.576Z] [Frontend] INFO: [Pipeline] Loaded 14 companies from SQLite
+[2026-05-11T00:12:42.576Z] POST /api/log
+[2026-05-11T00:12:42.577Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-11T00:12:44.921Z] POST /api/log
+[2026-05-11T00:12:44.921Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-11T00:16:17.834Z] POST /api/log
+[2026-05-11T00:16:17.834Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-11T00:16:17.834Z] GET /api/companies
+[2026-05-11T00:16:17.844Z] POST /api/log
+[2026-05-11T00:16:17.845Z] [Frontend] INFO: [Pipeline] Loaded 14 companies from SQLite
+[2026-05-11T00:16:17.845Z] POST /api/log
+[2026-05-11T00:16:17.845Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]
+[2026-05-11T00:21:17.443Z] POST /api/log
+[2026-05-11T00:21:17.443Z] [Frontend] INFO: [Pipeline] Loading data from SQLite...
+[2026-05-11T00:21:17.444Z] GET /api/companies
+[2026-05-11T00:21:17.453Z] POST /api/log
+[2026-05-11T00:21:17.453Z] [Frontend] INFO: [Pipeline] Loaded 14 companies from SQLite
+[2026-05-11T00:21:17.454Z] POST /api/log
+[2026-05-11T00:21:17.455Z] [Frontend] INFO: [Pipeline] Checking for new scores for IDs: [2,5,7,8,10,11,12,13,14,15,16,17,18,19]

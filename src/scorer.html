@@ -270,11 +270,6 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
         </select>
       </div>
       
-      <div id="settings-anthropic-row" style="margin-bottom:1.5rem">
-        <label style="display:block;font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.5rem">Anthropic API Key</label>
-        <input type="password" id="settings-anthropic" placeholder="sk-ant-..." style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem;border-radius:4px;outline:none">
-      </div>
-      
       <div id="settings-ollama-row" style="margin-bottom:1.5rem">
         <label style="display:block;font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.5rem">Ollama Model Name</label>
         <input id="settings-ollama-model" placeholder="qwen3.6:27b" onblur="checkOllamaModel()" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem;border-radius:4px;outline:none">
@@ -307,11 +302,9 @@ var PROFILE_STORAGE_KEY = 'eval-profile';
   console.error = function() { oldError.apply(console, arguments); sendToServer('ERROR', arguments); };
   console.warn = function() { oldWarn.apply(console, arguments); sendToServer('WARN', arguments); };
 })();
-var API_KEY_STORAGE_KEY = 'anthropic-api-key';
 var PROVIDER_STORAGE_KEY = 'scorer-provider';
 var OLLAMA_MODEL_STORAGE_KEY = 'ollama-model';
 
-var currentApiKey = '';
 var currentCompanyId = null;
 var currentProvider = 'ollama';
 var currentOllamaModel = 'qwen3.6:27b';
@@ -324,44 +317,25 @@ var currentProfile = DEFAULT_PROFILE;
 // ── STORAGE ─────────────────────────────────────────────────────
 
 window.loadProfile = function() {
-  function loadFallback() {
-    try {
-      var localProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
-      if (localProfile) currentProfile = localProfile;
-    } catch(err) {}
-    window.renderProfileBar();
-  }
-
   try {
-    window.storage.get(PROFILE_STORAGE_KEY).then(function(result) {
-      if (result && result.value) {
-        currentProfile = result.value;
-        window.renderProfileBar();
-      } else {
-        loadFallback();
-      }
-    }).catch(function() { loadFallback(); });
-  } catch(e) {
-    loadFallback();
-  }
+    var saved = localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (saved) currentProfile = saved;
+  } catch(e) {}
+  window.renderProfileBar();
 };
 
 window.saveProfileToStorage = function() {
-  try {
-    window.storage.set(PROFILE_STORAGE_KEY, currentProfile).catch(function(e) { console.warn('Profile save failed', e); });
-  } catch(e) { console.warn('Storage unavailable', e); }
+  try { localStorage.setItem(PROFILE_STORAGE_KEY, currentProfile); } catch(e) {}
 };
 
 // ── API KEY ──────────────────────────────────────────────────────
 
 window.openSettingsModal = function() {
   document.getElementById('settings-provider').value = currentProvider;
-  document.getElementById('settings-anthropic').value = currentApiKey;
   document.getElementById('settings-ollama-model').value = currentOllamaModel;
-  
+
   var updateRows = function() {
     var p = document.getElementById('settings-provider').value;
-    document.getElementById('settings-anthropic-row').style.display = p === 'anthropic' ? 'block' : 'none';
     document.getElementById('settings-ollama-row').style.display = p === 'ollama' ? 'block' : 'none';
   };
   document.getElementById('settings-provider').onchange = function() { updateRows(); window.checkOllamaModel(); };
@@ -410,34 +384,15 @@ window.checkOllamaModel = function() {
 
 window.saveSettings = function() {
   var p = document.getElementById('settings-provider').value;
-  var a = document.getElementById('settings-anthropic').value.trim();
   var o = document.getElementById('settings-ollama-model').value.trim();
-  
+
   currentProvider = p;
-  currentApiKey = a;
   currentOllamaModel = o || 'qwen3.6:27b';
-  
-  var keys = {};
-  keys[PROVIDER_STORAGE_KEY] = currentProvider;
-  keys[API_KEY_STORAGE_KEY] = currentApiKey;
-  keys[OLLAMA_MODEL_STORAGE_KEY] = currentOllamaModel;
-  
-  try {
-    var ps = [];
-    for (var k in keys) { ps.push(window.storage.set(k, keys[k])); }
-    Promise.all(ps).then(function() {
-      window.renderConfigLabel();
-      window.closeSettingsModal();
-    }).catch(function() {
-      for (var k in keys) { try { localStorage.setItem(k, keys[k]); } catch(err) {} }
-      window.renderConfigLabel();
-      window.closeSettingsModal();
-    });
-  } catch(e) {
-    for (var k in keys) { try { localStorage.setItem(k, keys[k]); } catch(err) {} }
-    window.renderConfigLabel();
-    window.closeSettingsModal();
-  }
+
+  try { localStorage.setItem(PROVIDER_STORAGE_KEY, currentProvider); } catch(e) {}
+  try { localStorage.setItem(OLLAMA_MODEL_STORAGE_KEY, currentOllamaModel); } catch(e) {}
+  window.renderConfigLabel();
+  window.closeSettingsModal();
 };
 
 window.renderConfigLabel = function() {
@@ -447,68 +402,24 @@ window.renderConfigLabel = function() {
   el.textContent = label;
 };
 
-// ── API KEY ──────────────────────────────────────────────────────
-
-window.loadApiKey = function() {
-  function loadFallback() {
-    try {
-      var a = localStorage.getItem(API_KEY_STORAGE_KEY);
-      currentApiKey = a || '';
-    } catch(e) {}
-  }
-  try {
-    return window.storage.get(API_KEY_STORAGE_KEY).then(function(result) {
-      currentApiKey = (result && result.value) ? result.value : null;
-      if (currentApiKey === null) loadFallback();
-    }).catch(function() { loadFallback(); });
-  } catch(e) {
-    loadFallback();
-    return Promise.resolve();
-  }
-};
-
-// ── PROVIDER ─────────────────────────────────────────────────────
+// ── PROVIDER + MODEL ─────────────────────────────────────────────
 
 window.loadProvider = function() {
-  function loadFallback() {
-    try {
-      var p = localStorage.getItem(PROVIDER_STORAGE_KEY);
-      currentProvider = p || 'ollama';
-    } catch(e) {}
-    window.renderConfigLabel();
-  }
   try {
-    return window.storage.get(PROVIDER_STORAGE_KEY).then(function(result) {
-      currentProvider = (result && result.value) ? result.value : null;
-      if (!currentProvider) return loadFallback();
-      window.renderConfigLabel();
-    }).catch(function() { loadFallback(); });
-  } catch(e) {
-    loadFallback();
-    return Promise.resolve();
-  }
+    var p = localStorage.getItem(PROVIDER_STORAGE_KEY);
+    if (p) currentProvider = p;
+  } catch(e) {}
+  window.renderConfigLabel();
+  return Promise.resolve();
 };
 
-// ── OLLAMA MODEL ─────────────────────────────────────────────────
-
 window.loadOllamaModel = function() {
-  function loadFallback() {
-    try {
-      var m = localStorage.getItem(OLLAMA_MODEL_STORAGE_KEY);
-      currentOllamaModel = m || 'qwen3.6:27b';
-    } catch(e) {}
-    window.renderConfigLabel();
-  }
   try {
-    return window.storage.get(OLLAMA_MODEL_STORAGE_KEY).then(function(result) {
-      currentOllamaModel = (result && result.value) ? result.value : null;
-      if (!currentOllamaModel) return loadFallback();
-      window.renderConfigLabel();
-    }).catch(function() { loadFallback(); });
-  } catch(e) {
-    loadFallback();
-    return Promise.resolve();
-  }
+    var m = localStorage.getItem(OLLAMA_MODEL_STORAGE_KEY);
+    if (m) currentOllamaModel = m;
+  } catch(e) {}
+  window.renderConfigLabel();
+  return Promise.resolve();
 };
 
 // ── SCORE STORAGE ────────────────────────────────────────────────
@@ -577,13 +488,7 @@ window.saveProfile = function() {
   var val = document.getElementById('profile-editor').value;
   if (!val.trim()) return;
   currentProfile = val;
-  try {
-    window.storage.set(PROFILE_STORAGE_KEY, val).catch(function(e) {
-      try { localStorage.setItem(PROFILE_STORAGE_KEY, val); } catch(err) {}
-    });
-  } catch(e) {
-    try { localStorage.setItem(PROFILE_STORAGE_KEY, val); } catch(err) {}
-  }
+  try { localStorage.setItem(PROFILE_STORAGE_KEY, val); } catch(e) {}
   window.renderProfileBar();
   window.closeProfileEditor();
 };
@@ -595,14 +500,9 @@ window.buildPrompts = function(jdText, company, url) {
 };
 
 window.fetchAnthropic = function(prompts) {
-  return fetch('https://api.anthropic.com/v1/messages', {
+  return fetch('/proxy/anthropic', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': currentApiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
@@ -612,7 +512,7 @@ window.fetchAnthropic = function(prompts) {
   }).then(function(res) { return res.json(); }).then(function(data) {
     if (!data.content) {
       var msg = (data.error && data.error.message) ? data.error.message : 'Unknown error from Anthropic API';
-      throw new Error('Anthropic API error: ' + msg + '. Check your API key in Settings.');
+      throw new Error('Anthropic API error: ' + msg + '. Ensure ANTHROPIC_API_KEY is set in .env and restart the server.');
     }
     var text = '';
     for (var i = 0; i < data.content.length; i++) {
@@ -681,11 +581,6 @@ window.fetchOllama = function(prompts) {
 };
 
 window.scoreRole = function() {
-  if (currentProvider === 'anthropic' && !currentApiKey) {
-    alert('Enter your Anthropic API key in the top bar first.');
-    return;
-  }
-
   var jdText = document.getElementById('jd-input').value.trim();
   if (!jdText) { alert('Please paste a job description.'); return; }
 
@@ -803,33 +698,15 @@ window.renderResults = function(r) {
 // ── PENDING JD ──────────────────────────────────────────────────
 
 window.readPendingJd = function() {
-  function readFallback() {
-    try {
-      var localJd = localStorage.getItem('pending-jd');
-      if (localJd) {
-        var jdInput = document.getElementById('jd-input');
-        if (jdInput) jdInput.value = localJd;
-        localStorage.removeItem('pending-jd');
-      }
-    } catch(e) {}
-  }
-
   try {
-    return window.storage.get('pending-jd').then(function(result) {
-      if (result && result.value) {
-        var jdInput = document.getElementById('jd-input');
-        if (jdInput) jdInput.value = result.value;
-        window.storage.set('pending-jd', null).catch(function() {});
-      } else {
-        readFallback();
-      }
-    }).catch(function() {
-      readFallback();
-    });
-  } catch(e) {
-    readFallback();
-    return Promise.resolve();
-  }
+    var jd = localStorage.getItem('pending-jd');
+    if (jd) {
+      var jdInput = document.getElementById('jd-input');
+      if (jdInput) jdInput.value = jd;
+      localStorage.removeItem('pending-jd');
+    }
+  } catch(e) {}
+  return Promise.resolve();
 };
 
 // ── QUERY PARAMS ────────────────────────────────────────────────
@@ -853,7 +730,6 @@ window.readQueryParams = function() {
 
 // ── INIT ────────────────────────────────────────────────────────
 window.loadProfile();
-window.loadApiKey();
 window.loadProvider();
 window.loadOllamaModel();
 window.readQueryParams();

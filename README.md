@@ -7,7 +7,8 @@ A personal job search CRM with persistent storage, funnel analytics, and AI-powe
 ```
 job-pipeline/
 ├── config/
-│   └── evaluation-profile.md    # Your scoring criteria (edit this)
+│   ├── evaluation-profile.boilerplate.md # Committed template
+│   └── evaluation-profile.md             # Local copy (gitignored, customize this)
 ├── src/
 │   ├── pipeline.html            # Main tracker app (Kanban + Table + Funnel)
 │   ├── scorer.html              # Role scorer — paste a JD, get a scored breakdown
@@ -22,11 +23,49 @@ job-pipeline/
 └── README.md
 ```
 
+## Dependencies
+
+### Required
+- **Node.js** (v18+) — runs the local server and SQLite backend
+- **npm** — package manager (`npm install` fetches `better-sqlite3`)
+
+### AI Scorer (choose one)
+
+#### Option A — Ollama (local, free)
+Runs models entirely on your machine. No API key needed.
+
+1. Install Ollama: https://ollama.com
+2. Pull a model (recommended):
+   ```bash
+   ollama pull qwen3:8b
+   ```
+3. Ollama must be running when you use the scorer (`ollama serve` or the desktop app).
+4. In the scorer's Settings, select **Ollama (Local)** and enter your model name (e.g. `qwen3:8b`).
+
+#### Option B — Anthropic (Claude)
+Uses Claude via the Anthropic API (costs money per call).
+
+1. Get an API key at https://console.anthropic.com
+2. In the scorer's Settings, select **Anthropic (Claude)** and paste your key.
+   > The key is stored in your browser's localStorage — it never leaves your machine.
+
+### URL Extraction (optional)
+The scorer can auto-fetch job descriptions from a URL using **Tavily**.
+
+1. Get a free API key at https://tavily.com (free tier is sufficient)
+2. Add it to your `.env` file:
+   ```
+   TAVILY_API_KEY=tvly-...
+   ```
+   The server reads this from the environment — restart after changes.
+
 ## Quick start
 
 ```bash
 # Install dependencies
 npm install
+# Create your personal profile (first run only)
+cp config/evaluation-profile.boilerplate.md config/evaluation-profile.md
 
 # Start the server (SQLite backend + AI proxies)
 npm run serve
@@ -51,6 +90,8 @@ npm run serve
 - Score saved to pipeline card if linked
 
 ### Evaluation profile (`config/evaluation-profile.md`)
+- This file is user-specific and intentionally **not committed** to git
+- Start by copying `config/evaluation-profile.boilerplate.md` to `config/evaluation-profile.md`
 - **This is the file you edit** to change what matters to you
 - Scoring weights, hard nos, compensation floors, lifestyle constraints
 - The scorer reads this at runtime — changes take effect immediately

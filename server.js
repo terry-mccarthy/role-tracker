@@ -4,6 +4,14 @@ var fs = require('fs');
 var path = require('path');
 var db = require('./database');
 
+// ── CONFIGURATION ────────────────────────────────────────────────────────
+// API keys are read from environment variables — never from the browser client.
+// Set these in your .env file (already gitignored) or export them in your shell:
+//   TAVILY_API_KEY=tvly-...
+//   ANTHROPIC_API_KEY=sk-ant-...
+var TAVILY_KEY     = process.env.TAVILY_API_KEY     || '';
+var ANTHROPIC_KEY  = process.env.ANTHROPIC_API_KEY  || '';
+
 var MIME = {
   '.html': 'text/html',
   '.css':  'text/css',
@@ -16,6 +24,7 @@ var MIME = {
 
 var PORT = 3000;
 var LOG_FILE = path.join(__dirname, 'pipeline.log');
+var MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MB request body limit
 
 function logToFile(msg) {
   var timestamp = new Date().toISOString();
@@ -25,6 +34,35 @@ function logToFile(msg) {
 }
 
 logToFile('--- Server Starting ---');
+
+// ── HELPERS ──────────────────────────────────────────────────────────────
+
+/** Accumulate the request body, enforcing a max size limit. */
+function readBody(req, res, cb) {
+  var body = '';
+  req.on('data', function(chunk) {
+    body += chunk;
+    if (body.length > MAX_BODY_BYTES) {
+      res.writeHead(413);
+      res.end(JSON.stringify({ error: 'Request body too large' }));
+      req.destroy();
+    }
+  });
+  req.on('end', function() { cb(body); });
+}
+
+/** Parse JSON body, sending a 400 response and returning null on failure. */
+function parseBody(body, res) {
+  try {
+    return JSON.parse(body);
+  } catch(e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'Invalid JSON' }));
+    return null;
+  }
+}
+
+// ── HTTP SERVER ──────────────────────────────────────────────────────────
 
 http.createServer(function(req, res) {
   logToFile(req.method + ' ' + req.url);
@@ -38,27 +76,26 @@ http.createServer(function(req, res) {
     return;
   }
 
+  // ── PROXY: Tavily Extract ─────────────────────────────────────────────
+
   if (req.url === '/proxy/tavily' && req.method === 'POST') {
-    var body = '';
-    req.on('data', function(chunk) { body += chunk; });
-    req.on('end', function() {
-      var parsed;
-      try { parsed = JSON.parse(body); } catch(e) {
-        res.writeHead(400);
-        res.end(JSON.stringify({ error: 'Invalid JSON' }));
-        return;
-      }
+    if (!TAVILY_KEY) {
+      res.writeHead(503);
+      res.end(JSON.stringify({ error: 'TAVILY_API_KEY not configured on server. Add it to your .env file.' }));
+      return;
+    }
+    readBody(req, res, function(body) {
+      var parsed = parseBody(body, res);
+      if (!parsed) return;
 
-      var apiKey = parsed.apiKey;
       var payload = JSON.stringify({ urls: parsed.urls, extract_depth: parsed.extract_depth || 'advanced' });
-
       var options = {
         hostname: 'api.tavily.com',
         path: '/extract',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey,
+          'Authorization': 'Bearer ' + TAVILY_KEY,
           'Content-Length': Buffer.byteLength(payload)
         }
       };
@@ -71,39 +108,36 @@ http.createServer(function(req, res) {
           res.end(data);
         });
       });
-
       proxyReq.on('error', function(err) {
         res.writeHead(502);
         res.end(JSON.stringify({ error: err.message }));
       });
-
       proxyReq.write(payload);
       proxyReq.end();
     });
     return;
   }
 
+  // ── PROXY: Tavily Search ──────────────────────────────────────────────
+
   if (req.url === '/proxy/tavily-search' && req.method === 'POST') {
-    var body = '';
-    req.on('data', function(chunk) { body += chunk; });
-    req.on('end', function() {
-      var parsed;
-      try { parsed = JSON.parse(body); } catch(e) {
-        res.writeHead(400);
-        res.end(JSON.stringify({ error: 'Invalid JSON' }));
-        return;
-      }
+    if (!TAVILY_KEY) {
+      res.writeHead(503);
+      res.end(JSON.stringify({ error: 'TAVILY_API_KEY not configured on server. Add it to your .env file.' }));
+      return;
+    }
+    readBody(req, res, function(body) {
+      var parsed = parseBody(body, res);
+      if (!parsed) return;
 
-      var apiKey = parsed.apiKey;
       var payload = JSON.stringify({ query: parsed.query, search_depth: 'basic', max_results: 5, include_images: false });
-
       var options = {
         hostname: 'api.tavily.com',
         path: '/search',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey,
+          'Authorization': 'Bearer ' + TAVILY_KEY,
           'Content-Length': Buffer.byteLength(payload)
         }
       };
@@ -116,17 +150,57 @@ http.createServer(function(req, res) {
           res.end(data);
         });
       });
-
       proxyReq.on('error', function(err) {
         res.writeHead(502);
         res.end(JSON.stringify({ error: err.message }));
       });
-
       proxyReq.write(payload);
       proxyReq.end();
     });
     return;
   }
+
+  // ── PROXY: Anthropic (Claude) ─────────────────────────────────────────
+
+  if (req.url === '/proxy/anthropic' && req.method === 'POST') {
+    if (!ANTHROPIC_KEY) {
+      res.writeHead(503);
+      res.end(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured on server. Add it to your .env file.' }));
+      return;
+    }
+    readBody(req, res, function(body) {
+      // Forward the request body as-is; only the auth header is added server-side
+      var options = {
+        hostname: 'api.anthropic.com',
+        path: '/v1/messages',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01',
+          'Content-Length': Buffer.byteLength(body)
+        }
+      };
+
+      var proxyReq = https.request(options, function(proxyRes) {
+        var data = '';
+        proxyRes.on('data', function(chunk) { data += chunk; });
+        proxyRes.on('end', function() {
+          res.writeHead(proxyRes.statusCode, { 'Content-Type': 'application/json' });
+          res.end(data);
+        });
+      });
+      proxyReq.on('error', function(err) {
+        res.writeHead(502);
+        res.end(JSON.stringify({ error: err.message }));
+      });
+      proxyReq.write(body);
+      proxyReq.end();
+    });
+    return;
+  }
+
+  // ── PROXY: Ollama (local LLM) ─────────────────────────────────────────
 
   if (req.url.startsWith('/proxy/ollama')) {
     var ollamaPath = req.url.replace('/proxy/ollama', '');
@@ -160,20 +234,18 @@ http.createServer(function(req, res) {
     return;
   }
 
-  // ── DATABASE API ────────────────────────────────────────────────
+  // ── DATABASE API ──────────────────────────────────────────────────────
   
   if (req.url === '/api/companies' && req.method === 'GET') {
     var companies = db.getAllCompanies();
-    var nextId = db.getKV('nextId') || "1";
+    var nextId = db.getKV('nextId') || '1';
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ companies: companies, nextId: parseInt(nextId, 10) }));
     return;
   }
 
   if (req.url === '/api/save' && req.method === 'POST') {
-    var body = '';
-    req.on('data', function(chunk) { body += chunk; });
-    req.on('end', function() {
+    readBody(req, res, function(body) {
       try {
         var company = JSON.parse(body);
         db.saveCompany(company);
@@ -188,9 +260,7 @@ http.createServer(function(req, res) {
   }
 
   if (req.url === '/api/delete' && req.method === 'POST') {
-    var body = '';
-    req.on('data', function(chunk) { body += chunk; });
-    req.on('end', function() {
+    readBody(req, res, function(body) {
       try {
         var parsed = JSON.parse(body);
         db.deleteCompany(parsed.id);
@@ -204,11 +274,21 @@ http.createServer(function(req, res) {
     return;
   }
 
+  if (req.url === '/api/reset' && req.method === 'POST') {
+    try {
+      db.resetAll();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+    } catch(e) {
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
   if (req.url === '/api/migrate' && req.method === 'POST') {
-    var body = '';
-    req.on('data', function(chunk) { body += chunk; });
-    req.on('end', function() {
-      console.log('[Server] /api/migrate received data');
+    readBody(req, res, function(body) {
+      logToFile('[Server] /api/migrate received data');
       try {
         var parsed = JSON.parse(body);
         db.migrateCompanies(parsed.companies, parsed.nextId);
@@ -223,12 +303,10 @@ http.createServer(function(req, res) {
   }
 
   if (req.url === '/api/save-score' && req.method === 'POST') {
-    var body = '';
-    req.on('data', function(chunk) { body += chunk; });
-    req.on('end', function() {
+    readBody(req, res, function(body) {
       try {
         var parsed = JSON.parse(body);
-        console.log('[Server] /api/save-score - id:', parsed.id, 'score:', parsed.score ? 'present' : 'null');
+        logToFile('[Server] /api/save-score - id: ' + parsed.id + ' score: ' + (parsed.score ? 'present' : 'null'));
         db.saveScore(parsed.id, parsed.score);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true }));
@@ -241,9 +319,7 @@ http.createServer(function(req, res) {
   }
 
   if (req.url === '/api/kv' && req.method === 'POST') {
-    var body = '';
-    req.on('data', function(chunk) { body += chunk; });
-    req.on('end', function() {
+    readBody(req, res, function(body) {
       try {
         var parsed = JSON.parse(body);
         db.setKV(parsed.key, parsed.value);
@@ -258,9 +334,7 @@ http.createServer(function(req, res) {
   }
 
   if (req.url === '/api/log' && req.method === 'POST') {
-    var body = '';
-    req.on('data', function(chunk) { body += chunk; });
-    req.on('end', function() {
+    readBody(req, res, function(body) {
       try {
         var parsed = JSON.parse(body);
         logToFile('[Frontend] ' + (parsed.level || 'INFO') + ': ' + parsed.message);
@@ -273,6 +347,8 @@ http.createServer(function(req, res) {
     });
     return;
   }
+
+  // ── STATIC FILE SERVING ───────────────────────────────────────────────
 
   var filePath = req.url === '/' ? '/pipeline.html' : req.url;
   // Strip query string
@@ -306,5 +382,7 @@ http.createServer(function(req, res) {
     res.end(data);
   });
 }).listen(PORT, function() {
-  console.log('Serving on http://localhost:' + PORT);
+  if (!TAVILY_KEY)    logToFile('WARNING: TAVILY_API_KEY not set — URL fetching and culture research will be disabled.');
+  if (!ANTHROPIC_KEY) logToFile('WARNING: ANTHROPIC_API_KEY not set — Anthropic provider will be disabled (Ollama still works).');
+  logToFile('Serving on http://localhost:' + PORT);
 });

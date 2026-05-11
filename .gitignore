@@ -4,6 +4,13 @@
 # Environment variables
 .env
 .env.*
+# User-specific configuration (local only)
+config/evaluation-profile.md
+
+# Database and generated data — never commit
+pipeline.db
+pipeline.log
+output.json
 
 # Dependencies
 node_modules/
