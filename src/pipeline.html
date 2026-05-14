@@ -1831,13 +1831,40 @@ window.deleteCompany = function(id) {
   selectedId = null;
 };
 
+window.addInterviewNote = function() {
+  var el = document.getElementById('dp-note-entry');
+  var text = el.value.trim();
+  if (!text) return;
+  var c = null;
+  for (var i = 0; i < companies.length; i++) { if (companies[i].id === selectedId) c = companies[i]; }
+  if (!c) return;
+  window.addInterviewNoteToCompany(c, text, window.todayLabel());
+  el.value = '';
+  window.syncCompanyToDb(c);
+  window.selectCompany(selectedId);
+};
+
+var saveNotesTimer = null;
+window.saveNotes = function(el) {
+  clearTimeout(saveNotesTimer);
+  saveNotesTimer = setTimeout(function() {
+    var id = parseInt(el.getAttribute('data-id'));
+    if (!id) return;
+    var c = null;
+    for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
+    if (!c) return;
+    c.notes = el.value;
+    window.syncCompanyToDb(c);
+  }, 500);
+};
+
 window.logActivity = function(id) {
   var text = prompt('What happened?');
   if (!text) return;
   var c = null;
   for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
   if (!c) return;
-  c.activity.unshift({ date: window.todayLabel(), text: text });
+  window.logActivityToCompany(c, text, window.todayLabel());
   window.syncCompanyToDb(c);
   window.render();
   window.selectCompany(id);

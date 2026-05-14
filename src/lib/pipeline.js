@@ -81,15 +81,31 @@
     };
   }
 
+  function addInterviewNoteToCompany(c, text, dateLabel) {
+    if (!c.interviewNotes) c.interviewNotes = [];
+    c.interviewNotes.unshift({ date: dateLabel, text: text });
+    return c;
+  }
+
+  function logActivityToCompany(c, text, dateLabel) {
+    if (!c.activity) c.activity = [];
+    c.activity.unshift({ date: dateLabel, text: text });
+    return c;
+  }
+
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
       scoreTier: scoreTier,
       createCompanyRecord: createCompanyRecord,
-      computeFunnelStats: computeFunnelStats
+      computeFunnelStats: computeFunnelStats,
+      addInterviewNoteToCompany: addInterviewNoteToCompany,
+      logActivityToCompany: logActivityToCompany
     };
   } else {
     window.scoreTier = scoreTier;
     window.createCompanyRecord = createCompanyRecord;
     window.computeFunnelStats = computeFunnelStats;
+    window.addInterviewNoteToCompany = addInterviewNoteToCompany;
+    window.logActivityToCompany = logActivityToCompany;
   }
 })();

@@ -1,6 +1,6 @@
 var test = require('node:test');
 var assert = require('node:assert/strict');
-var { createCompanyRecord, computeFunnelStats } = require('../src/lib/pipeline.js');
+var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany } = require('../src/lib/pipeline.js');
 
 // ── createCompanyRecord ───────────────────────────────────────────────
 
@@ -125,4 +125,52 @@ test('computeFunnelStats handles empty array', function() {
   assert.equal(stats.netConv, 0);
   assert.equal(stats.screenCount, 0);
   assert.equal(stats.bottleneck, null);
+});
+
+// ── addInterviewNoteToCompany ─────────────────────────────────────────
+
+test('addInterviewNoteToCompany prepends note to empty array', function() {
+  var c = { id: 1 };
+  addInterviewNoteToCompany(c, 'Great chat', '14 May');
+  assert.equal(c.interviewNotes.length, 1);
+  assert.equal(c.interviewNotes[0].text, 'Great chat');
+  assert.equal(c.interviewNotes[0].date, '14 May');
+});
+
+test('addInterviewNoteToCompany prepends to existing notes', function() {
+  var c = { id: 1, interviewNotes: [{ date: '13 May', text: 'First note' }] };
+  addInterviewNoteToCompany(c, 'Second note', '14 May');
+  assert.equal(c.interviewNotes.length, 2);
+  assert.equal(c.interviewNotes[0].text, 'Second note');
+  assert.equal(c.interviewNotes[1].text, 'First note');
+});
+
+test('addInterviewNoteToCompany returns the company', function() {
+  var c = { id: 1 };
+  var result = addInterviewNoteToCompany(c, 'note', '14 May');
+  assert.equal(result, c);
+});
+
+// ── logActivityToCompany ──────────────────────────────────────────────
+
+test('logActivityToCompany prepends entry to empty array', function() {
+  var c = { id: 1 };
+  logActivityToCompany(c, 'Advanced to screen', '14 May');
+  assert.equal(c.activity.length, 1);
+  assert.equal(c.activity[0].text, 'Advanced to screen');
+  assert.equal(c.activity[0].date, '14 May');
+});
+
+test('logActivityToCompany prepends to existing activity', function() {
+  var c = { id: 1, activity: [{ date: '13 May', text: 'Added to pipeline' }] };
+  logActivityToCompany(c, 'Called recruiter', '14 May');
+  assert.equal(c.activity.length, 2);
+  assert.equal(c.activity[0].text, 'Called recruiter');
+  assert.equal(c.activity[1].text, 'Added to pipeline');
+});
+
+test('logActivityToCompany returns the company', function() {
+  var c = { id: 1, activity: [] };
+  var result = logActivityToCompany(c, 'note', '14 May');
+  assert.equal(result, c);
 });
