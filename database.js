@@ -15,12 +15,32 @@ db.exec(`
     data TEXT,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
-  
+
   CREATE TABLE IF NOT EXISTS kv_store (
     key TEXT PRIMARY KEY,
     value TEXT
   );
 `);
+
+// Migrations: add columns if they don't exist yet
+['culture_rating INTEGER', 'culture_notes TEXT'].forEach(function(col) {
+  try { db.exec('ALTER TABLE companies ADD COLUMN ' + col); } catch(e) { /* already exists */ }
+});
+
+// Data migration: promote culture fields from JSON blob into dedicated columns
+// Only runs for rows where the columns are still NULL but the blob has the data
+(function migrateCultureColumns() {
+  const rows = db.prepare('SELECT id, data FROM companies WHERE culture_rating IS NULL OR culture_notes IS NULL').all();
+  const stmt = db.prepare('UPDATE companies SET culture_rating = ?, culture_notes = ? WHERE id = ?');
+  for (const row of rows) {
+    try {
+      const blob = JSON.parse(row.data || '{}');
+      if (blob.culture_rating || blob.culture_notes) {
+        stmt.run(blob.culture_rating || null, blob.culture_notes || null, row.id);
+      }
+    } catch(e) { /* malformed blob — skip */ }
+  }
+})();
 
 /**
  * Maps a numeric overall score (1–10) to a tier label (A/B/C/D).
@@ -35,14 +55,16 @@ function scoreTier(val) {
 
 // Prepared statements (hoisted for reuse)
 const stmtUpsertCompany = db.prepare(`
-  INSERT INTO companies (id, company, role, tier, stage, data, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+  INSERT INTO companies (id, company, role, tier, stage, data, culture_rating, culture_notes, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
   ON CONFLICT(id) DO UPDATE SET
     company=excluded.company,
     role=excluded.role,
     tier=excluded.tier,
     stage=excluded.stage,
     data=excluded.data,
+    culture_rating=excluded.culture_rating,
+    culture_notes=excluded.culture_notes,
     updated_at=CURRENT_TIMESTAMP
 `);
 
@@ -55,9 +77,9 @@ module.exports = {
   },
   
   saveCompany: (company) => {
-    const { id, company: name, role, tier, stage, updated_at, data: rawData, ...rest } = company;
+    const { id, company: name, role, tier, stage, updated_at, data: rawData, culture_rating, culture_notes, ...rest } = company;
     const data = JSON.stringify(rest);
-    return stmtUpsertCompany.run(id, name, role, tier, stage, data);
+    return stmtUpsertCompany.run(id, name, role, tier, stage, data, culture_rating || null, culture_notes || null);
   },
 
   deleteCompany: (id) => {
@@ -80,10 +102,10 @@ module.exports = {
   migrateCompanies: (companiesList, nextId) => {
     const transaction = db.transaction((list) => {
       for (const c of list) {
-        const { id, company: name, role, tier, stage, updated_at, data: rawData, ...rest } = c;
-        delete rest.data;      // Cleanup any nested blob
+        const { id, company: name, role, tier, stage, updated_at, data: rawData, culture_rating, culture_notes, ...rest } = c;
+        delete rest.data;
         delete rest.updated_at;
-        stmtUpsertCompany.run(id, name, role, tier, stage, JSON.stringify(rest));
+        stmtUpsertCompany.run(id, name, role, tier, stage, JSON.stringify(rest), culture_rating || null, culture_notes || null);
       }
       if (nextId) {
         db.prepare(

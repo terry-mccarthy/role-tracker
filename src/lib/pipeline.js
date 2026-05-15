@@ -81,6 +81,33 @@
     };
   }
 
+  function parseCultureResponse(raw) {
+    if (!raw) return null;
+    var s = raw.trim();
+    var start = s.indexOf('{');
+    var end = s.lastIndexOf('}');
+    if (start === -1 || end === -1) return null;
+    var jsonStr = s.substring(start, end + 1);
+    // Replace backtick-delimited strings with properly escaped double-quoted strings
+    jsonStr = jsonStr.replace(/`([\s\S]*?)`/g, function(match, content) {
+      return '"' + content.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n') + '"';
+    });
+    try {
+      var d = JSON.parse(jsonStr);
+      if (!d.rating && !d.summary) return null;
+      return { rating: parseInt(d.rating) || 0, summary: String(d.summary || '').trim() };
+    } catch(e) {
+      // Fallback: regex extraction for unescaped newlines inside string values
+      var rMatch = jsonStr.match(/"rating"\s*:\s*(\d+)/);
+      var sMatch = jsonStr.match(/"summary"\s*:\s*"([\s\S]+?)"\s*\}?\s*$/);
+      if (!rMatch && !sMatch) return null;
+      return {
+        rating: rMatch ? parseInt(rMatch[1]) : 0,
+        summary: sMatch ? sMatch[1].trim() : ''
+      };
+    }
+  }
+
   function addInterviewNoteToCompany(c, text, dateLabel) {
     if (!c.interviewNotes) c.interviewNotes = [];
     c.interviewNotes.unshift({ date: dateLabel, text: text });
@@ -99,7 +126,8 @@
       createCompanyRecord: createCompanyRecord,
       computeFunnelStats: computeFunnelStats,
       addInterviewNoteToCompany: addInterviewNoteToCompany,
-      logActivityToCompany: logActivityToCompany
+      logActivityToCompany: logActivityToCompany,
+      parseCultureResponse: parseCultureResponse
     };
   } else {
     window.scoreTier = scoreTier;
@@ -107,5 +135,6 @@
     window.computeFunnelStats = computeFunnelStats;
     window.addInterviewNoteToCompany = addInterviewNoteToCompany;
     window.logActivityToCompany = logActivityToCompany;
+    window.parseCultureResponse = parseCultureResponse;
   }
 })();

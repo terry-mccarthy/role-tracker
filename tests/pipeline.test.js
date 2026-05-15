@@ -1,6 +1,6 @@
 var test = require('node:test');
 var assert = require('node:assert/strict');
-var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany } = require('../src/lib/pipeline.js');
+var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany, parseCultureResponse } = require('../src/lib/pipeline.js');
 
 // ── createCompanyRecord ───────────────────────────────────────────────
 
@@ -173,4 +173,60 @@ test('logActivityToCompany returns the company', function() {
   var c = { id: 1, activity: [] };
   var result = logActivityToCompany(c, 'note', '14 May');
   assert.equal(result, c);
+});
+
+// ── parseCultureResponse ──────────────────────────────────────────────
+
+test('parseCultureResponse parses valid JSON', function() {
+  var raw = '{"rating": 4, "summary": "Great culture."}';
+  var r = parseCultureResponse(raw);
+  assert.equal(r.rating, 4);
+  assert.equal(r.summary, 'Great culture.');
+});
+
+test('parseCultureResponse extracts JSON from surrounding prose', function() {
+  var raw = 'Here is the result:\n{"rating": 3, "summary": "Mixed reviews."}\nDone.';
+  var r = parseCultureResponse(raw);
+  assert.equal(r.rating, 3);
+  assert.equal(r.summary, 'Mixed reviews.');
+});
+
+test('parseCultureResponse handles backtick-delimited summary', function() {
+  var raw = '{"rating": 3, "summary": `* Good culture.\n* Remote friendly.`}';
+  var r = parseCultureResponse(raw);
+  assert.equal(r.rating, 3);
+  assert.ok(r.summary.indexOf('Good culture') !== -1);
+  assert.ok(r.summary.indexOf('Remote friendly') !== -1);
+});
+
+test('parseCultureResponse handles backtick with embedded double quotes', function() {
+  var raw = '{"rating": 2, "summary": `Employees say "management is poor".`}';
+  var r = parseCultureResponse(raw);
+  assert.equal(r.rating, 2);
+  assert.ok(r.summary.indexOf('management is poor') !== -1);
+});
+
+test('parseCultureResponse returns null for empty input', function() {
+  assert.equal(parseCultureResponse(''), null);
+  assert.equal(parseCultureResponse(null), null);
+});
+
+test('parseCultureResponse returns null when no JSON object found', function() {
+  assert.equal(parseCultureResponse('no json here'), null);
+});
+
+test('parseCultureResponse coerces rating to integer', function() {
+  var raw = '{"rating": "4", "summary": "Good."}';
+  var r = parseCultureResponse(raw);
+  assert.equal(r.rating, 4);
+  assert.equal(typeof r.rating, 'number');
+});
+
+test('parseCultureResponse handles unescaped newlines in summary', function() {
+  var raw = '{\n  "rating": 3,\n  "summary": "Line one.\nLine two.\nLine three."\n}';
+  var r = parseCultureResponse(raw);
+  assert.ok(r !== null, 'should not return null');
+  assert.equal(r.rating, 3);
+  assert.ok(r.summary.indexOf('Line one') !== -1);
+  assert.ok(r.summary.indexOf('Line two') !== -1);
 });

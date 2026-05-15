@@ -395,6 +395,25 @@ td {
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--surface2); }
 
+.filter-dd { position: relative; }
+.filter-dd-btn {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+  padding: 0.45rem 0.75rem; color: var(--dim); font-family: var(--mono); font-size: 0.72rem;
+  cursor: pointer; white-space: nowrap;
+}
+.filter-dd-btn.active { border-color: var(--accent); color: var(--accent); }
+.filter-panel {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 100;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+  padding: 0.4rem 0.2rem; min-width: 130px; box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+.filter-panel label {
+  display: flex; align-items: center; gap: 0.45rem; padding: 0.3rem 0.6rem;
+  font-family: var(--mono); font-size: 0.72rem; color: var(--text);
+  cursor: pointer; border-radius: 3px; white-space: nowrap;
+}
+.filter-panel label:hover { background: var(--surface2); }
+
 .stage-pill {
   font-family: var(--mono);
   font-size: 0.58rem;
@@ -883,6 +902,39 @@ tr:hover td { background: var(--surface2); }
 
   <!-- TABLE -->
   <div id="view-table" style="display:none; flex:1; overflow-y:auto; padding:1.25rem;">
+    <div style="display:flex;gap:0.6rem;margin-bottom:0.9rem;align-items:center;flex-wrap:wrap">
+      <input id="tbl-search" type="text" placeholder="Search company or role…" oninput="window.renderTable()"
+        style="flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:0.45rem 0.75rem;color:var(--text);font-family:var(--mono);font-size:0.72rem;outline:none">
+      <div class="filter-dd" id="fd-stage">
+        <button class="filter-dd-btn" id="fd-stage-btn" onclick="window.toggleFilterDropdown('fd-stage')">Stage</button>
+        <div class="filter-panel" id="fd-stage-panel">
+          <label><input type="checkbox" value="target" onchange="window.renderTable()"> Target</label>
+          <label><input type="checkbox" value="warm" onchange="window.renderTable()"> Warm</label>
+          <label><input type="checkbox" value="screen" onchange="window.renderTable()"> Screen</label>
+          <label><input type="checkbox" value="interview" onchange="window.renderTable()"> Interview</label>
+          <label><input type="checkbox" value="offer" onchange="window.renderTable()"> Offer</label>
+          <label><input type="checkbox" value="closed" onchange="window.renderTable()"> Closed</label>
+        </div>
+      </div>
+      <div class="filter-dd" id="fd-tier">
+        <button class="filter-dd-btn" id="fd-tier-btn" onclick="window.toggleFilterDropdown('fd-tier')">Tier</button>
+        <div class="filter-panel" id="fd-tier-panel">
+          <label><input type="checkbox" value="A" onchange="window.renderTable()"> Tier A</label>
+          <label><input type="checkbox" value="B" onchange="window.renderTable()"> Tier B</label>
+          <label><input type="checkbox" value="C" onchange="window.renderTable()"> Tier C</label>
+          <label><input type="checkbox" value="D" onchange="window.renderTable()"> Tier D</label>
+        </div>
+      </div>
+      <div class="filter-dd" id="fd-source">
+        <button class="filter-dd-btn" id="fd-source-btn" onclick="window.toggleFilterDropdown('fd-source')">Source</button>
+        <div class="filter-panel" id="fd-source-panel">
+          <label><input type="checkbox" value="Network" onchange="window.renderTable()"> Network</label>
+          <label><input type="checkbox" value="Job Board" onchange="window.renderTable()"> Job Board</label>
+        </div>
+      </div>
+      <button onclick="window.clearTableFilters()"
+        style="background:none;border:1px solid var(--border);border-radius:4px;padding:0.45rem 0.75rem;color:var(--muted);font-family:var(--mono);font-size:0.72rem;cursor:pointer">Clear</button>
+    </div>
     <div class="table-wrap">
       <table>
         <thead>
@@ -1165,7 +1217,8 @@ window.saveToStorage = function() {
 window.syncCompanyToDb = function(c) {
   if (!c || !c.id) return;
   console.log('[Pipeline] Syncing company to DB:', c.id, c.company);
-  
+  c.updated_at = window.todayStr();
+
   // Create a clean copy for syncing
   var toSync = Object.assign({}, c);
   delete toSync.data; // Ensure we don't send the raw blob back to be double-encoded
@@ -1210,18 +1263,13 @@ window.loadFromStorage = function() {
           try { extra = JSON.parse(c.data); } catch(e) {}
           var merged = Object.assign({}, extra, c);
           delete merged.data; // PREVENT DOUBLE ENCODING
-          
-          // AUTO-FIX: If culture_notes contains JSON but rating is missing
-          var cNotes = String(merged.culture_notes || '');
-          if (cNotes.indexOf('{') !== -1 && cNotes.indexOf('}') !== -1 && !merged.culture_rating) {
-            try {
-              var s = cNotes.trim();
-              var start = s.indexOf('{');
-              var end = s.lastIndexOf('}');
-              var d = JSON.parse(s.substring(start, end + 1));
-              if (d.rating) merged.culture_rating = d.rating;
-              if (d.summary) merged.culture_notes = String(d.summary);
-            } catch(e) {}
+          // Clear any corrupted object-coercion artifacts
+          if (merged.culture_notes === '[object Object]') { merged.culture_notes = null; merged.culture_rating = null; }
+          // Heal any rows where culture_notes was stored as raw JSON
+          var cultureParsed = window.parseCultureResponse(String(merged.culture_notes || ''));
+          if (cultureParsed && cultureParsed.summary && cultureParsed.summary !== merged.culture_notes) {
+            merged.culture_rating = merged.culture_rating || cultureParsed.rating;
+            merged.culture_notes = cultureParsed.summary;
           }
           return merged;
         });
@@ -1367,7 +1415,7 @@ window.renderStats = function() {
 };
 
 window.renderCard = function(c) {
-  var days = window.daysSince(c.added);
+  var days = window.daysSince(c.updated_at || c.added);
   var urgent = (c.stage === 'interview' || c.stage === 'warm') && days > 5;
   var contactTag = '';
   if (c.contact && c.contact.length > 0) {
@@ -1385,7 +1433,8 @@ window.renderCard = function(c) {
   }
   var cultureBadge = '';
   if (c.culture_rating) {
-    cultureBadge = '<span style="color:var(--accent2);font-size:0.65rem;margin-left:0.4rem;font-family:var(--mono)">★' + c.culture_rating + '</span>';
+    var cColor = c.culture_rating >= 4 ? 'var(--green)' : c.culture_rating >= 3 ? 'var(--accent2)' : 'var(--red)';
+    cultureBadge = '<span style="color:' + cColor + ';font-size:0.65rem;margin-left:0.4rem;font-family:var(--mono)">★' + c.culture_rating + '</span>';
   }
   var nextLine = c.next ? '<div class="card-next">' + window.esc(c.next) + '</div>' : '';
   return '<div class="card' + (urgent ? ' card-urgent' : '') + '" onclick="selectCompany(' + c.id + ')">' +
@@ -1434,14 +1483,71 @@ window.renderKanban = function() {
   wrap.innerHTML = html;
 };
 
+window.toggleFilterDropdown = function(id) {
+  var panel = document.getElementById(id + '-panel');
+  var isOpen = panel.style.display === 'block';
+  var allPanels = document.querySelectorAll('.filter-panel');
+  for (var i = 0; i < allPanels.length; i++) allPanels[i].style.display = 'none';
+  if (!isOpen) panel.style.display = 'block';
+};
+
+document.addEventListener('click', function(e) {
+  var t = e.target;
+  while (t) { if (t.classList && t.classList.contains('filter-dd')) return; t = t.parentElement; }
+  var allPanels = document.querySelectorAll('.filter-panel');
+  for (var i = 0; i < allPanels.length; i++) allPanels[i].style.display = 'none';
+});
+
+function getCheckedValues(panelId) {
+  var boxes = document.querySelectorAll('#' + panelId + ' input:checked');
+  var vals = [];
+  for (var i = 0; i < boxes.length; i++) vals.push(boxes[i].value);
+  return vals;
+}
+
+function updateFilterBtn(btnId, label, count) {
+  var btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.textContent = count > 0 ? label + ' (' + count + ')' : label;
+  if (count > 0) btn.classList.add('active'); else btn.classList.remove('active');
+}
+
+window.clearTableFilters = function() {
+  document.getElementById('tbl-search').value = '';
+  var boxes = document.querySelectorAll('.filter-panel input[type="checkbox"]');
+  for (var i = 0; i < boxes.length; i++) boxes[i].checked = false;
+  window.renderTable();
+};
+
 window.renderTable = function() {
   var tbody = document.getElementById('table-body');
-  if (companies.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No companies yet</td></tr>'; return; }
-  var html = '';
+  var search = document.getElementById('tbl-search') ? document.getElementById('tbl-search').value.toLowerCase() : '';
+  var stageF = getCheckedValues('fd-stage-panel');
+  var tierF = getCheckedValues('fd-tier-panel');
+  var sourceF = getCheckedValues('fd-source-panel');
+
+  updateFilterBtn('fd-stage-btn', 'Stage', stageF.length);
+  updateFilterBtn('fd-tier-btn', 'Tier', tierF.length);
+  updateFilterBtn('fd-source-btn', 'Source', sourceF.length);
+
+  var filtered = [];
   for (var i = 0; i < companies.length; i++) {
     var c = companies[i];
+    if (search && (c.company + ' ' + c.role).toLowerCase().indexOf(search) === -1) continue;
+    if (stageF.length > 0 && stageF.indexOf(c.stage) === -1) continue;
+    if (tierF.length > 0 && tierF.indexOf(c.tier) === -1) continue;
+    if (sourceF.length > 0 && sourceF.indexOf(c.source) === -1) continue;
+    filtered.push(c);
+  }
+
+  if (companies.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No companies yet</td></tr>'; return; }
+  if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No matches</td></tr>'; return; }
+
+  var html = '';
+  for (var j = 0; j < filtered.length; j++) {
+    var c = filtered[j];
     var sl = '';
-    for (var j = 0; j < STAGES.length; j++) { if (STAGES[j].id === c.stage) sl = STAGES[j].label; }
+    for (var k = 0; k < STAGES.length; k++) { if (STAGES[k].id === c.stage) sl = STAGES[k].label; }
     html += '<tr onclick="selectCompany(' + c.id + ')" style="cursor:pointer">' +
       '<td style="font-weight:600">' + window.esc(c.company) + '</td>' +
       '<td style="color:var(--dim)">' + window.esc(c.role) + '</td>' +
@@ -1684,20 +1790,12 @@ window.researchCulture = function(id) {
     return window.callLlm(system, user, null);
   })
   .then(function(response) {
-    try {
-      var jsonStr = response.trim();
-      var start = jsonStr.indexOf('{');
-      var end = jsonStr.lastIndexOf('}');
-      if (start !== -1 && end !== -1) {
-        jsonStr = jsonStr.substring(start, end + 1);
-        var data = JSON.parse(jsonStr);
-        c.culture_notes = data.summary || response;
-        c.culture_rating = data.rating || 0;
-      } else {
-        throw new Error('No JSON found');
-      }
-    } catch(e) {
-      console.warn('Failed to parse culture JSON:', e);
+    var parsed = window.parseCultureResponse(response);
+    if (parsed) {
+      c.culture_notes = parsed.summary;
+      c.culture_rating = parsed.rating;
+    } else {
+      console.warn('Failed to parse culture JSON, storing raw text');
       c.culture_notes = response;
       c.culture_rating = 0;
     }
@@ -1725,46 +1823,17 @@ window.renderCulture = function(c) {
   var ratingEl = document.getElementById('dp-culture-rating');
   if (!textEl || !ratingEl) return;
 
+  if (c.culture_notes === '[object Object]') { c.culture_notes = null; c.culture_rating = null; }
   var notesRaw = c.culture_notes || '';
-  var notes = typeof notesRaw === 'string' ? notesRaw : (notesRaw.summary || notesRaw.text || JSON.stringify(notesRaw));
-  if (notes === '[object Object]') notes = ''; // Fallback for empty/weird objects
-  var rating = c.culture_rating || 0;
-  
-  // AUTO-FIX: If notes is actually a JSON string or malformed JSON
-  if (notes.indexOf('{') !== -1 && notes.indexOf('}') !== -1) {
-    try {
-      var s = notes.trim();
-      var start = s.indexOf('{');
-      var end = s.lastIndexOf('}');
-      var jsonStr = s.substring(start, end + 1);
-      
-      // Try standard parse first
-      var d = null;
-      try {
-        d = JSON.parse(jsonStr);
-      } catch(e) {
-        // Fallback: Regex extraction for common malformed patterns (like backticks in screenshot)
-        var rMatch = jsonStr.match(/"rating":\s*(\d+)/);
-        var sMatch = jsonStr.match(/"summary":\s*[`"]([\s\S]*?)[`"]\s*[},]/);
-        if (rMatch || sMatch) {
-          d = {
-            rating: rMatch ? parseInt(rMatch[1]) : 0,
-            summary: sMatch ? sMatch[1].trim() : ""
-          };
-        }
-      }
-
-      if (d && (d.rating || d.summary)) {
-        if (d.rating) { rating = d.rating; c.culture_rating = d.rating; }
-        if (d.summary) { notes = d.summary; c.culture_notes = d.summary; }
-        // Save the fixed version back to DB
-        window.syncCompanyToDb(c);
-        window.render(); // Update stars on card
-      }
-    } catch(e) {
-      console.warn('Ultimate fix failed:', e);
-    }
+  // Attempt to re-parse if stored value looks like it slipped through as raw JSON
+  var parsed = window.parseCultureResponse(notesRaw);
+  if (parsed && parsed.summary) {
+    c.culture_notes = parsed.summary;
+    c.culture_rating = parsed.rating;
+    window.syncCompanyToDb(c);
   }
+  var notes = c.culture_notes || '';
+  var rating = c.culture_rating || 0;
 
   textEl.textContent = notes;
   
