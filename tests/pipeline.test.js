@@ -127,6 +127,37 @@ test('computeFunnelStats handles empty array', function() {
   assert.equal(stats.bottleneck, null);
 });
 
+test('computeFunnelStats cumulative counts include downstream stages', function() {
+  var companies = [
+    makeCompany('target'), makeCompany('warm'),
+    makeCompany('screen'), makeCompany('interview'), makeCompany('offer')
+  ];
+  var c = computeFunnelStats(companies).cumulative;
+  assert.equal(c.target, 5);
+  assert.equal(c.warm, 4);
+  assert.equal(c.screen, 3);
+  assert.equal(c.interview, 2);
+  assert.equal(c.offer, 1);
+});
+
+test('computeFunnelStats cumulative never produces >100% conversion for mid-funnel adds', function() {
+  // Simulates adding 10 companies directly to warm with only 1 in target
+  var companies = [makeCompany('target')];
+  for (var i = 0; i < 10; i++) companies.push(makeCompany('warm'));
+  var c = computeFunnelStats(companies).cumulative;
+  var convRate = Math.round((c.warm / c.target) * 100);
+  assert.ok(convRate <= 100, 'conversion rate should not exceed 100% (got ' + convRate + '%)');
+});
+
+test('computeFunnelStats cumulative excludes closed companies', function() {
+  var companies = [
+    makeCompany('target'), makeCompany('offer'), makeCompany('closed')
+  ];
+  var c = computeFunnelStats(companies).cumulative;
+  assert.equal(c.target, 2);
+  assert.equal(c.offer, 1);
+});
+
 // ── addInterviewNoteToCompany ─────────────────────────────────────────
 
 test('addInterviewNoteToCompany prepends note to empty array', function() {

@@ -1,0 +1,7 @@
+node_modules/
+pipeline.db
+pipeline.log
+output.json
+.env
+scratch/
+docs/

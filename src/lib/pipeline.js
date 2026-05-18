@@ -45,6 +45,17 @@
       counts[STAGE_IDS[i]] = cnt;
     }
 
+    // Cumulative counts: companies that reached at least each stage.
+    // A company in 'interview' also counts toward 'target', 'warm', 'screen'.
+    // Closed companies are excluded — they exited the funnel.
+    var funnelIds = ['target', 'warm', 'screen', 'interview', 'offer'];
+    var cumulative = {};
+    var running = 0;
+    for (i = funnelIds.length - 1; i >= 0; i--) {
+      running += counts[funnelIds[i]] || 0;
+      cumulative[funnelIds[i]] = running;
+    }
+
     var networkTotal = 0, networkAdv = 0, boardTotal = 0, boardAdv = 0;
     for (i = 0; i < companies.length; i++) {
       var c = companies[i];
@@ -71,6 +82,7 @@
 
     return {
       counts: counts,
+      cumulative: cumulative,
       netConv: netConv,
       boardConv: boardConv,
       bottleneck: bottleneck,

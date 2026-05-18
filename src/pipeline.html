@@ -1569,6 +1569,7 @@ window.renderFunnel = function() {
 
   var stats = window.computeFunnelStats(companies);
   var counts = stats.counts;
+  var cumulative = stats.cumulative;
   var total = companies.length || 1;
   var activeStages = [];
   var i;
@@ -1589,8 +1590,9 @@ window.renderFunnel = function() {
 
     if (i < activeStages.length - 1) {
       var ns = activeStages[i+1];
-      var nc = counts[ns.id];
-      var convRate = count > 0 ? Math.round((nc / count) * 100) : 0;
+      var fromCum = cumulative[s.id] || 0;
+      var toCum = cumulative[ns.id] || 0;
+      var convRate = fromCum > 0 ? Math.round((toCum / fromCum) * 100) : 0;
       var benchKey = s.id + '_' + ns.id;
       var bench = FUNNEL_BENCHMARKS[benchKey];
       var convClass = 'conv-warn';
@@ -2208,14 +2210,23 @@ window.fetchJobFromUrl = function(url) {
   });
 };
 
+window.stripJdGuff = function(text) {
+  return text
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')   // markdown images: ![alt](url)
+    .replace(/\[([^\]]*)\]\(https?:\/\/[^)]*\)/g, '$1')  // markdown links: [text](url) → text
+    .replace(/[ \t]+$/gm, '')               // trailing whitespace on each line
+    .replace(/\n{3,}/g, '\n\n')             // collapse 3+ blank lines to 2
+    .trim();
+};
+
 window.extractJobData = function(content, onToken) {
-  // Only ask for company + title — the raw content goes straight to the JD field
-  // so the scorer has full context rather than an LLM summary.
   var truncated = content.length > 8000 ? content.substring(0, 8000) : content;
   console.log('[extractJobData] content chars:', content.length, '→ sending:', truncated.length);
 
-  var system = 'Extract job details from the following content. Return ONLY a valid JSON object with exactly these fields: company_name, job_title. No markdown, no preamble, no explanation.';
-  var user = 'Extract company_name and job_title from this job posting:\n\n' + truncated;
+  var system = 'Extract job details from the following content. Return ONLY a valid JSON object with exactly these fields: company_name, job_title, contact_name. ' +
+    'contact_name: name of the recruiter or hiring manager visible in the posting (null if not found). ' +
+    'No markdown, no preamble, no explanation.';
+  var user = 'Extract job details from this job posting:\n\n' + truncated;
   return window.callLlm(system, user, onToken).then(function(text) {
     console.log('[extractJobData] raw response:', JSON.stringify(text));
     try {
@@ -2259,8 +2270,19 @@ window.fetchAndFill = function() {
   }).then(function(extracted) {
     if (extracted && extracted.company_name) document.getElementById('f-company').value = extracted.company_name;
     if (extracted && extracted.job_title) document.getElementById('f-role').value = extracted.job_title;
+    if (extracted && extracted.contact_name) {
+      var contactEl = document.getElementById('f-contact');
+      if (contactEl && !contactEl.value) contactEl.value = extracted.contact_name;
+    }
+    if (url.indexOf('linkedin.com') !== -1) {
+      var sourceEl = document.getElementById('f-source');
+      if (sourceEl) sourceEl.value = 'LinkedIn';
+    }
     var jdEl = document.getElementById('f-jd');
-    if (jdEl && rawContent) jdEl.value = rawContent.length > 12000 ? rawContent.substring(0, 12000) : rawContent;
+    if (jdEl && rawContent) {
+      var jdText = window.stripJdGuff(rawContent);
+      jdEl.value = jdText.length > 12000 ? jdText.substring(0, 12000) : jdText;
+    }
     if (btn) btn.textContent = origText;
     if (tokensEl) {
       tokensEl.style.display = tokensFired > 0 ? 'block' : 'none';

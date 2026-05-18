@@ -12,6 +12,12 @@ var db = require('./database');
 var TAVILY_KEY     = process.env.TAVILY_API_KEY     || '';
 var ANTHROPIC_KEY  = process.env.ANTHROPIC_API_KEY  || '';
 
+// OLLAMA_HOST lets Docker Compose point the proxy at the ollama service.
+// Defaults to localhost for native dev.
+var _ollamaUrl     = new URL(process.env.OLLAMA_HOST || 'http://localhost:11434');
+var OLLAMA_HOSTNAME = _ollamaUrl.hostname;
+var OLLAMA_PORT    = parseInt(_ollamaUrl.port, 10) || 11434;
+
 var MIME = {
   '.html': 'text/html',
   '.css':  'text/css',
@@ -207,8 +213,8 @@ http.createServer(function(req, res) {
     if (!ollamaPath) ollamaPath = '/';
 
     var options = {
-      hostname: 'localhost',
-      port: 11434,
+      hostname: OLLAMA_HOSTNAME,
+      port: OLLAMA_PORT,
       path: ollamaPath,
       method: req.method,
       headers: req.headers

@@ -1,0 +1,35 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - DB_PATH=/app/data/pipeline.db
+      # Points the Ollama proxy at the ollama service defined below.
+      # To use native Ollama on the Mac host instead (GPU-accelerated), comment
+      # out the ollama service and set this to:
+      #   OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_HOST=http://ollama:11434
+    volumes:
+      - pipeline_db:/app/data
+      - ./config:/app/config:ro
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    # On Mac, Docker containers run in a Linux VM with no GPU passthrough,
+    # so Ollama runs on CPU only. For GPU acceleration, run Ollama natively
+    # and switch OLLAMA_HOST above to http://host.docker.internal:11434.
+
+volumes:
+  pipeline_db:
+  ollama_data:

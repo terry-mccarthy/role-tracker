@@ -4,6 +4,13 @@
 
 This is a personal job search pipeline tool for a senior engineering manager. It uses a Node.js server with a SQLite backend for persistent storage and proxies for AI services. The frontend consists of HTML files in `src/` using vanilla JS with strict compatibility constraints.
 
+## File discovery fallback
+
+When a direct file path returns empty (glob/read fails):
+1. Read the parent directory first to discover actual structure
+2. Use a broader glob pattern (e.g. `src/**/*.js` instead of `src/pipeline.js`)
+3. Never retry the same path — widen the search
+
 ## Critical constraints
 
 ### JavaScript patterns (MUST follow)
@@ -23,7 +30,9 @@ This is a personal job search pipeline tool for a senior engineering manager. It
   - `POST /api/delete`: Delete a company.
   - `POST /api/save-score`: Update a company's AI score.
   - `POST /api/kv`: Generic key-value storage (e.g., `nextId`).
-- Use `.then()` / `.catch()` for promises to maintain compatibility with the sandboxed environment constraints.
+  - `POST /api/log`: Write a log entry server-side.
+  - `POST /api/migrate`: Bulk import companies.
+  - `POST /api/reset`: Wipe all pipeline data.
 
 ### Styling
 - Dark theme with CSS custom properties (see `:root` in pipeline.html)
@@ -38,7 +47,9 @@ This is a personal job search pipeline tool for a senior engineering manager. It
 | `config/evaluation-profile.md` | User's scoring criteria. Editable. Parsed at scoring time. |
 | `src/pipeline.html` | Main CRM — kanban, table, funnel views. All pipeline CRUD. |
 | `src/scorer.html` | Role evaluation tool. Takes JD text, scores against profile. |
-| `src/shared.css` | Design tokens (future — currently inlined in each HTML file) |
+| `src/lib/pipeline.js` | Pipeline data model — record creation, funnel stats, culture parse, activity logging. |
+| `src/lib/parse.js` | JD parsing and extraction utilities. |
+| `src/lib/scoring.js` | AI scoring bridge — calls external model and processes results. |
 
 ## Evaluation profile format
 
@@ -56,21 +67,16 @@ The profile in `config/evaluation-profile.md` follows a specific structure:
 2. Add a row to the `## Scoring weights` table (rebalance to 100%)
 3. Update `src/scorer.html` scoring logic to include the new dimension
 
-### Changing compensation thresholds
-1. Edit `## Compensation` in `evaluation-profile.md`
-2. The scorer reads these values dynamically — no code changes needed
-
 ### Adding a pipeline field
 1. Add the field to the modal form HTML in `pipeline.html`
 2. Add it to `window.saveCompany` (both create and edit paths)
 3. Add it to `window.renderCard` and/or `window.selectCompany` display
-4. It will automatically persist via the existing storage mechanism
 
 ## Testing
 
 - **Backend tests**: Run `npm test` to execute SQLite and API tests.
 - **Manual testing**:
-  1. Start the server: `npm run serve`
+  1. Start the server: `npm run serve` (local) or `docker compose up` (Docker)
   2. Open `http://localhost:3000`
   3. Verify CRUD operations: add company, edit, advance stage, delete.
   4. Verify scoring: paste JD, run scorer, check if score is saved to the company card.
