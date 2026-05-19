@@ -132,6 +132,16 @@
     return c;
   }
 
+  function filterCompanies(list, query) {
+    if (!query) return list;
+    var q = query.toLowerCase();
+    return list.filter(function(c) {
+      return c.company.toLowerCase().indexOf(q) !== -1 ||
+             c.role.toLowerCase().indexOf(q) !== -1 ||
+             (c.contact && c.contact.toLowerCase().indexOf(q) !== -1);
+    });
+  }
+
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
       scoreTier: scoreTier,
@@ -139,7 +149,8 @@
       computeFunnelStats: computeFunnelStats,
       addInterviewNoteToCompany: addInterviewNoteToCompany,
       logActivityToCompany: logActivityToCompany,
-      parseCultureResponse: parseCultureResponse
+      parseCultureResponse: parseCultureResponse,
+      filterCompanies: filterCompanies
     };
   } else {
     window.scoreTier = scoreTier;
@@ -148,5 +159,6 @@
     window.addInterviewNoteToCompany = addInterviewNoteToCompany;
     window.logActivityToCompany = logActivityToCompany;
     window.parseCultureResponse = parseCultureResponse;
+    window.filterCompanies = filterCompanies;
   }
 })();

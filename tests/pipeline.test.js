@@ -1,6 +1,6 @@
 var test = require('node:test');
 var assert = require('node:assert/strict');
-var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany, parseCultureResponse } = require('../src/lib/pipeline.js');
+var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany, parseCultureResponse, filterCompanies } = require('../src/lib/pipeline.js');
 
 // ── createCompanyRecord ───────────────────────────────────────────────
 
@@ -156,6 +156,62 @@ test('computeFunnelStats cumulative excludes closed companies', function() {
   var c = computeFunnelStats(companies).cumulative;
   assert.equal(c.target, 2);
   assert.equal(c.offer, 1);
+});
+
+// ── filterCompanies ───────────────────────────────────────────────────
+
+test('filterCompanies returns full list when query is empty', function() {
+  var list = [{ company: 'Acme', role: 'Engineer', contact: '' }];
+  assert.deepEqual(filterCompanies(list, ''), list);
+  assert.deepEqual(filterCompanies(list, null), list);
+});
+
+test('filterCompanies matches on company name', function() {
+  var list = [
+    { company: 'Acme', role: 'Engineer', contact: '' },
+    { company: 'Globex', role: 'Manager', contact: '' }
+  ];
+  var result = filterCompanies(list, 'acme');
+  assert.equal(result.length, 1);
+  assert.equal(result[0].company, 'Acme');
+});
+
+test('filterCompanies matches on role', function() {
+  var list = [
+    { company: 'Acme', role: 'Senior Engineer', contact: '' },
+    { company: 'Globex', role: 'Product Manager', contact: '' }
+  ];
+  var result = filterCompanies(list, 'product');
+  assert.equal(result.length, 1);
+  assert.equal(result[0].company, 'Globex');
+});
+
+test('filterCompanies matches on contact', function() {
+  var list = [
+    { company: 'Acme', role: 'Engineer', contact: 'Sarah Chen' },
+    { company: 'Globex', role: 'Manager', contact: 'Bob Smith' }
+  ];
+  var result = filterCompanies(list, 'sarah');
+  assert.equal(result.length, 1);
+  assert.equal(result[0].company, 'Acme');
+});
+
+test('filterCompanies is case-insensitive', function() {
+  var list = [{ company: 'Canva', role: 'Engineering Manager', contact: 'Alice' }];
+  assert.equal(filterCompanies(list, 'CANVA').length, 1);
+  assert.equal(filterCompanies(list, 'engineering MANAGER').length, 1);
+  assert.equal(filterCompanies(list, 'ALICE').length, 1);
+});
+
+test('filterCompanies returns empty array when nothing matches', function() {
+  var list = [{ company: 'Acme', role: 'Engineer', contact: 'Bob' }];
+  assert.equal(filterCompanies(list, 'zzznomatch').length, 0);
+});
+
+test('filterCompanies handles missing contact field', function() {
+  var list = [{ company: 'Acme', role: 'Engineer' }];
+  assert.doesNotThrow(function() { filterCompanies(list, 'sarah'); });
+  assert.equal(filterCompanies(list, 'acme').length, 1);
 });
 
 // ── addInterviewNoteToCompany ─────────────────────────────────────────

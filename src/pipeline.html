@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EM Job Search · Funnel CRM</title>
+<title>Job Search · Funnel CRM</title>
 <link rel="icon" type="image/png" href="/assets/jobsearch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -102,6 +102,27 @@ body {
 
 .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 .nav-tab:hover:not(.active) { color: var(--dim); }
+
+.topbar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 0 1.5rem;
+}
+.global-search {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  padding: 0.35rem 0.75rem;
+  width: 240px;
+  outline: none;
+}
+.global-search:focus { border-color: var(--accent); }
+.global-search::placeholder { color: var(--muted); }
 
 .topbar-right {
   display: flex;
@@ -871,16 +892,16 @@ tr:hover td { background: var(--surface2); }
   <div class="topbar-left">
     <div class="logo">
       <div class="logo-dot"></div>
-      EM Job Search
-      <button onclick="window.loadFromStorage()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:0.55rem;text-transform:uppercase;letter-spacing:0.05em;margin-left:1rem;display:flex;align-items:center;gap:0.3rem">
-        <span style="font-size:0.8rem">↻</span> Refresh
-      </button>
+      Job Search
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchView('kanban',this)">Kanban</button>
       <button class="nav-tab" onclick="switchView('table',this)">Table</button>
       <button class="nav-tab" onclick="switchView('funnel',this)">Funnel</button>
     </div>
+  </div>
+  <div class="topbar-center">
+    <input class="global-search" id="global-search" type="text" placeholder="Search companies, roles, contacts…" oninput="window.onSearch(this.value)">
   </div>
   <div class="topbar-right">
     <button class="btn-add" onclick="openModal()" style="margin-right:0.4rem">+ Add Company</button>
@@ -1161,7 +1182,11 @@ var STORAGE_KEY = 'pipeline-data';
   var oldError = console.error;
   var oldWarn = console.warn;
   function sendToServer(level, args) {
-    var msg = Array.from(args).map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+    var msg = Array.from(args).map(function(a) {
+      if (a instanceof Error) return a.message + (a.stack ? '\n' + a.stack : '');
+      if (typeof a === 'object' && a !== null) { try { return JSON.stringify(a); } catch(e) { return String(a); } }
+      return String(a);
+    }).join(' ');
     fetch('/api/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1199,6 +1224,18 @@ var nextId = 1;
 var selectedId = null;
 var editingId = null;
 var isLoaded = false;
+var searchQuery = '';
+var currentView = 'kanban';
+
+window.visibleCompanies = function() {
+  return window.filterCompanies(companies, searchQuery);
+};
+
+window.onSearch = function(val) {
+  searchQuery = val.trim();
+  if (currentView === 'kanban') window.renderKanban();
+  else if (currentView === 'table') window.renderTable();
+};
 
 // ── STORAGE ────────────────────────────────────────────────────────
 
@@ -1462,13 +1499,21 @@ window.renderKanban = function() {
     return;
   }
 
+  var visible = window.visibleCompanies();
+
+  if (searchQuery && visible.length === 0) {
+    wrap.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;width:100%;padding:4rem 2rem;text-align:center;color:var(--muted);font-family:var(--mono);font-size:0.8rem">No matches for &ldquo;' + window.esc(searchQuery) + '&rdquo;</div>';
+    return;
+  }
+
   var html = '';
   for (var si = 0; si < STAGES.length; si++) {
     var s = STAGES[si];
     var cards = [];
-    for (var ci = 0; ci < companies.length; ci++) {
-      if (companies[ci].stage === s.id) cards.push(companies[ci]);
+    for (var ci = 0; ci < visible.length; ci++) {
+      if (visible[ci].stage === s.id) cards.push(visible[ci]);
     }
+    if (searchQuery && cards.length === 0) continue;
     html += '<div class="kanban-col ' + s.col + '">';
     html += '<div class="col-header"><div class="col-header-left"><div class="col-dot"></div><div class="col-name">' + s.label + '</div></div><div class="col-count">' + cards.length + '</div></div>';
     if (cards.length === 0) {
@@ -1530,10 +1575,11 @@ window.renderTable = function() {
   updateFilterBtn('fd-tier-btn', 'Tier', tierF.length);
   updateFilterBtn('fd-source-btn', 'Source', sourceF.length);
 
+  var base = window.visibleCompanies();
   var filtered = [];
-  for (var i = 0; i < companies.length; i++) {
-    var c = companies[i];
-    if (search && (c.company + ' ' + c.role).toLowerCase().indexOf(search) === -1) continue;
+  for (var i = 0; i < base.length; i++) {
+    var c = base[i];
+    if (search && (c.company + ' ' + c.role + ' ' + (c.contact || '')).toLowerCase().indexOf(search) === -1) continue;
     if (stageF.length > 0 && stageF.indexOf(c.stage) === -1) continue;
     if (tierF.length > 0 && tierF.indexOf(c.tier) === -1) continue;
     if (sourceF.length > 0 && sourceF.indexOf(c.source) === -1) continue;
@@ -2461,6 +2507,7 @@ window.openScorer = function(id) {
 // ── VIEW SWITCHING ─────────────────────────────────────────────────
 
 window.switchView = function(name, btn) {
+  currentView = name;
   var tabs = document.querySelectorAll('.nav-tab');
   for (var i = 0; i < tabs.length; i++) { tabs[i].classList.remove('active'); }
   btn.classList.add('active');

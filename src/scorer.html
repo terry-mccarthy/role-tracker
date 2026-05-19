@@ -292,7 +292,11 @@ var PROFILE_STORAGE_KEY = 'eval-profile';
   var oldError = console.error;
   var oldWarn = console.warn;
   function sendToServer(level, args) {
-    var msg = Array.from(args).map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+    var msg = Array.from(args).map(function(a) {
+      if (a instanceof Error) return a.message + (a.stack ? '\n' + a.stack : '');
+      if (typeof a === 'object' && a !== null) { try { return JSON.stringify(a); } catch(e) { return String(a); } }
+      return String(a);
+    }).join(' ');
     fetch('/api/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -595,11 +599,14 @@ window.scoreRole = function() {
 
   var fetchFn = currentProvider === 'ollama' ? window.fetchOllama : window.fetchAnthropic;
 
+  var rawLlmText = '';
   return fetchFn(prompts).then(function(text) {
+    rawLlmText = text;
     var result = window.parseJsonResponse(text);
     window.renderResults(result);
   }).catch(function(err) {
-    console.error('Scoring error:', err);
+    console.error('Scoring error [provider=' + currentProvider + ']: ' + (err && err.message ? err.message : String(err)));
+    if (rawLlmText) console.error('Scoring error — raw LLM output:', rawLlmText.substring(0, 500));
     alert('Scoring failed. ' + (currentProvider === 'ollama' ? 'Is Ollama running? Check http://localhost:11434' : 'Check the console for details.'));
   }).finally(function() {
     document.getElementById('loading').style.display = 'none';
