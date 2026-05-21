@@ -37,10 +37,10 @@ Runs models entirely on your machine. No API key needed.
 1. Install Ollama: https://ollama.com
 2. Pull a model (recommended):
    ```bash
-   ollama pull qwen3:8b
+   ollama pull qwen2.5-coder:32b
    ```
 3. Ollama must be running when you use the scorer (`ollama serve` or the desktop app).
-4. In the scorer's Settings, select **Ollama (Local)** and enter your model name (e.g. `qwen3:8b`).
+4. In the scorer's Settings, select **Ollama (Local)** and enter your model name (e.g. `qwen2.5-coder:32b`).
 
 #### Option B — Anthropic (Claude)
 Uses Claude via the Anthropic API (costs money per call).

@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3002:3000"
+    environment:
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - DB_PATH=/app/data/pipeline.db
+      # Uses Ollama running natively on the Mac host (GPU-accelerated).
+      # Make sure Ollama is running: `ollama serve`
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    volumes:
+      - ./pipeline.db:/app/data/pipeline.db
+      - ./config:/app/config:ro
+    restart: unless-stopped

@@ -587,6 +587,75 @@ tr:hover td { background: var(--surface2); }
   font-weight: 600;
 }
 
+.funnel-closed-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1.25rem;
+}
+
+.funnel-closed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.funnel-closed-title {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+}
+
+.funnel-closed-split {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+.funnel-exit-row {
+  display: grid;
+  grid-template-columns: 160px auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--surface2);
+}
+
+.funnel-exit-company {
+  font-size: 0.82rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.funnel-exit-stage {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.funnel-exit-note {
+  font-size: 0.78rem;
+  color: var(--dim);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.funnel-exit-no-note {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
 /* MODAL */
 .modal-overlay {
   display: none;
@@ -1161,7 +1230,7 @@ tr:hover td { background: var(--surface2); }
       </div>
       <div class="form-row" id="settings-ollama-row" style="margin-top: 1rem">
         <label class="form-label">Ollama Model Name</label>
-        <input class="form-input" id="settings-ollama-model" placeholder="qwen3.6:27b" onblur="checkOllamaModel()">
+        <input class="form-input" id="settings-ollama-model" placeholder="qwen2.5:7b" onblur="checkOllamaModel()">
         <div id="ollama-model-status" style="font-family:var(--mono);font-size:0.6rem;margin-top:0.3rem"></div>
       </div>
     </div>
@@ -1648,6 +1717,74 @@ window.renderFunnel = function() {
     }
   }
 
+  // Closed exit section
+  var closedCos = [];
+  var closedHtml = '';
+  for (var ci = 0; ci < companies.length; ci++) {
+    if (companies[ci].stage === 'closed') closedCos.push(companies[ci]);
+  }
+
+  if (closedCos.length > 0) {
+    var noiseTexts = ['Updated details', 'Researched company culture', 'Added to pipeline', 'Marked as closed'];
+    var stageKws = [
+      { stage: 'offer',     kw: 'Offer' },
+      { stage: 'interview', kw: 'Interview' },
+      { stage: 'screen',    kw: 'Screen' },
+      { stage: 'warm',      kw: 'Warming Up' }
+    ];
+
+    var preInterview = 0, postInterview = 0;
+    var exitRows = '';
+
+    for (var ci2 = 0; ci2 < closedCos.length; ci2++) {
+      var cc = closedCos[ci2];
+      var cActivity = cc.activity || [];
+
+      var highestStage = 'target';
+      outerKw: for (var ski = 0; ski < stageKws.length; ski++) {
+        for (var aii = 0; aii < cActivity.length; aii++) {
+          if ((cActivity[aii].text || '').indexOf(stageKws[ski].kw) >= 0) {
+            highestStage = stageKws[ski].stage;
+            break outerKw;
+          }
+        }
+      }
+
+      if (highestStage === 'interview' || highestStage === 'offer') { postInterview++; } else { preInterview++; }
+
+      var exitNote = null;
+      for (var en = 0; en < cActivity.length; en++) {
+        var enText = cActivity[en].text || '';
+        var enNoise = false;
+        for (var ni = 0; ni < noiseTexts.length; ni++) {
+          if (enText.indexOf(noiseTexts[ni]) >= 0) { enNoise = true; break; }
+        }
+        if (!enNoise && enText.length > 0) { exitNote = enText; break; }
+      }
+
+      var stageColor = STAGE_COLORS[highestStage] || '#6b6f78';
+      var stageLabel = highestStage.charAt(0).toUpperCase() + highestStage.slice(1);
+      var noteDisplay = exitNote ? (exitNote.length > 80 ? exitNote.substring(0, 77) + '...' : exitNote) : null;
+      var noteHtml = noteDisplay
+        ? '<span class="funnel-exit-note">' + window.esc(noteDisplay) + '</span>'
+        : '<span class="funnel-exit-note funnel-exit-no-note">no note</span>';
+
+      exitRows += '<div class="funnel-exit-row">' +
+        '<span class="funnel-exit-company">' + window.esc(cc.company) + '</span>' +
+        '<span class="funnel-exit-stage" style="border-color:' + stageColor + ';color:' + stageColor + '">' + stageLabel + '</span>' +
+        noteHtml +
+        '</div>';
+    }
+
+    var closedHtml = '<div class="funnel-closed-section">' +
+      '<div class="funnel-closed-header">' +
+        '<span class="funnel-closed-title">Closed &middot; ' + closedCos.length + '</span>' +
+        '<span class="funnel-closed-split">' + preInterview + ' before interview &middot; ' + postInterview + ' after</span>' +
+      '</div>' +
+      exitRows +
+      '</div>';
+  }
+
   var netConv = stats.netConv;
   var boardConv = stats.boardConv;
   var screenCount = stats.screenCount;
@@ -1668,6 +1805,8 @@ window.renderFunnel = function() {
     '<div class="insight-card"><h4>Pipeline Diagnosis</h4><p>' + diagMsg + '</p></div>' +
     '<div class="insight-card"><h4>Tier Distribution</h4><p>Tier A: <span class="highlight">' + stats.tierA + '</span> &middot; Tier B: <span class="highlight">' + stats.tierB + '</span> &middot; Tier C: <span class="highlight">' + stats.tierC + '</span>. ' + (stats.tierA < 4 ? 'Add more Tier A targets.' : 'Good tier spread.') + '</p></div>' +
     '<div class="insight-card"><h4>Velocity</h4><p><span class="highlight">' + screenCount + '</span> active past warm stage. Target: 6-8. ' + (screenCount < 4 ? 'Accelerate outreach.' : screenCount > 10 ? 'Focus on quality now.' : 'Good momentum.') + '</p></div></div>';
+
+  html += closedHtml;
 
   container.innerHTML = html;
 };
@@ -2032,7 +2171,7 @@ window.closeModal = function() {
 
 window.openSettingsModal = function() {
   document.getElementById('settings-provider').value = llmConfig.provider || 'ollama';
-  document.getElementById('settings-ollama-model').value = llmConfig.ollamaModel || 'qwen3.6:27b';
+  document.getElementById('settings-ollama-model').value = llmConfig.ollamaModel || 'qwen2.5:7b';
 
   var updateRows = function() {
     var p = document.getElementById('settings-provider').value;
@@ -2147,7 +2286,7 @@ window.saveCompany = function() {
 
 // ── LLM CONFIG ─────────────────────────────────────────────────────
 
-var llmConfig = { provider: 'ollama', ollamaModel: 'qwen3.6:27b' };
+var llmConfig = { provider: 'ollama', ollamaModel: 'qwen2.5:7b' };
 
 window.loadLlmConfig = function() {
   try {
@@ -2170,7 +2309,8 @@ window.callLlm = function(system, user, onToken) {
           { role: 'system', content: system },
           { role: 'user', content: user }
         ],
-        stream: true
+        stream: true,
+        think: false
       })
     }).then(function(res) {
       if (!res.ok) { return res.text().then(function(t) { throw new Error('Ollama error: ' + t); }); }
@@ -2487,6 +2627,16 @@ window.addEventListener('focus', function() {
   if (!isLoaded) return;
   clearTimeout(focusReloadTimer);
   focusReloadTimer = setTimeout(function() { window.loadFromStorage(); }, 500);
+});
+
+document.addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+    var input = document.getElementById('global-search');
+    if (!input) return;
+    e.preventDefault();
+    input.focus();
+    input.select();
+  }
 });
 
 window.openScorer = function(id) {
