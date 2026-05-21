@@ -1,11 +1,11 @@
-# Job Pipeline — Senior EM Search System
+# Role Tracker — Senior EM Search System
 
 A personal job search CRM with persistent storage, funnel analytics, and AI-powered role scoring against your evaluation profile.
 
 ## Architecture
 
 ```
-job-pipeline/
+role-tracker/
 ├── config/
 │   ├── evaluation-profile.boilerplate.md # Committed template
 │   └── evaluation-profile.md             # Local copy (gitignored, customize this)
