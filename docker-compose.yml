@@ -2,7 +2,7 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - "3002:3000"
     environment:
       - TAVILY_API_KEY=${TAVILY_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
@@ -29,6 +29,18 @@ services:
     # On Mac, Docker containers run in a Linux VM with no GPU passthrough,
     # so Ollama runs on CPU only. For GPU acceleration, run Ollama natively
     # and switch OLLAMA_HOST above to http://host.docker.internal:11434.
+
+  mcp:
+    build: .
+    ports:
+      - "3100:3100"
+    environment:
+      - MCP_PORT=3100
+      - API_BASE_URL=http://app:3000
+    command: ["node", "mcp-server-http.js"]
+    restart: unless-stopped
+    depends_on:
+      - app
 
 volumes:
   pipeline_db:

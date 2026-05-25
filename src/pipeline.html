@@ -1834,7 +1834,9 @@ window.selectCompany = function(id) {
     for (var d = 0; d < urls.length; d++) {
       var urlStr = urls[d].trim();
       if (urlStr) {
-        docsHtml += '<a href="' + urlStr + '" target="_blank" rel="noopener" style="font-size:0.78rem;color:var(--blue);text-decoration:none;word-break:break-all;line-height:1.4;">' + urlStr + '</a>';
+        var safeUrl = urlStr;
+        if (safeUrl.indexOf('http://') !== 0 && safeUrl.indexOf('https://') !== 0) safeUrl = '';
+        docsHtml += '<a href="' + safeUrl + '" target="_blank" rel="noopener" style="font-size:0.78rem;color:var(--blue);text-decoration:none;word-break:break-all;line-height:1.4;">' + window.esc(urlStr) + '</a>';
       }
     }
     docsHtml += '</div>';
@@ -1876,7 +1878,7 @@ window.selectCompany = function(id) {
   document.getElementById('dp-meta').innerHTML =
     '<span class="card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span>' +
     '<span class="stage-pill stage-' + c.stage + '">' + sl + '</span>' +
-    '<span class="tag">' + c.source + '</span>';
+    '<span class="tag">' + window.esc(c.source) + '</span>';
 
   var actHTML = '';
   var acts = c.activity || [];
@@ -2389,10 +2391,24 @@ window.fetchJobFromUrl = function(url) {
     if (!res.ok) throw new Error('Tavily fetch failed (' + res.status + ')');
     return res.json();
   }).then(function(data) {
-    if (!data.results || !data.results[0] || !data.results[0].raw_content) {
-      throw new Error('No content returned from Tavily. Try pasting the job description directly.');
+    if (data.results && data.results[0] && data.results[0].raw_content) {
+      return data.results[0].raw_content;
     }
-    return data.results[0].raw_content;
+    // Tavily returned no content — fall back to Jina Reader
+    console.log('[fetchJobFromUrl] Tavily returned no content, trying Jina Reader fallback for:', url);
+    return fetch('/proxy/jina-reader', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url })
+    }).then(function(res) {
+      if (!res.ok) throw new Error('Jina Reader failed (' + res.status + ')');
+      return res.text();
+    }).then(function(content) {
+      if (!content || content.trim().length < 100) {
+        throw new Error('No content returned from Tavily or Jina Reader. Try pasting the job description directly.');
+      }
+      return content;
+    });
   });
 };
 
@@ -2533,7 +2549,7 @@ window.showScoreInPanel = function(score) {
       '<span style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">/10</span>' +
       (score.hard_nos_pass === false ? '<span style="font-family:var(--mono);font-size:0.58rem;color:var(--red);margin-left:0.8rem;background:rgba(232,91,91,0.1);padding:0.1rem 0.4rem;border-radius:2px">Hard no triggered</span>' : '') +
     '</div>' +
-    '<div style="font-size:0.78rem;color:var(--text);font-weight:500;margin-bottom:0.75rem;line-height:1.4">' + (score.verdict || score.overall_verdict || '') + '</div>';
+    '<div style="font-size:0.78rem;color:var(--text);font-weight:500;margin-bottom:0.75rem;line-height:1.4">' + window.esc(score.verdict || score.overall_verdict || '') + '</div>';
 
   // Dimension breakdown
   if (score.dimensions && score.dimensions.length > 0) {
@@ -2542,7 +2558,7 @@ window.showScoreInPanel = function(score) {
       var d = score.dimensions[i];
       var dColor = d.score >= 7 ? 'var(--green)' : d.score >= 5 ? 'var(--accent2)' : 'var(--red)';
       html += '<div style="background:var(--surface2);padding:0.4rem 0.6rem;border-radius:4px;border:1px solid var(--border)">' +
-        '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.2rem">' + d.name + '</div>' +
+        '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.2rem">' + window.esc(d.name) + '</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
           '<span style="font-weight:600;font-size:0.85rem;color:' + dColor + '">' + d.score + '</span>' +
           '<span style="font-size:0.55rem;color:var(--dim)">' + d.weight + '</span>' +
@@ -2558,12 +2574,12 @@ window.showScoreInPanel = function(score) {
     html += '<div style="margin-top:0.75rem">' +
       '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--accent2);text-transform:uppercase;margin-bottom:0.4rem;letter-spacing:0.05em">Needs Discovery</div>';
     for (var j = 0; j < discovery.length; j++) {
-      html += '<div style="font-size:0.72rem;color:var(--dim);margin-bottom:0.3rem;display:flex;gap:0.4rem"><span>•</span><span>' + discovery[j] + '</span></div>';
+      html += '<div style="font-size:0.72rem;color:var(--dim);margin-bottom:0.3rem;display:flex;gap:0.4rem"><span>•</span><span>' + window.esc(discovery[j]) + '</span></div>';
     }
     html += '</div>';
   }
 
-  html += '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);margin-top:1rem;border-top:1px solid var(--border);padding-top:0.5rem">Scored ' + (score.scored_at || 'Recently') + '</div>';
+  html += '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);margin-top:1rem;border-top:1px solid var(--border);padding-top:0.5rem">Scored ' + window.esc(score.scored_at || 'Recently') + '</div>';
   
   el.innerHTML = html;
   section.style.display = 'block';

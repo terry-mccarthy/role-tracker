@@ -29,7 +29,7 @@
       jd: fields.jd || '',
       added: todayStr,
       score: null,
-      activity: [{ date: todayLabel, text: 'Added to pipeline' }]
+      activity: [{ date: todayLabel, text: 'Added to pipeline (' + fields.stage + ')' }]
     };
   }
 

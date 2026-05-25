@@ -15,6 +15,6 @@ COPY . .
 # DB lives in a named volume at /app/data so it survives restarts
 RUN mkdir -p /app/data
 
-EXPOSE 3000
+EXPOSE 3000 3100
 
 CMD ["node", "server.js"]

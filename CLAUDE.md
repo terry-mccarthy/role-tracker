@@ -72,6 +72,10 @@ The profile in `config/evaluation-profile.md` follows a specific structure:
 2. Add it to `window.saveCompany` (both create and edit paths)
 3. Add it to `window.renderCard` and/or `window.selectCompany` display
 
+### Maintaining Docker
+1. Need to keep the docker-compose files in sync. 
+2. For local development we use docker-compose.local-ollama.yml 
+
 ## Testing
 
 - **Backend tests**: Run `npm test` to execute SQLite and API tests.

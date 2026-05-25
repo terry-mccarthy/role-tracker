@@ -28,7 +28,7 @@ var MIME = {
   '.md':   'text/markdown'
 };
 
-var PORT = 3000;
+var PORT = process.env.PORT !== undefined ? parseInt(process.env.PORT, 10) : 3000;
 var LOG_FILE = path.join(__dirname, 'pipeline.log');
 var MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MB request body limit
 
@@ -162,6 +162,33 @@ http.createServer(function(req, res) {
       });
       proxyReq.write(payload);
       proxyReq.end();
+    });
+    return;
+  }
+
+  // ── PROXY: Jina Reader (fallback URL fetcher) ─────────────────────────
+
+  if (req.url === '/proxy/jina-reader' && req.method === 'POST') {
+    readBody(req, res, function(body) {
+      var parsed = parseBody(body, res);
+      if (!parsed) return;
+      if (!parsed.url) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'url is required' }));
+        return;
+      }
+      var targetUrl = 'https://r.jina.ai/' + encodeURIComponent(parsed.url);
+      https.get(targetUrl, function(proxyRes) {
+        var data = '';
+        proxyRes.on('data', function(chunk) { data += chunk; });
+        proxyRes.on('end', function() {
+          res.writeHead(proxyRes.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end(data);
+        });
+      }).on('error', function(err) {
+        res.writeHead(502);
+        res.end(JSON.stringify({ error: err.message }));
+      });
     });
     return;
   }
@@ -388,7 +415,8 @@ http.createServer(function(req, res) {
     res.end(data);
   });
 }).listen(PORT, function() {
+  var actualPort = this.address().port;
   if (!TAVILY_KEY)    logToFile('WARNING: TAVILY_API_KEY not set — URL fetching and culture research will be disabled.');
   if (!ANTHROPIC_KEY) logToFile('WARNING: ANTHROPIC_API_KEY not set — Anthropic provider will be disabled (Ollama still works).');
-  logToFile('Serving on http://localhost:' + PORT);
+  logToFile('Serving on http://localhost:' + actualPort);
 });

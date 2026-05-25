@@ -24,7 +24,7 @@ test('createCompanyRecord sets all fields', function() {
 test('createCompanyRecord sets initial activity entry', function() {
   var rec = createCompanyRecord(BASE_FIELDS, 1, '2026-05-07', '7 May');
   assert.equal(rec.activity.length, 1);
-  assert.equal(rec.activity[0].text, 'Added to pipeline');
+  assert.equal(rec.activity[0].text, 'Added to pipeline (target)');
   assert.equal(rec.activity[0].date, '7 May');
 });
 
@@ -249,11 +249,11 @@ test('logActivityToCompany prepends entry to empty array', function() {
 });
 
 test('logActivityToCompany prepends to existing activity', function() {
-  var c = { id: 1, activity: [{ date: '13 May', text: 'Added to pipeline' }] };
+  var c = { id: 1, activity: [{ date: '13 May', text: 'Added to pipeline (target)' }] };
   logActivityToCompany(c, 'Called recruiter', '14 May');
   assert.equal(c.activity.length, 2);
   assert.equal(c.activity[0].text, 'Called recruiter');
-  assert.equal(c.activity[1].text, 'Added to pipeline');
+  assert.equal(c.activity[1].text, 'Added to pipeline (target)');
 });
 
 test('logActivityToCompany returns the company', function() {

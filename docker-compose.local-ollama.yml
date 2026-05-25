@@ -14,3 +14,15 @@ services:
       - ./pipeline.db:/app/data/pipeline.db
       - ./config:/app/config:ro
     restart: unless-stopped
+
+  mcp:
+    build: .
+    ports:
+      - "3100:3100"
+    environment:
+      - MCP_PORT=3100
+      - API_BASE_URL=http://app:3000
+    command: ["node", "mcp-server-http.js"]
+    restart: unless-stopped
+    depends_on:
+      - app

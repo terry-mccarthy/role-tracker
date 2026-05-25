@@ -273,7 +273,7 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
       
       <div id="settings-ollama-row" style="margin-bottom:1.5rem">
         <label style="display:block;font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.5rem">Ollama Model Name</label>
-        <input id="settings-ollama-model" placeholder="qwen3.6:27b" onblur="checkOllamaModel()" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem;border-radius:4px;outline:none">
+        <input id="settings-ollama-model" placeholder="qwen2.5:7b" onblur="checkOllamaModel()" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.5rem;border-radius:4px;outline:none">
         <div id="ollama-model-status" style="font-family:var(--mono);font-size:0.6rem;margin-top:0.3rem"></div>
       </div>
     </div>
@@ -310,9 +310,13 @@ var PROFILE_STORAGE_KEY = 'eval-profile';
 var PROVIDER_STORAGE_KEY = 'scorer-provider';
 var OLLAMA_MODEL_STORAGE_KEY = 'ollama-model';
 
+window.esc = function(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+};
+
 var currentCompanyId = null;
 var currentProvider = 'ollama';
-var currentOllamaModel = 'qwen3.6:27b';
+var currentOllamaModel = 'qwen2.5:7b';
 
 // Default profile embedded — overridden if user has saved a custom one
 var DEFAULT_PROFILE = "# Offer Evaluation Profile \u2014 Terry McCarthy\n\n_Captured 2026-04-30._\n\n## Top-line orientation\n\n- **Primary driver:** Lifestyle & balance\n- **Time horizon:** Stepping stone \u2014 next role should set me up for VP Eng / CTO within 2\u20133 years\n- **Geography:** Sydney-based or fully remote \u2014 no relocation\n- **Hybrid stance:** Open to up to 3 days office; 5-day RTO is a hard no\n\n## Compensation\n\n- **TC floor:** AUD $250k\u2013$300k (base + super + cash bonus)\n- **Cash-first.** Strong preference for high base over equity\n- **Sceptical of bonuses** \u2014 discount STI/LTI heavily\n- **Benefits that move the needle:** L&D / conference budget, generous leave\n\n## Role & scope\n\n- **Org size:** Multi-squad \u2014 15\u201340 engineers (Head of level)\n- **Time mix:** People leadership + strategy/roadmap. Not seeking hands-on coding.\n- **Domain:** Agnostic\n- **Reporting line:** Report to CTO\n\n## Company fit\n\n- **Stage:** Series B\u2013C scaleup\n- **Size:** 50\u20131,000 employees\n- **Industries (in preference order):** Healthcare / climate / impact, AI/ML-native, B2B SaaS\n- **Cultural must-haves:** High-trust low-politics, strong engineering craft, wellbeing & sustainability\n\n## Lifestyle constraints\n\n- **Office cadence:** Up to 3 days/week\n- **Commute:** 30\u201345 min one-way max\n- **Sustainable hours:** ~40 hrs/week\n- **Travel:** Minimal only \u2014 1\u20132 trips/year max\n\n## Manager, peers, growth\n\n- **Manager (CTO) attributes:** Trust + autonomy, strong technical depth, career coach\n- **Peers:** Critical \u2014 want strong engineering peers\n- **Growth wanted:** Path to VP / CTO + funded executive coaching\n\n## Hard nos\n\n- Crypto, gambling, adult, or weapons industries\n- Hero / burnout culture\n- 5-day in-office mandate\n- Founder/CEO red flags (toxic behaviour, bullying)\n\n## Scoring weights\n\n| Dimension | Weight |\n|---|---|\n| Lifestyle (hybrid, hours, commute, travel) | 25% |\n| Compensation (base, total cash, benefits) | 20% |\n| Scope & growth path (size, level, VP/CTO trajectory) | 20% |\n| People (manager fit, peer strength) | 20% |\n| Company & mission (stage, industry, culture, runway) | 15% |\n\n## Tensions to surface\n\n- Lifestyle-first vs stepping-stone ambition\n- Cash-first vs scaleup equity norms\n- Multi-squad scope vs actual org chart depth";
@@ -392,7 +396,7 @@ window.saveSettings = function() {
   var o = document.getElementById('settings-ollama-model').value.trim();
 
   currentProvider = p;
-  currentOllamaModel = o || 'qwen3.6:27b';
+  currentOllamaModel = o || 'qwen2.5:7b';
 
   try { localStorage.setItem(PROVIDER_STORAGE_KEY, currentProvider); } catch(e) {}
   try { localStorage.setItem(OLLAMA_MODEL_STORAGE_KEY, currentOllamaModel); } catch(e) {}
@@ -473,7 +477,7 @@ window.renderProfileBar = function() {
   var weights = window.parseProfileWeights(currentProfile);
   var chips = '';
   for (var i = 0; i < weights.length; i++) {
-    chips += '<span class="weight-chip">' + weights[i].dim + ' ' + weights[i].weight + '</span>';
+    chips += '<span class="weight-chip">' + window.esc(weights[i].dim) + ' ' + window.esc(weights[i].weight) + '</span>';
   }
   weightsEl.innerHTML = chips;
 };
@@ -541,7 +545,8 @@ window.fetchOllama = function(prompts) {
         { role: 'system', content: prompts.system },
         { role: 'user', content: prompts.user }
       ],
-      stream: true
+      stream: true,
+      think: false
     })
   }).then(function(res) {
     if (!res.ok) { return res.text().then(function(t) { throw new Error('Ollama error: ' + t); }); }
@@ -663,8 +668,8 @@ window.renderResults = function(r) {
     var d = dims[i];
     var dClass = d.score >= 7 ? 'high' : d.score >= 5 ? 'mid' : 'low';
     dimsHTML += '<div class="dim-card">' +
-      '<div class="dim-left"><div class="dim-header"><span class="dim-name">' + d.name + '</span><span class="dim-weight">' + d.weight + '</span></div>' +
-      '<div class="dim-detail">' + d.detail + '</div></div>' +
+      '<div class="dim-left"><div class="dim-header"><span class="dim-name">' + window.esc(d.name) + '</span><span class="dim-weight">' + window.esc(d.weight) + '</span></div>' +
+      '<div class="dim-detail">' + window.esc(d.detail) + '</div></div>' +
       '<div class="dim-right"><div class="dim-score ' + dClass + '">' + d.score + '</div><div class="dim-max">/10</div></div>' +
     '</div>';
   }
@@ -676,7 +681,7 @@ window.renderResults = function(r) {
     document.getElementById('tensions-box').style.display = 'block';
     var tHTML = '';
     for (var j = 0; j < tensions.length; j++) {
-      tHTML += '<div class="tension-item">' + tensions[j] + '</div>';
+      tHTML += '<div class="tension-item">' + window.esc(tensions[j]) + '</div>';
     }
     document.getElementById('tensions-list').innerHTML = tHTML;
   } else {
@@ -689,7 +694,7 @@ window.renderResults = function(r) {
     document.getElementById('discovery-box').style.display = 'block';
     var dHTML = '';
     for (var k = 0; k < disc.length; k++) {
-      dHTML += '<div class="discovery-item">' + disc[k] + '</div>';
+      dHTML += '<div class="discovery-item">' + window.esc(disc[k]) + '</div>';
     }
     document.getElementById('discovery-list').innerHTML = dHTML;
   } else {
