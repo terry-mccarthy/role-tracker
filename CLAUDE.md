@@ -43,13 +43,15 @@ When a direct file path returns empty (glob/read fails):
 ## File responsibilities
 
 | File | Purpose |
-|---|---|
+|---|---|---|
 | `config/evaluation-profile.md` | User's scoring criteria. Editable. Parsed at scoring time. |
 | `src/pipeline.html` | Main CRM — kanban, table, funnel views. All pipeline CRUD. |
 | `src/scorer.html` | Role evaluation tool. Takes JD text, scores against profile. |
 | `src/lib/pipeline.js` | Pipeline data model — record creation, funnel stats, culture parse, activity logging. |
 | `src/lib/parse.js` | JD parsing and extraction utilities. |
 | `src/lib/scoring.js` | AI scoring bridge — calls external model and processes results. |
+| `mcp-server.js` | MCP server (stdio) — reads SQLite directly, for local dev. |
+| `mcp-server-http.js` | MCP server (HTTP/SSE) — proxies through web API, for Docker. |
 
 ## Evaluation profile format
 
@@ -73,8 +75,54 @@ The profile in `config/evaluation-profile.md` follows a specific structure:
 3. Add it to `window.renderCard` and/or `window.selectCompany` display
 
 ### Maintaining Docker
-1. Need to keep the docker-compose files in sync. 
-2. For local development we use docker-compose.local-ollama.yml 
+1. Keep `docker-compose.yml` and `docker-compose.local-ollama.yml` in sync (same service definitions, only diff is `OLLAMA_HOST`).
+2. Both files bind-mount `./pipeline.db:/app/data/pipeline.db` — the database is the local file, not a Docker named volume. Changes made outside Docker (npm run serve, direct SQLite) are immediately visible inside containers.
+3. The `mcp` service runs in Docker as an HTTP/SSE server on port 3100, proxying through the app's HTTP API to read/write the database.
+4. After rebuilding the Docker image (`docker compose build`), the `mcp` service inside the container must point to the correct server. If `mcp-server-http.js` is updated, rebuild: `docker compose build mcp && docker compose up -d mcp`.
+
+## MCP Server
+
+The project includes two MCP server variants that expose the job pipeline database as AI tools (`list_jobs`, `add_job`).
+
+### Stdio (local development)
+
+Run directly — no web server needed:
+
+```json
+"mcpServers": {
+  "job-pipeline": {
+    "command": "node",
+    "args": ["mcp-server.js"],
+    "env": {
+      "DB_PATH": "/absolute/path/to/pipeline.db"
+    }
+  }
+}
+```
+
+The `DB_PATH` env var defaults to `./pipeline.db` relative to the project root.
+
+### Docker
+
+When running via Docker, connect Claude to the MCP container:
+
+```json
+"mcpServers": {
+  "job-pipeline": {
+    "type": "url",
+    "url": "http://localhost:3100/sse"
+  }
+}
+```
+
+Start services with: `docker compose up -d` (or `docker compose -f docker-compose.local-ollama.yml up -d`)
+
+### Tools
+
+| Tool | Description |
+|---|---|
+| `list_jobs` | Returns all pipeline entries (company, role, stage, tier, etc.) |
+| `add_job` | Adds a new job to Target List stage. Required: `company`, `role`. Optional: `url`, `source`, `notes`, `tier` (default B). |
 
 ## Testing
 

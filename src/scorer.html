@@ -546,7 +546,7 @@ window.fetchOllama = function(prompts) {
         { role: 'user', content: prompts.user }
       ],
       stream: true,
-      think: false
+      max_tokens: 4096
     })
   }).then(function(res) {
     if (!res.ok) { return res.text().then(function(t) { throw new Error('Ollama error: ' + t); }); }
@@ -556,6 +556,8 @@ window.fetchOllama = function(prompts) {
     var fullText = '';
     var tokenCount = 0;
     var buffer = '';
+    var lastActivity = Date.now();
+    var FETCH_TIMEOUT_MS = 120000; // 2 min without any token = bail
 
     function read() {
       return reader.read().then(function(chunk) {
@@ -573,15 +575,36 @@ window.fetchOllama = function(prompts) {
           try {
             var parsed = JSON.parse(raw);
             var delta = parsed.choices[0].delta.content;
+            var reasoning = parsed.choices[0].delta.reasoning;
             if (delta) {
               fullText += delta;
               tokenCount++;
-              if (tokensEl && tokenCount % 5 === 0) {
-                tokensEl.textContent = tokenCount + ' tokens...';
-              }
+              lastActivity = Date.now();
+            } else if (reasoning) {
+              // Still making progress — count reasoning tokens for UI feedback
+              tokenCount++;
+              lastActivity = Date.now();
+            }
+            if (tokensEl && tokenCount % 5 === 0) {
+              tokensEl.textContent = tokenCount + ' tokens' + (delta ? '' : ' (thinking...)');
             }
           } catch(e) { /* incomplete JSON chunk, skip */ }
         }
+
+        // Check timeout
+        if (Date.now() - lastActivity > FETCH_TIMEOUT_MS) {
+          console.error('[Scorer] Ollama stream timed out after ' + (FETCH_TIMEOUT_MS/1000) + 's — no tokens received');
+          fetch('/api/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              level: 'ERROR',
+              message: 'Ollama stream timeout model=' + currentOllamaModel + ' tokens=' + tokenCount + ' received=' + fullText.length + ' chars'
+            })
+          });
+          throw new Error('Ollama stream timed out — no tokens received for ' + (FETCH_TIMEOUT_MS/1000) + 's. Check pipeline.log and verify model "' + currentOllamaModel + '" exists.');
+        }
+
         return read();
       });
     }
@@ -629,14 +652,24 @@ window.renderResults = function(r) {
   var results = document.getElementById('results');
   results.style.display = 'block';
 
+  // Clamp model scores to valid range 1-10 (model sometimes outputs >10)
+  function clampScore(n) {
+    n = parseInt(n, 10);
+    if (isNaN(n)) return 5;
+    if (n < 1) return 1;
+    if (n > 10) return 10;
+    return n;
+  }
+
   // Calculate weighted average overall score to ensure accuracy
   var calculatedScore = 0;
   var totalWeight = 0;
   var dims = r.dimensions || [];
   for (var i = 0; i < dims.length; i++) {
     var d = dims[i];
+    d.score = clampScore(d.score);
     var weightPercent = parseInt(d.weight || '0', 10);
-    calculatedScore += (d.score || 0) * (weightPercent / 100);
+    calculatedScore += d.score * (weightPercent / 100);
     totalWeight += weightPercent;
   }
   
@@ -647,6 +680,8 @@ window.renderResults = function(r) {
   
   // Update r.overall_score with the more accurate calculated value
   r.overall_score = Math.round(calculatedScore);
+  if (r.overall_score > 10) r.overall_score = 10;
+  if (r.overall_score < 1) r.overall_score = 1;
 
   // Overall score rendering
   var overallBox = document.getElementById('overall-box');

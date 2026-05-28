@@ -13,7 +13,7 @@ services:
       #   OLLAMA_HOST=http://host.docker.internal:11434
       - OLLAMA_HOST=http://ollama:11434
     volumes:
-      - pipeline_db:/app/data
+      - ./pipeline.db:/app/data/pipeline.db
       - ./config:/app/config:ro
     depends_on:
       - ollama
@@ -43,5 +43,4 @@ services:
       - app
 
 volumes:
-  pipeline_db:
   ollama_data:

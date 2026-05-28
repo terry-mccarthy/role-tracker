@@ -239,31 +239,43 @@ http.createServer(function(req, res) {
     var ollamaPath = req.url.replace('/proxy/ollama', '');
     if (!ollamaPath) ollamaPath = '/';
 
-    var options = {
-      hostname: OLLAMA_HOSTNAME,
-      port: OLLAMA_PORT,
-      path: ollamaPath,
-      method: req.method,
-      headers: req.headers
-    };
+    // Accumulate body first, then proxy once fully received
+    var reqBody = '';
+    req.on('data', function(chunk) { reqBody += chunk.toString(); });
+    req.on('end', function() {
+      var modelName = 'unknown';
+      try {
+        var parsed = JSON.parse(reqBody);
+        if (parsed.model) modelName = parsed.model;
+      } catch(e) {}
+      logToFile('Ollama proxy -> ' + ollamaPath + ' model=' + modelName + ' (' + reqBody.length + ' bytes)');
 
-    // Remove headers that might cause CORS or host issues
-    delete options.headers['host'];
-    delete options.headers['origin'];
-    delete options.headers['referer'];
+      var options = {
+        hostname: OLLAMA_HOSTNAME,
+        port: OLLAMA_PORT,
+        path: ollamaPath,
+        method: req.method,
+        headers: req.headers
+      };
 
-    var proxyReq = http.request(options, function(proxyRes) {
-      res.writeHead(proxyRes.statusCode, proxyRes.headers);
-      proxyRes.pipe(res);
+      delete options.headers['host'];
+      delete options.headers['origin'];
+      delete options.headers['referer'];
+
+      var proxyReq = http.request(options, function(proxyRes) {
+        logToFile('Ollama proxy <- ' + ollamaPath + ' status=' + proxyRes.statusCode);
+        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        proxyRes.pipe(res);
+      });
+
+      proxyReq.on('error', function(err) {
+        logToFile('Ollama Proxy Error: ' + err.message);
+        res.writeHead(502);
+        res.end(JSON.stringify({ error: 'Ollama proxy error: ' + err.message }));
+      });
+
+      proxyReq.end(reqBody);
     });
-
-    proxyReq.on('error', function(err) {
-      logToFile('Ollama Proxy Error: ' + err.message);
-      res.writeHead(502);
-      res.end(JSON.stringify({ error: 'Ollama proxy error: ' + err.message }));
-    });
-
-    req.pipe(proxyReq);
     return;
   }
 

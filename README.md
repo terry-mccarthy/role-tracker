@@ -16,6 +16,10 @@ role-tracker/
 ├── server.js                    # Node.js server & API proxy
 ├── database.js                  # SQLite database interface
 ├── pipeline.db                  # Persistent SQLite database
+├── mcp-server.js                # MCP server (stdio) — local Claude Code integration
+├── mcp-server-http.js           # MCP server (HTTP/SSE) — Docker integration
+├── docker-compose.yml           # Docker setup (Ollama in container)
+├── docker-compose.local-ollama.yml # Docker setup (host Ollama, GPU-accelerated)
 ├── docs/
 │   └── scoring-methodology.md   # How the AI scoring works
 ├── CLAUDE.md                    # Claude Code project instructions
@@ -96,6 +100,61 @@ npm run serve
 - Scoring weights, hard nos, compensation floors, lifestyle constraints
 - The scorer reads this at runtime — changes take effect immediately
 
+## Docker
+
+Run the full stack (app + Ollama + MCP) in containers:
+
+```bash
+# Production variant (Ollama inside Docker, CPU only)
+docker compose up -d
+# Local dev variant (uses Ollama on host, GPU-accelerated)
+docker compose -f docker-compose.local-ollama.yml up -d
+```
+
+Both compose files bind-mount `./pipeline.db:/app/data/pipeline.db` — the database is the local file, not a Docker volume. Changes made via `npm run serve` or direct SQLite queries are immediately visible inside containers.
+
+- **App**: http://localhost:3002
+- **MCP server**: http://localhost:3100/sse
+
+## MCP Server (Claude Code Integration)
+
+The project includes an MCP (Model Context Protocol) server that exposes pipeline data as AI tools in Claude Code: `list_jobs` and `add_job`.
+
+### Local development
+
+Add to your Claude Code project config (`~/.claude.json` or `.claude.jsonc`):
+
+```json
+{
+  "mcpServers": {
+    "job-pipeline": {
+      "command": "node",
+      "args": ["mcp-server.js"],
+      "env": {
+        "DB_PATH": "/absolute/path/to/pipeline.db"
+      }
+    }
+  }
+}
+```
+
+`DB_PATH` defaults to `./pipeline.db` relative to the project root.
+
+### Docker
+
+```json
+{
+  "mcpServers": {
+    "job-pipeline": {
+      "type": "url",
+      "url": "http://localhost:3100/sse"
+    }
+  }
+}
+```
+
+The Docker MCP server proxies requests through the app's HTTP API, so it always reads the same database.
+
 ## Developing with Claude Code
 
 This project is designed for iterative development with Claude Code. See `CLAUDE.md` for project-specific instructions.
@@ -106,6 +165,8 @@ claude "Add a salary range field to the pipeline cards"
 claude "Update my evaluation profile — change TC floor to 280k"
 claude "Add a new scoring dimension for DEI maturity"
 claude "Build a weekly review summary that emails me pipeline stats"
+claude "List all jobs in my pipeline"
+claude "Add Clio - Engineering Manager to my pipeline"
 ```
 
 Pipeline data is stored in a local SQLite database (`pipeline.db`).
@@ -114,4 +175,6 @@ The server also provides proxies for:
 - **Ollama**: Local AI scoring (port 11434)
 - **Tavily**: External search and content extraction
 
-Backup the `pipeline.db` file regularly.
+The MCP server (`mcp-server.js` / `mcp-server-http.js`) exposes the same data to Claude Code via `list_jobs` and `add_job` tools.
+
+Backup the `pipeline.db` file regularly — it's your source of truth.

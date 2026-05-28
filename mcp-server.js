@@ -37,7 +37,6 @@ function getAllJobs() {
       source: data.source || '',
       contact: data.contact || '',
       notes: data.notes || '',
-      jd: data.jd || '',
       added: data.added || '',
       score: data.score || null,
       activity: data.activity || [],
