@@ -17,7 +17,7 @@ function startServer(env) {
       process.env.PORT = '${port}';
       process.env.TAVILY_API_KEY = '${env.TAVILY_KEY || ''}';
       process.env.ANTHROPIC_API_KEY = '${env.ANTHROPIC_KEY || ''}';
-      var srv = require('./server.js');
+      var srv = require('./src/server/server.js');
     `], { cwd: path.join(__dirname, '..'), stdio: ['pipe', 'pipe', 'pipe'] });
     var started = false;
     var buf = '';

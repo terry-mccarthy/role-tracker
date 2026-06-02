@@ -23,7 +23,7 @@ function getPort(server) {
 
 function startMcpServer(apiPort) {
   return new Promise(function(resolve, reject) {
-    var proc = spawn('node', ['mcp-server-http.js'], {
+    var proc = spawn('node', ['src/mcp/mcp-server-http.js'], {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: Object.assign({}, process.env, {
         MCP_PORT: '0',

@@ -8,7 +8,7 @@ const {
   ListToolsRequestSchema,
 } = require('@modelcontextprotocol/sdk/types.js');
 
-const dbPath = process.env.DB_PATH || path.join(__dirname, 'pipeline.db');
+const dbPath = process.env.DB_PATH || path.join(__dirname, '../../pipeline.db');
 const db = new Database(dbPath);
 
 function todayISO() {

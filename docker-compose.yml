@@ -37,7 +37,7 @@ services:
     environment:
       - MCP_PORT=3100
       - API_BASE_URL=http://app:3000
-    command: ["node", "mcp-server-http.js"]
+    command: ["node", "src/mcp/mcp-server-http.js"]
     restart: unless-stopped
     depends_on:
       - app

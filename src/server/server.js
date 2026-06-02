@@ -14,7 +14,9 @@ var ANTHROPIC_KEY  = process.env.ANTHROPIC_API_KEY  || '';
 
 // OLLAMA_HOST lets Docker Compose point the proxy at the ollama service.
 // Defaults to localhost for native dev.
-var _ollamaUrl     = new URL(process.env.OLLAMA_HOST || 'http://localhost:11434');
+var _ollamaHostRaw = process.env.OLLAMA_HOST || 'http://localhost:11434';
+if (_ollamaHostRaw.indexOf('://') === -1) { _ollamaHostRaw = 'http://' + _ollamaHostRaw; }
+var _ollamaUrl     = new URL(_ollamaHostRaw);
 var OLLAMA_HOSTNAME = _ollamaUrl.hostname;
 var OLLAMA_PORT    = parseInt(_ollamaUrl.port, 10) || 11434;
 
@@ -29,7 +31,7 @@ var MIME = {
 };
 
 var PORT = process.env.PORT !== undefined ? parseInt(process.env.PORT, 10) : 3000;
-var LOG_FILE = path.join(__dirname, 'pipeline.log');
+var LOG_FILE = path.join(__dirname, '../../pipeline.log');
 var MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MB request body limit
 
 function logToFile(msg) {
@@ -404,12 +406,12 @@ http.createServer(function(req, res) {
     filePath += '.html';
   }
   
-  var full = path.join(__dirname, 'src', filePath);
+  var full = path.join(__dirname, '..', filePath);
 
   fs.readFile(full, function(err, data) {
     if (err) {
       // Try serving from root (for config/, etc.)
-      var rootFull = path.join(__dirname, filePath);
+      var rootFull = path.join(__dirname, '../..', filePath);
       fs.readFile(rootFull, function(err2, data2) {
         if (err2) {
           res.writeHead(404);

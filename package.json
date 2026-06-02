@@ -4,7 +4,7 @@
   "description": "Personal job search CRM with AI-powered role scoring",
   "private": true,
   "scripts": {
-    "serve": "node --env-file=.env server.js",
+    "serve": "node --env-file=.env src/server/server.js",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {

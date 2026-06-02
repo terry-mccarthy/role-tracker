@@ -17,4 +17,4 @@ RUN mkdir -p /app/data
 
 EXPOSE 3000 3100
 
-CMD ["node", "server.js"]
+CMD ["node", "src/server/server.js"]

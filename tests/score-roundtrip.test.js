@@ -14,7 +14,7 @@ function startServer() {
     var proc = require('child_process').spawn('node', ['-e', `
       process.env.DB_PATH = '${TEST_DB}';
       process.env.PORT = '0';
-      require('./server.js');
+      require('./src/server/server.js');
     `], { cwd: path.join(__dirname, '..'), stdio: ['pipe', 'pipe', 'pipe'] });
     var started = false;
     var buf = '';

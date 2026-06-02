@@ -6,7 +6,7 @@
 var Database = require('better-sqlite3');
 var path = require('path');
 
-var dbPath = process.env.DB_PATH || path.join(__dirname, 'pipeline.db');
+var dbPath = process.env.DB_PATH || path.join(__dirname, '../../pipeline.db');
 var db = new Database(dbPath);
 
 var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

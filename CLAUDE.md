@@ -50,8 +50,11 @@ When a direct file path returns empty (glob/read fails):
 | `src/lib/pipeline.js` | Pipeline data model — record creation, funnel stats, culture parse, activity logging. |
 | `src/lib/parse.js` | JD parsing and extraction utilities. |
 | `src/lib/scoring.js` | AI scoring bridge — calls external model and processes results. |
-| `mcp-server.js` | MCP server (stdio) — reads SQLite directly, for local dev. |
-| `mcp-server-http.js` | MCP server (HTTP/SSE) — proxies through web API, for Docker. |
+| `src/server/server.js` | HTTP server — static files, API routes, proxy endpoints. |
+| `src/server/database.js` | SQLite layer — schema, prepared statements, CRUD helpers. |
+| `src/mcp/mcp-server.js` | MCP server (stdio) — reads SQLite directly, for local dev. |
+| `src/mcp/mcp-server-http.js` | MCP server (HTTP/SSE) — proxies through web API, for Docker. |
+| `src/scripts/add-jobs.js` | One-off import script — bulk add roles to the pipeline. |
 
 ## Evaluation profile format
 
@@ -75,10 +78,10 @@ The profile in `config/evaluation-profile.md` follows a specific structure:
 3. Add it to `window.renderCard` and/or `window.selectCompany` display
 
 ### Maintaining Docker
-1. Keep `docker-compose.yml` and `docker-compose.local-ollama.yml` in sync (same service definitions, only diff is `OLLAMA_HOST`).
+1. Keep `docker-compose.local-ollama.yml` and `docker-compose.yml` in sync (same service definitions, only diff is `OLLAMA_HOST`).
 2. Both files bind-mount `./pipeline.db:/app/data/pipeline.db` — the database is the local file, not a Docker named volume. Changes made outside Docker (npm run serve, direct SQLite) are immediately visible inside containers.
 3. The `mcp` service runs in Docker as an HTTP/SSE server on port 3100, proxying through the app's HTTP API to read/write the database.
-4. After rebuilding the Docker image (`docker compose build`), the `mcp` service inside the container must point to the correct server. If `mcp-server-http.js` is updated, rebuild: `docker compose build mcp && docker compose up -d mcp`.
+4. After rebuilding the Docker image (`docker compose build`), the `mcp` service inside the container must point to the correct server. If `src/mcp/mcp-server-http.js` is updated, rebuild: `docker compose build mcp && docker compose up -d mcp`.
 
 ## MCP Server
 
@@ -92,7 +95,7 @@ Run directly — no web server needed:
 "mcpServers": {
   "job-pipeline": {
     "command": "node",
-    "args": ["mcp-server.js"],
+    "args": ["src/mcp/mcp-server.js"],
     "env": {
       "DB_PATH": "/absolute/path/to/pipeline.db"
     }
@@ -115,7 +118,7 @@ When running via Docker, connect Claude to the MCP container:
 }
 ```
 
-Start services with: `docker compose up -d` (or `docker compose -f docker-compose.local-ollama.yml up -d`)
+Start services with: `docker compose -f docker-compose.local-ollama.yml up -d` (or `docker compose up -d` for remote Ollama)
 
 ### Tools
 
@@ -128,7 +131,7 @@ Start services with: `docker compose up -d` (or `docker compose -f docker-compos
 
 - **Backend tests**: Run `npm test` to execute SQLite and API tests.
 - **Manual testing**:
-  1. Start the server: `npm run serve` (local) or `docker compose up` (Docker)
+  1. Start the server: `npm run serve` (local) or `docker compose -f docker-compose.local-ollama.yml up` (Docker)
   2. Open `http://localhost:3000`
   3. Verify CRUD operations: add company, edit, advance stage, delete.
   4. Verify scoring: paste JD, run scorer, check if score is saved to the company card.
