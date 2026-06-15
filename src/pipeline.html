@@ -656,6 +656,48 @@ tr:hover td { background: var(--surface2); }
   font-size: 0.7rem;
 }
 
+.funnel-ai-btn {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.6rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.funnel-ai-btn:hover { border-color: var(--accent); color: var(--accent); }
+.funnel-ai-btn:disabled { opacity: 0.5; cursor: default; }
+
+.funnel-ai-result {
+  margin-top: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+}
+.funnel-ai-result-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+.funnel-ai-result-body {
+  font-size: 0.8rem;
+  color: var(--dim);
+  line-height: 1.65;
+}
+.funnel-ai-result-body p { margin: 0 0 0.6rem; }
+.funnel-ai-result-body p:last-child { margin-bottom: 0; }
+.funnel-ai-result-body ul { margin: 0 0 0.6rem; padding-left: 1.2rem; }
+.funnel-ai-result-body li { margin-bottom: 0.25rem; }
+.funnel-ai-result-body strong { color: var(--text); font-weight: 600; }
+
 /* MODAL */
 .modal-overlay {
   display: none;
@@ -952,6 +994,110 @@ tr:hover td { background: var(--surface2); }
 .stage-interview { background: rgba(155,114,232,0.15); color: var(--purple); }
 .stage-offer { background: rgba(76,175,130,0.15); color: var(--green); }
 .stage-closed { background: rgba(107,111,120,0.1); color: var(--muted); }
+
+/* CLOSED STACK */
+.closed-stack {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.closed-stack-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface2);
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+}
+.closed-stack-toggle:hover {
+  background: var(--surface3);
+}
+.closed-stack-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+}
+.closed-stack-arrow {
+  font-size: 0.7rem;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+.closed-stack-arrow.open {
+  transform: rotate(90deg);
+}
+.closed-stack-count {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  background: var(--surface3);
+  color: var(--muted);
+  padding: 0.1rem 0.45rem;
+  border-radius: 2px;
+}
+.closed-stack-body {
+  border-top: 1px solid var(--border);
+}
+.closed-stack-card {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid var(--surface3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.closed-stack-card:last-child {
+  border-bottom: none;
+}
+.closed-stack-card:hover {
+  background: var(--surface3);
+}
+.closed-stack-card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
+.closed-stack-card-company {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.closed-stack-card-role {
+  font-size: 0.68rem;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.closed-stack-card-right {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+.closed-stack-card-tier {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 2px;
+}
+.closed-stack-card-date {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
 </style>
 </head>
 <body>
@@ -1281,6 +1427,117 @@ var STAGE_COLORS = {
   interview: '#9b72e8', offer: '#4caf82', closed: '#3a3d42'
 };
 
+var closedExpanded = false;
+var funnelAiResult = null;
+var funnelAiLoading = false;
+
+window.toggleClosedStack = function() {
+  closedExpanded = !closedExpanded;
+  window.renderKanban();
+};
+
+window.analyzeFunnelWithAI = function() {
+  var closedCos = [];
+  for (var i = 0; i < companies.length; i++) {
+    if (companies[i].stage === 'closed') closedCos.push(companies[i]);
+  }
+  if (closedCos.length === 0) return;
+
+  funnelAiLoading = true;
+  funnelAiResult = null;
+  window.renderFunnel();
+
+  var noiseTexts = ['Updated details', 'Researched company culture', 'Added to pipeline', 'Marked as closed'];
+  var stageOrder = ['offer', 'interview', 'screen', 'warm', 'target'];
+  var stageKws = [
+    { stage: 'offer',     kw: 'Offer' },
+    { stage: 'interview', kw: 'Interview' },
+    { stage: 'screen',    kw: 'Screen' },
+    { stage: 'warm',      kw: 'Warming Up' }
+  ];
+
+  var rolesSummary = '';
+  for (var ci = 0; ci < closedCos.length; ci++) {
+    var cc = closedCos[ci];
+    var cActivity = cc.activity || [];
+
+    var highestStage = 'target';
+    outerLoop: for (var ski = 0; ski < stageKws.length; ski++) {
+      for (var aii = 0; aii < cActivity.length; aii++) {
+        if ((cActivity[aii].text || '').indexOf(stageKws[ski].kw) >= 0) {
+          highestStage = stageKws[ski].stage;
+          break outerLoop;
+        }
+      }
+    }
+
+    var notes = [];
+    for (var en = 0; en < cActivity.length; en++) {
+      var enText = cActivity[en].text || '';
+      var isNoise = false;
+      for (var ni = 0; ni < noiseTexts.length; ni++) {
+        if (enText.indexOf(noiseTexts[ni]) >= 0) { isNoise = true; break; }
+      }
+      if (!isNoise && enText.length > 0) notes.push(enText);
+    }
+
+    rolesSummary += (ci + 1) + '. ' + cc.company + ' — ' + cc.role + '\n';
+    rolesSummary += '   Tier: ' + cc.tier + ' | Exited at: ' + highestStage + '\n';
+    if (cc.notes) rolesSummary += '   Notes: ' + cc.notes + '\n';
+    if (notes.length > 0) rolesSummary += '   Activity: ' + notes.slice(0, 3).join('; ') + '\n';
+    rolesSummary += '\n';
+  }
+
+  var system = 'You are a senior career strategist helping an engineering manager improve their job search. '
+    + 'Analyse the closed (exited) roles below and surface actionable insights. '
+    + 'Focus on: (1) patterns in exit stage — where in the process roles keep dying and why, '
+    + '(2) role/company profile patterns — what types of targets are underperforming, '
+    + '(3) 3-5 concrete, specific recommendations to better tailor the search going forward. '
+    + 'Be direct and concise. No preamble. Use short paragraphs or bullets. Max 350 words.';
+
+  var user = 'Here are the closed roles (' + closedCos.length + ' total):\n\n' + rolesSummary
+    + 'Based on these exits, what patterns do you see and how should this person sharpen their search?';
+
+  var ollamaModel = localStorage.getItem('ollama-model') || 'qwen2.5:7b';
+
+  fetch('/proxy/ollama/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: ollamaModel,
+      stream: false,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+      ]
+    })
+  })
+  .then(function(res) { return res.text(); })
+  .then(function(raw) {
+    var data;
+    try { data = JSON.parse(raw); } catch(e) {
+      funnelAiResult = 'Parse error: ' + e.message + ' — raw: ' + raw.substring(0, 100);
+      funnelAiLoading = false;
+      window.renderFunnel();
+      return;
+    }
+    var msg = data.message && data.message.content;
+    if (!msg) {
+      var errMsg = (data.error && data.error.message) ? data.error.message : JSON.stringify(data).substring(0, 200);
+      funnelAiResult = 'No content: ' + errMsg;
+    } else {
+      funnelAiResult = msg;
+    }
+    funnelAiLoading = false;
+    window.renderFunnel();
+  })
+  .catch(function(err) {
+    funnelAiResult = 'Request failed: ' + err.message;
+    funnelAiLoading = false;
+    window.renderFunnel();
+  });
+};
+
 var FUNNEL_BENCHMARKS = {
   target_warm:      { good: 30, warn: 15 },
   warm_screen:      { good: 40, warn: 20 },
@@ -1493,6 +1750,32 @@ window.esc = function(s) {
   return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 };
 
+window.mdToHtml = function(s) {
+  var lines = String(s == null ? '' : s).split('\n');
+  var out = '';
+  var inList = false;
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var isBullet = /^[\*\-]\s+/.test(line);
+    if (isBullet) {
+      if (!inList) { out += '<ul>'; inList = true; }
+      var content = line.replace(/^[\*\-]\s+/, '');
+      content = window.esc(content).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      out += '<li>' + content + '</li>';
+    } else {
+      if (inList) { out += '</ul>'; inList = false; }
+      var escaped = window.esc(line).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      if (escaped.trim() === '') {
+        if (out.slice(-4) !== '</p>') out += '';
+      } else {
+        out += '<p>' + escaped + '</p>';
+      }
+    }
+  }
+  if (inList) out += '</ul>';
+  return out;
+};
+
 window.render = function() {
   window.renderStats();
   window.renderKanban();
@@ -1556,6 +1839,20 @@ window.renderCard = function(c) {
   '</div>';
 };
 
+window.renderCompactCard = function(c) {
+  var days = window.daysSince(c.updated_at || c.added);
+  return '<div class="closed-stack-card" onclick="selectCompany(' + c.id + ')">' +
+    '<div class="closed-stack-card-left">' +
+      '<div class="closed-stack-card-company">' + window.esc(c.company) + '</div>' +
+      '<div class="closed-stack-card-role">' + window.esc(c.role) + '</div>' +
+    '</div>' +
+    '<div class="closed-stack-card-right">' +
+      '<span class="closed-stack-card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span>' +
+      '<span class="closed-stack-card-date">' + days + 'd</span>' +
+    '</div>' +
+  '</div>';
+};
+
 window.renderKanban = function() {
   var wrap = document.getElementById('view-kanban');
 
@@ -1587,6 +1884,20 @@ window.renderKanban = function() {
     html += '<div class="col-header"><div class="col-header-left"><div class="col-dot"></div><div class="col-name">' + s.label + '</div></div><div class="col-count">' + cards.length + '</div></div>';
     if (cards.length === 0) {
       html += '<div class="empty-col">No companies<br>at this stage</div>';
+    } else if (s.id === 'closed') {
+      var showAll = closedExpanded || searchQuery;
+      html += '<div class="closed-stack">';
+      html += '<div class="closed-stack-toggle" onclick="toggleClosedStack()">';
+      html += '<div class="closed-stack-left"><span class="closed-stack-arrow' + (showAll ? ' open' : '') + '">&#9654;</span><span>Closed</span></div><div class="closed-stack-count">' + cards.length + '</div>';
+      html += '</div>';
+      if (showAll) {
+        html += '<div class="closed-stack-body">';
+        for (var k = 0; k < cards.length; k++) {
+          html += window.renderCompactCard(cards[k]);
+        }
+        html += '</div>';
+      }
+      html += '</div>';
     } else {
       for (var k = 0; k < cards.length; k++) {
         html += window.renderCard(cards[k]);
@@ -1723,7 +2034,6 @@ window.renderFunnel = function() {
   for (var ci = 0; ci < companies.length; ci++) {
     if (companies[ci].stage === 'closed') closedCos.push(companies[ci]);
   }
-
   if (closedCos.length > 0) {
     var noiseTexts = ['Updated details', 'Researched company culture', 'Added to pipeline', 'Marked as closed'];
     var stageKws = [
@@ -1776,12 +2086,26 @@ window.renderFunnel = function() {
         '</div>';
     }
 
+    var aiBtn = funnelAiLoading
+      ? '<button class="funnel-ai-btn" disabled>Analysing...</button>'
+      : '<button class="funnel-ai-btn" onclick="window.analyzeFunnelWithAI()">Analyse with AI</button>';
+
+    var aiResultHtml = '';
+    if (funnelAiLoading) {
+      aiResultHtml = '<div class="funnel-ai-result"><div class="funnel-ai-result-label">AI Insights</div>'
+        + '<div class="funnel-ai-result-body" style="color:var(--muted)">Thinking...</div></div>';
+    } else if (funnelAiResult) {
+      aiResultHtml = '<div class="funnel-ai-result"><div class="funnel-ai-result-label">AI Insights &middot; <span style="cursor:pointer;text-decoration:underline" onclick="funnelAiResult=null;window.renderFunnel()">clear</span></div>'
+        + '<div class="funnel-ai-result-body">' + window.mdToHtml(funnelAiResult) + '</div></div>';
+    }
+
     var closedHtml = '<div class="funnel-closed-section">' +
       '<div class="funnel-closed-header">' +
         '<span class="funnel-closed-title">Closed &middot; ' + closedCos.length + '</span>' +
-        '<span class="funnel-closed-split">' + preInterview + ' before interview &middot; ' + postInterview + ' after</span>' +
+        '<div style="display:flex;align-items:center;gap:1rem"><span class="funnel-closed-split">' + preInterview + ' before interview &middot; ' + postInterview + ' after</span>' + aiBtn + '</div>' +
       '</div>' +
       exitRows +
+      aiResultHtml +
       '</div>';
   }
 
@@ -1807,8 +2131,12 @@ window.renderFunnel = function() {
     '<div class="insight-card"><h4>Velocity</h4><p><span class="highlight">' + screenCount + '</span> active past warm stage. Target: 6-8. ' + (screenCount < 4 ? 'Accelerate outreach.' : screenCount > 10 ? 'Focus on quality now.' : 'Good momentum.') + '</p></div></div>';
 
   html += closedHtml;
-
+  console.log('[FunnelAI] setting innerHTML, closedHtml length=' + closedHtml.length);
   container.innerHTML = html;
+  if (funnelAiResult) {
+    var funnelView = document.getElementById('view-funnel');
+    if (funnelView) setTimeout(function() { funnelView.scrollTop = funnelView.scrollHeight; }, 50);
+  }
 };
 
 // ── DETAIL PANEL ───────────────────────────────────────────────────
@@ -1922,6 +2250,7 @@ window.advanceStage = function(id) {
   if (stageIdx >= 0 && stageIdx < STAGES.length - 2) {
     var ns = STAGES[stageIdx + 1];
     c.stage = ns.id;
+    if (!c.activity) c.activity = [];
     c.activity.unshift({ date: window.todayLabel(), text: 'Advanced to ' + ns.label });
   }
   window.syncCompanyToDb(c);
@@ -1989,6 +2318,7 @@ window.researchCulture = function(id) {
       c.culture_rating = 0;
     }
 
+    if (!c.activity) c.activity = [];
     c.activity.unshift({ date: window.todayLabel(), text: 'Researched company culture' });
     window.syncCompanyToDb(c);
     
@@ -2064,6 +2394,7 @@ window.closeCompany = function(id) {
   for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
   if (!c) return;
   c.stage = 'closed';
+  if (!c.activity) c.activity = [];
   c.activity.unshift({ date: window.todayLabel(), text: 'Marked as closed' });
   window.syncCompanyToDb(c);
   window.render();
@@ -2259,6 +2590,7 @@ window.saveCompany = function() {
       var ldEl = document.getElementById('f-linked-documents');
       c.linked_documents = ldEl ? ldEl.value.trim() : '';
       c.jd = jdEl ? jdEl.value.trim() : '';
+      if (!c.activity) c.activity = [];
       c.activity.unshift({ date: window.todayLabel(), text: 'Updated details' });
       savedCompany = c;
     }
