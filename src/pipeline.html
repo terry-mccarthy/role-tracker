@@ -109,6 +109,11 @@ body {
   justify-content: center;
   padding: 0 1.5rem;
 }
+.global-search-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
 .global-search {
   background: var(--bg2);
   border: 1px solid var(--border2);
@@ -117,12 +122,25 @@ body {
   font-family: var(--mono);
   font-size: 0.7rem;
   letter-spacing: 0.02em;
-  padding: 0.35rem 0.75rem;
+  padding: 0.35rem 1.6rem 0.35rem 0.75rem;
   width: 240px;
   outline: none;
 }
 .global-search:focus { border-color: var(--accent); }
 .global-search::placeholder { color: var(--muted); }
+.global-search-clear {
+  position: absolute;
+  right: 0.45rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0;
+  display: none;
+}
+.global-search-clear:hover { color: var(--text); }
 
 .topbar-right {
   display: flex;
@@ -1116,7 +1134,10 @@ tr:hover td { background: var(--surface2); }
     </div>
   </div>
   <div class="topbar-center">
-    <input class="global-search" id="global-search" type="text" placeholder="Search companies, roles, contacts…" oninput="window.onSearch(this.value)">
+    <div class="global-search-wrap">
+      <input class="global-search" id="global-search" type="text" placeholder="Search companies, roles, contacts…" oninput="window.onSearch(this.value)">
+      <button class="global-search-clear" id="global-search-clear" onclick="window.clearSearch()" title="Clear search">&#x2715;</button>
+    </div>
   </div>
   <div class="topbar-right">
     <button class="btn-add" onclick="openModal()" style="margin-right:0.4rem">+ Add Company</button>
@@ -1559,8 +1580,16 @@ window.visibleCompanies = function() {
 
 window.onSearch = function(val) {
   searchQuery = val.trim();
+  var clearBtn = document.getElementById('global-search-clear');
+  if (clearBtn) clearBtn.style.display = searchQuery ? 'block' : 'none';
   if (currentView === 'kanban') window.renderKanban();
   else if (currentView === 'table') window.renderTable();
+};
+
+window.clearSearch = function() {
+  var input = document.getElementById('global-search');
+  if (input) { input.value = ''; }
+  window.onSearch('');
 };
 
 // ── STORAGE ────────────────────────────────────────────────────────
