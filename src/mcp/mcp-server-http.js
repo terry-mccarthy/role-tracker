@@ -83,20 +83,37 @@ async function getAllJobs() {
       id: r.id,
       company: r.company,
       role: r.role,
-      tier: r.tier,
       stage: r.stage,
+      tier: r.tier,
       url: data.url || '',
-      source: data.source || '',
-      contact: data.contact || '',
-      notes: data.notes || '',
-      added: data.added || '',
-      score: data.score || null,
-      activity: data.activity || [],
-      culture_rating: r.culture_rating,
-      culture_notes: r.culture_notes,
-      updated_at: r.updated_at
+      added: data.added || ''
     };
   });
+}
+
+async function getJobDetails(id) {
+  var result = await apiGet('/api/companies');
+  var row = (result.companies || []).find(function(r) { return r.id === id; });
+  if (!row) return null;
+  var data = {};
+  try { data = JSON.parse(row.data || '{}'); } catch(e) {}
+  return {
+    id: row.id,
+    company: row.company,
+    role: row.role,
+    stage: row.stage,
+    tier: row.tier,
+    url: data.url || '',
+    source: data.source || '',
+    contact: data.contact || '',
+    notes: data.notes || '',
+    added: data.added || '',
+    score: data.score || null,
+    activity: data.activity || [],
+    culture_rating: row.culture_rating,
+    culture_notes: row.culture_notes,
+    updated_at: row.updated_at
+  };
 }
 
 async function addJob(fields) {
@@ -143,8 +160,19 @@ server.setRequestHandler(ListToolsRequestSchema, async function() {
     tools: [
       {
         name: 'list_jobs',
-        description: 'Retrieve all job entries in the pipeline. Use this to check for duplicates before adding a new job.',
+        description: 'Returns a slim summary of every job in the pipeline (id, company, role, stage, tier, url, added). Use for dedup checks before adding a new job. Call get_job_details for full data on a specific entry.',
         inputSchema: { type: 'object', properties: {} }
+      },
+      {
+        name: 'get_job_details',
+        description: 'Returns full details for a single job including score, activity log, and culture notes. Use after list_jobs to get in-depth information on a specific entry.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', description: 'The job id from list_jobs' }
+          },
+          required: ['id']
+        }
       },
       {
         name: 'add_job',
@@ -176,6 +204,21 @@ server.setRequestHandler(CallToolRequestSchema, async function(request) {
       return { content: [{ type: 'text', text: JSON.stringify(jobs, null, 2) }] };
     } catch (e) {
       return { isError: true, content: [{ type: 'text', text: 'Failed to fetch jobs: ' + e.message }] };
+    }
+  }
+
+  if (name === 'get_job_details') {
+    if (args.id === undefined || args.id === null) {
+      return { isError: true, content: [{ type: 'text', text: 'Missing required field: id' }] };
+    }
+    try {
+      var job = await getJobDetails(args.id);
+      if (!job) {
+        return { isError: true, content: [{ type: 'text', text: 'Job not found: ' + args.id }] };
+      }
+      return { content: [{ type: 'text', text: JSON.stringify(job, null, 2) }] };
+    } catch (e) {
+      return { isError: true, content: [{ type: 'text', text: 'Failed to fetch job details: ' + e.message }] };
     }
   }
 

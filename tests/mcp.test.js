@@ -177,11 +177,18 @@ test('mcp: list_jobs returns companies from API', async function(t) {
     var content = result.result.content;
     var jobs = JSON.parse(content[0].text);
     assert.equal(jobs.length, 2);
+    assert.equal(jobs[0].id, 1);
     assert.equal(jobs[0].company, 'Acme');
     assert.equal(jobs[0].role, 'Engineer');
     assert.equal(jobs[0].stage, 'target');
+    assert.equal(jobs[0].tier, 'A');
     assert.equal(jobs[0].url, 'https://acme.com/jobs');
-    assert.equal(jobs[0].source, 'LinkedIn');
+    assert.equal(jobs[0].added, '2026-05-24');
+    // slim response must NOT include heavy fields
+    assert.equal(jobs[0].score, undefined);
+    assert.equal(jobs[0].activity, undefined);
+    assert.equal(jobs[0].culture_notes, undefined);
+    assert.equal(jobs[0].source, undefined);
     assert.equal(jobs[1].company, 'Globex');
     assert.equal(jobs[1].stage, 'warm');
   } finally {
@@ -273,6 +280,7 @@ test('mcp: tools/list returns tool definitions', async function(t) {
     var names = tools.map(function(t) { return t.name; });
     assert.ok(names.indexOf('list_jobs') !== -1);
     assert.ok(names.indexOf('add_job') !== -1);
+    assert.ok(names.indexOf('get_job_details') !== -1);
   } finally {
     cleanup(api, mcp, conn);
   }
@@ -307,6 +315,72 @@ test('mcp: add_job defaults optional fields', async function(t) {
     assert.equal(savedPayload.source, '');
     assert.equal(savedPayload.notes, '');
     assert.equal(savedPayload.stage, 'target');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: get_job_details returns full record for known id', async function(t) {
+  var api, mcp, conn;
+  try {
+    var fakeData = JSON.stringify({
+      url: 'https://acme.com/jobs',
+      source: 'LinkedIn',
+      notes: 'Great fit',
+      added: '2026-05-24',
+      score: 82,
+      activity: [{ date: '24 May', text: 'Added' }]
+    });
+    var fakeCompanies = [
+      { id: 7, company: 'Acme', role: 'Engineer', stage: 'target', tier: 'A',
+        data: fakeData, culture_rating: 4, culture_notes: 'Good vibes', updated_at: '2026-05-24' }
+    ];
+    api = await startMockApi(function(req, res) {
+      if (req.url === '/api/companies' && req.method === 'GET')
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 8 }));
+      else { res.statusCode = 404; res.end('{}'); }
+    });
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'get_job_details', arguments: { id: 7 } }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result);
+    assert.ok(result.result, 'Should have result');
+    var job = JSON.parse(result.result.content[0].text);
+    assert.equal(job.id, 7);
+    assert.equal(job.company, 'Acme');
+    assert.equal(job.score, 82);
+    assert.deepEqual(job.activity, [{ date: '24 May', text: 'Added' }]);
+    assert.equal(job.culture_notes, 'Good vibes');
+    assert.equal(job.source, 'LinkedIn');
+    assert.equal(job.notes, 'Great fit');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: get_job_details returns error for unknown id', async function(t) {
+  var api, mcp, conn;
+  try {
+    api = await startMockApi(function(req, res) {
+      if (req.url === '/api/companies' && req.method === 'GET')
+        res.end(JSON.stringify({ companies: [], nextId: 1 }));
+      else { res.statusCode = 404; res.end('{}'); }
+    });
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'get_job_details', arguments: { id: 999 } }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result);
+    assert.ok(result.result && result.result.isError, 'Should return an error for unknown id');
   } finally {
     cleanup(api, mcp, conn);
   }
