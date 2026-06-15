@@ -1457,98 +1457,69 @@ window.toggleClosedStack = function() {
   window.renderKanban();
 };
 
-window.analyzeFunnelWithAI = function() {
-  var closedCos = [];
-  for (var i = 0; i < companies.length; i++) {
-    if (companies[i].stage === 'closed') closedCos.push(companies[i]);
+var AI_NOISE_TEXTS = ['Updated details', 'Researched company culture', 'Added to pipeline', 'Marked as closed'];
+var AI_STAGE_KWS = [
+  { stage: 'offer',     kw: 'Offer' },
+  { stage: 'interview', kw: 'Interview' },
+  { stage: 'screen',    kw: 'Screen' },
+  { stage: 'warm',      kw: 'Warming Up' }
+];
+
+function getSignificantNotes(activity, noiseTexts) {
+  return (activity || []).filter(function(a) {
+    const t = a.text || '';
+    return t.length > 0 && !noiseTexts.some(n => t.indexOf(n) >= 0);
+  }).map(function(a) { return a.text; });
+}
+
+function buildRoleSummaryEntry(idx, cc) {
+  const activity = cc.activity || [];
+  const highestStage = getExitHighestStage(activity, AI_STAGE_KWS);
+  const notes = getSignificantNotes(activity, AI_NOISE_TEXTS);
+  let entry = `${idx + 1}. ${cc.company} — ${cc.role}\n   Tier: ${cc.tier} | Exited at: ${highestStage}\n`;
+  if (cc.notes) entry += `   Notes: ${cc.notes}\n`;
+  if (notes.length > 0) entry += `   Activity: ${notes.slice(0, 3).join('; ')}\n`;
+  return entry + '\n';
+}
+
+function parseFunnelAiResponse(raw) {
+  try {
+    const data = JSON.parse(raw);
+    const msg = data.message && data.message.content;
+    if (msg) return { result: msg };
+    const errMsg = (data.error && data.error.message) ? data.error.message : JSON.stringify(data).substring(0, 200);
+    return { result: 'No content: ' + errMsg };
+  } catch(e) {
+    return { result: 'Parse error: ' + e.message + ' — raw: ' + raw.substring(0, 100) };
   }
+}
+
+window.analyzeFunnelWithAI = function() {
+  const closedCos = companies.filter(c => c.stage === 'closed');
   if (closedCos.length === 0) return;
 
   funnelAiLoading = true;
   funnelAiResult = null;
   window.renderFunnel();
 
-  var noiseTexts = ['Updated details', 'Researched company culture', 'Added to pipeline', 'Marked as closed'];
-  var stageOrder = ['offer', 'interview', 'screen', 'warm', 'target'];
-  var stageKws = [
-    { stage: 'offer',     kw: 'Offer' },
-    { stage: 'interview', kw: 'Interview' },
-    { stage: 'screen',    kw: 'Screen' },
-    { stage: 'warm',      kw: 'Warming Up' }
-  ];
-
-  var rolesSummary = '';
-  for (var ci = 0; ci < closedCos.length; ci++) {
-    var cc = closedCos[ci];
-    var cActivity = cc.activity || [];
-
-    var highestStage = 'target';
-    outerLoop: for (var ski = 0; ski < stageKws.length; ski++) {
-      for (var aii = 0; aii < cActivity.length; aii++) {
-        if ((cActivity[aii].text || '').indexOf(stageKws[ski].kw) >= 0) {
-          highestStage = stageKws[ski].stage;
-          break outerLoop;
-        }
-      }
-    }
-
-    var notes = [];
-    for (var en = 0; en < cActivity.length; en++) {
-      var enText = cActivity[en].text || '';
-      var isNoise = false;
-      for (var ni = 0; ni < noiseTexts.length; ni++) {
-        if (enText.indexOf(noiseTexts[ni]) >= 0) { isNoise = true; break; }
-      }
-      if (!isNoise && enText.length > 0) notes.push(enText);
-    }
-
-    rolesSummary += (ci + 1) + '. ' + cc.company + ' — ' + cc.role + '\n';
-    rolesSummary += '   Tier: ' + cc.tier + ' | Exited at: ' + highestStage + '\n';
-    if (cc.notes) rolesSummary += '   Notes: ' + cc.notes + '\n';
-    if (notes.length > 0) rolesSummary += '   Activity: ' + notes.slice(0, 3).join('; ') + '\n';
-    rolesSummary += '\n';
-  }
-
-  var system = 'You are a senior career strategist helping an engineering manager improve their job search. '
-    + 'Analyse the closed (exited) roles below and surface actionable insights. '
-    + 'Focus on: (1) patterns in exit stage — where in the process roles keep dying and why, '
-    + '(2) role/company profile patterns — what types of targets are underperforming, '
-    + '(3) 3-5 concrete, specific recommendations to better tailor the search going forward. '
-    + 'Be direct and concise. No preamble. Use short paragraphs or bullets. Max 350 words.';
-
-  var user = 'Here are the closed roles (' + closedCos.length + ' total):\n\n' + rolesSummary
-    + 'Based on these exits, what patterns do you see and how should this person sharpen their search?';
-
-  var ollamaModel = localStorage.getItem('ollama-model') || 'qwen2.5:7b';
+  const rolesSummary = closedCos.map((cc, i) => buildRoleSummaryEntry(i, cc)).join('');
+  const system = 'You are a senior career strategist helping an engineering manager improve their job search. ' +
+    'Analyse the closed (exited) roles below and surface actionable insights. ' +
+    'Focus on: (1) patterns in exit stage — where in the process roles keep dying and why, ' +
+    '(2) role/company profile patterns — what types of targets are underperforming, ' +
+    '(3) 3-5 concrete, specific recommendations to better tailor the search going forward. ' +
+    'Be direct and concise. No preamble. Use short paragraphs or bullets. Max 350 words.';
+  const user = `Here are the closed roles (${closedCos.length} total):\n\n${rolesSummary}Based on these exits, what patterns do you see and how should this person sharpen their search?`;
+  const ollamaModel = localStorage.getItem('ollama-model') || 'qwen2.5:7b';
 
   fetch('/proxy/ollama/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: ollamaModel,
-      stream: false,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user }
-      ]
-    })
+    body: JSON.stringify({ model: ollamaModel, stream: false, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] })
   })
   .then(function(res) { return res.text(); })
   .then(function(raw) {
-    var data;
-    try { data = JSON.parse(raw); } catch(e) {
-      funnelAiResult = 'Parse error: ' + e.message + ' — raw: ' + raw.substring(0, 100);
-      funnelAiLoading = false;
-      window.renderFunnel();
-      return;
-    }
-    var msg = data.message && data.message.content;
-    if (!msg) {
-      var errMsg = (data.error && data.error.message) ? data.error.message : JSON.stringify(data).substring(0, 200);
-      funnelAiResult = 'No content: ' + errMsg;
-    } else {
-      funnelAiResult = msg;
-    }
+    funnelAiResult = parseFunnelAiResponse(raw).result;
     funnelAiLoading = false;
     window.renderFunnel();
   })
@@ -1643,49 +1614,55 @@ window.migrateToSqlite = function(localCompanies, localNextId) {
     });
 };
 
+function mergeCultureHeal(obj) {
+  if (obj.culture_notes === '[object Object]') { obj.culture_notes = null; obj.culture_rating = null; return; }
+  const p = window.parseCultureResponse(String(obj.culture_notes || ''));
+  if (p && p.summary && p.summary !== obj.culture_notes) {
+    obj.culture_rating = obj.culture_rating || p.rating;
+    obj.culture_notes = p.summary;
+  }
+}
+
+function parseCompanyRow(row) {
+  let extra = {};
+  try { extra = JSON.parse(row.data); } catch(e) {}
+  const merged = Object.assign({}, extra, row);
+  delete merged.data;
+  mergeCultureHeal(merged);
+  return merged;
+}
+
+function finishLoad() {
+  isLoaded = true;
+  window.render();
+  window.checkForAllScores();
+}
+
+function migrateIfLocalData() {
+  const localData = localStorage.getItem(STORAGE_KEY);
+  if (!localData) return false;
+  let parsed;
+  try { parsed = JSON.parse(localData); } catch(e) { return false; }
+  if (parsed.companies && parsed.companies.length > 0 && confirm('Found existing data in browser storage. Migrate to SQLite?')) {
+    window.migrateToSqlite(parsed.companies, parsed.nextId);
+    return true;
+  }
+  return false;
+}
+
 window.loadFromStorage = function() {
   console.log('[Pipeline] Loading data from SQLite...');
-  
   fetch('/api/companies')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.companies && data.companies.length > 0) {
-        companies = data.companies.map(function(c) {
-          var extra = {};
-          try { extra = JSON.parse(c.data); } catch(e) {}
-          var merged = Object.assign({}, extra, c);
-          delete merged.data; // PREVENT DOUBLE ENCODING
-          // Clear any corrupted object-coercion artifacts
-          if (merged.culture_notes === '[object Object]') { merged.culture_notes = null; merged.culture_rating = null; }
-          // Heal any rows where culture_notes was stored as raw JSON
-          var cultureParsed = window.parseCultureResponse(String(merged.culture_notes || ''));
-          if (cultureParsed && cultureParsed.summary && cultureParsed.summary !== merged.culture_notes) {
-            merged.culture_rating = merged.culture_rating || cultureParsed.rating;
-            merged.culture_notes = cultureParsed.summary;
-          }
-          return merged;
-        });
+        companies = data.companies.map(parseCompanyRow);
         nextId = data.nextId || 1;
         console.log('[Pipeline] Loaded ' + companies.length + ' companies from SQLite');
-        isLoaded = true;
-        window.render();
-        window.checkForAllScores();
-      } else {
-        // Check for migration
-        var localData = localStorage.getItem(STORAGE_KEY);
-        if (localData) {
-          var parsed = JSON.parse(localData);
-          if (parsed.companies && parsed.companies.length > 0) {
-            if (confirm('Found existing data in browser storage. Migrate to SQLite?')) {
-              window.migrateToSqlite(parsed.companies, parsed.nextId);
-              return;
-            }
-          }
-        }
-        isLoaded = true;
-        window.render();
-        window.checkForAllScores();
+        finishLoad();
+        return;
       }
+      if (!migrateIfLocalData()) finishLoad();
     })
     .catch(function(err) {
       console.error('[Pipeline] SQLite load failed', err);
@@ -1832,28 +1809,30 @@ window.renderStats = function() {
     '<div class="stat-item"><span class="stat-value">' + viaNet + '</span><span class="stat-label">Via Network</span></div>';
 };
 
+function buildScoreBadge(score) {
+  if (!score || (score.overall === undefined && score.overall_score === undefined)) return '';
+  const sc = score.overall !== undefined ? score.overall : score.overall_score;
+  const scColor = sc >= 7 ? 'var(--green)' : sc >= 5 ? 'var(--accent2)' : 'var(--red)';
+  return `<div class="card-score-badge" style="color:${scColor};border:1px solid ${scColor}44">${sc}</div>`;
+}
+
+function buildCultureBadge(culture_rating) {
+  if (!culture_rating) return '';
+  const cColor = culture_rating >= 4 ? 'var(--green)' : culture_rating >= 3 ? 'var(--accent2)' : 'var(--red)';
+  return `<span style="color:${cColor};font-size:0.65rem;margin-left:0.4rem;font-family:var(--mono)">★${culture_rating}</span>`;
+}
+
 window.renderCard = function(c) {
   var days = window.daysSince(c.updated_at || c.added);
   var urgent = (c.stage === 'interview' || c.stage === 'warm') && days > 5;
-  var contactTag = '';
-  if (c.contact && c.contact.length > 0) {
-    contactTag = '<span class="tag">' + window.esc(c.contact.split('(')[0].trim()) + '</span>';
-  }
-  var urlTag = '';
-  if (c.url && c.url.length > 0) {
-    urlTag = '<span class="tag" style="color:var(--blue)">Link</span>';
-  }
-  var scoreBadge = '';
-  if (c.score && (c.score.overall !== undefined || c.score.overall_score !== undefined)) {
-    var sc = c.score.overall !== undefined ? c.score.overall : c.score.overall_score;
-    var scColor = sc >= 7 ? 'var(--green)' : sc >= 5 ? 'var(--accent2)' : 'var(--red)';
-    scoreBadge = '<div class="card-score-badge" style="color:' + scColor + ';border:1px solid ' + scColor + '44">' + sc + '</div>';
-  }
-  var cultureBadge = '';
-  if (c.culture_rating) {
-    var cColor = c.culture_rating >= 4 ? 'var(--green)' : c.culture_rating >= 3 ? 'var(--accent2)' : 'var(--red)';
-    cultureBadge = '<span style="color:' + cColor + ';font-size:0.65rem;margin-left:0.4rem;font-family:var(--mono)">★' + c.culture_rating + '</span>';
-  }
+  var contactTag = c.contact && c.contact.length > 0
+    ? '<span class="tag">' + window.esc(c.contact.split('(')[0].trim()) + '</span>'
+    : '';
+  var urlTag = c.url && c.url.length > 0
+    ? '<span class="tag" style="color:var(--blue)">Link</span>'
+    : '';
+  var scoreBadge = buildScoreBadge(c.score);
+  var cultureBadge = buildCultureBadge(c.culture_rating);
   var nextLine = c.next ? '<div class="card-next">' + window.esc(c.next) + '</div>' : '';
   return '<div class="card' + (urgent ? ' card-urgent' : '') + '" onclick="selectCompany(' + c.id + ')">' +
     scoreBadge +
@@ -1882,8 +1861,26 @@ window.renderCompactCard = function(c) {
   '</div>';
 };
 
+function buildKanbanColHtml(s, cards) {
+  const header = `<div class="col-header"><div class="col-header-left"><div class="col-dot"></div><div class="col-name">${s.label}</div></div><div class="col-count">${cards.length}</div></div>`;
+  let body = '';
+  if (cards.length === 0) {
+    body = '<div class="empty-col">No companies<br>at this stage</div>';
+  } else if (s.id === 'closed') {
+    const showAll = closedExpanded || searchQuery;
+    const arrow = `<span class="closed-stack-arrow${showAll ? ' open' : ''}">&#9654;</span>`;
+    const stackBody = showAll
+      ? `<div class="closed-stack-body">${cards.map(window.renderCompactCard).join('')}</div>`
+      : '';
+    body = `<div class="closed-stack"><div class="closed-stack-toggle" onclick="toggleClosedStack()"><div class="closed-stack-left">${arrow}<span>Closed</span></div><div class="closed-stack-count">${cards.length}</div></div>${stackBody}</div>`;
+  } else {
+    body = cards.map(window.renderCard).join('');
+  }
+  return `<div class="kanban-col ${s.col}">${header}${body}<button class="add-card-btn" onclick="openModal('${s.id}')">+ Add</button></div>`;
+}
+
 window.renderKanban = function() {
-  var wrap = document.getElementById('view-kanban');
+  const wrap = document.getElementById('view-kanban');
 
   if (companies.length === 0) {
     wrap.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;padding:4rem 2rem;text-align:center">' +
@@ -1894,46 +1891,18 @@ window.renderKanban = function() {
     return;
   }
 
-  var visible = window.visibleCompanies();
+  const visible = window.visibleCompanies();
 
   if (searchQuery && visible.length === 0) {
     wrap.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;width:100%;padding:4rem 2rem;text-align:center;color:var(--muted);font-family:var(--mono);font-size:0.8rem">No matches for &ldquo;' + window.esc(searchQuery) + '&rdquo;</div>';
     return;
   }
 
-  var html = '';
-  for (var si = 0; si < STAGES.length; si++) {
-    var s = STAGES[si];
-    var cards = [];
-    for (var ci = 0; ci < visible.length; ci++) {
-      if (visible[ci].stage === s.id) cards.push(visible[ci]);
-    }
-    if (searchQuery && cards.length === 0) continue;
-    html += '<div class="kanban-col ' + s.col + '">';
-    html += '<div class="col-header"><div class="col-header-left"><div class="col-dot"></div><div class="col-name">' + s.label + '</div></div><div class="col-count">' + cards.length + '</div></div>';
-    if (cards.length === 0) {
-      html += '<div class="empty-col">No companies<br>at this stage</div>';
-    } else if (s.id === 'closed') {
-      var showAll = closedExpanded || searchQuery;
-      html += '<div class="closed-stack">';
-      html += '<div class="closed-stack-toggle" onclick="toggleClosedStack()">';
-      html += '<div class="closed-stack-left"><span class="closed-stack-arrow' + (showAll ? ' open' : '') + '">&#9654;</span><span>Closed</span></div><div class="closed-stack-count">' + cards.length + '</div>';
-      html += '</div>';
-      if (showAll) {
-        html += '<div class="closed-stack-body">';
-        for (var k = 0; k < cards.length; k++) {
-          html += window.renderCompactCard(cards[k]);
-        }
-        html += '</div>';
-      }
-      html += '</div>';
-    } else {
-      for (var k = 0; k < cards.length; k++) {
-        html += window.renderCard(cards[k]);
-      }
-    }
-    html += '<button class="add-card-btn" onclick="openModal(\'' + s.id + '\')">+ Add</button></div>';
-  }
+  const html = STAGES.map(s => {
+    const cards = visible.filter(c => c.stage === s.id);
+    if (searchQuery && cards.length === 0) return '';
+    return buildKanbanColHtml(s, cards);
+  }).join('');
   wrap.innerHTML = html;
 };
 
@@ -1973,47 +1942,173 @@ window.clearTableFilters = function() {
   window.renderTable();
 };
 
+function filterTableRows(base, search, stageF, tierF, sourceF) {
+  return base.filter(function(c) {
+    if (search && (c.company + ' ' + c.role + ' ' + (c.contact || '')).toLowerCase().indexOf(search) === -1) return false;
+    if (stageF.length > 0 && stageF.indexOf(c.stage) === -1) return false;
+    if (tierF.length > 0 && tierF.indexOf(c.tier) === -1) return false;
+    if (sourceF.length > 0 && sourceF.indexOf(c.source) === -1) return false;
+    return true;
+  });
+}
+
+function buildTableRowHtml(c) {
+  const sl = (STAGES.find(s => s.id === c.stage) || {}).label || '';
+  return `<tr onclick="selectCompany(${c.id})" style="cursor:pointer">` +
+    `<td style="font-weight:600">${window.esc(c.company)}</td>` +
+    `<td style="color:var(--dim)">${window.esc(c.role)}</td>` +
+    `<td><span class="card-tier tier-${c.tier.toLowerCase()}">Tier ${c.tier}</span></td>` +
+    `<td><span class="stage-pill stage-${c.stage}">${sl}</span></td>` +
+    `<td style="color:var(--dim)">${window.esc(c.source)}</td>` +
+    `<td style="color:var(--dim);font-family:var(--mono);font-size:0.7rem">${window.daysSince(c.added)}d ago</td>` +
+    `<td style="color:var(--accent2);font-style:italic;font-size:0.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${window.esc(c.next || '')}</td></tr>`;
+}
+
 window.renderTable = function() {
-  var tbody = document.getElementById('table-body');
-  var search = document.getElementById('tbl-search') ? document.getElementById('tbl-search').value.toLowerCase() : '';
-  var stageF = getCheckedValues('fd-stage-panel');
-  var tierF = getCheckedValues('fd-tier-panel');
-  var sourceF = getCheckedValues('fd-source-panel');
+  const tbody = document.getElementById('table-body');
+  const search = document.getElementById('tbl-search') ? document.getElementById('tbl-search').value.toLowerCase() : '';
+  const stageF = getCheckedValues('fd-stage-panel');
+  const tierF = getCheckedValues('fd-tier-panel');
+  const sourceF = getCheckedValues('fd-source-panel');
 
   updateFilterBtn('fd-stage-btn', 'Stage', stageF.length);
   updateFilterBtn('fd-tier-btn', 'Tier', tierF.length);
   updateFilterBtn('fd-source-btn', 'Source', sourceF.length);
 
-  var base = window.visibleCompanies();
-  var filtered = [];
-  for (var i = 0; i < base.length; i++) {
-    var c = base[i];
-    if (search && (c.company + ' ' + c.role + ' ' + (c.contact || '')).toLowerCase().indexOf(search) === -1) continue;
-    if (stageF.length > 0 && stageF.indexOf(c.stage) === -1) continue;
-    if (tierF.length > 0 && tierF.indexOf(c.tier) === -1) continue;
-    if (sourceF.length > 0 && sourceF.indexOf(c.source) === -1) continue;
-    filtered.push(c);
-  }
-
   if (companies.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No companies yet</td></tr>'; return; }
+  const filtered = filterTableRows(window.visibleCompanies(), search, stageF, tierF, sourceF);
   if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No matches</td></tr>'; return; }
-
-  var html = '';
-  for (var j = 0; j < filtered.length; j++) {
-    var c = filtered[j];
-    var sl = '';
-    for (var k = 0; k < STAGES.length; k++) { if (STAGES[k].id === c.stage) sl = STAGES[k].label; }
-    html += '<tr onclick="selectCompany(' + c.id + ')" style="cursor:pointer">' +
-      '<td style="font-weight:600">' + window.esc(c.company) + '</td>' +
-      '<td style="color:var(--dim)">' + window.esc(c.role) + '</td>' +
-      '<td><span class="card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span></td>' +
-      '<td><span class="stage-pill stage-' + c.stage + '">' + sl + '</span></td>' +
-      '<td style="color:var(--dim)">' + window.esc(c.source) + '</td>' +
-      '<td style="color:var(--dim);font-family:var(--mono);font-size:0.7rem">' + window.daysSince(c.added) + 'd ago</td>' +
-      '<td style="color:var(--accent2);font-style:italic;font-size:0.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + window.esc(c.next || '') + '</td></tr>';
-  }
-  tbody.innerHTML = html;
+  tbody.innerHTML = filtered.map(buildTableRowHtml).join('');
 };
+
+function buildFunnelBarHtml(s, count, total, color) {
+  const pct = Math.max(4, Math.round((count / total) * 100));
+  return `<div class="funnel-stage-row">` +
+    `<div class="funnel-stage-label">${s.label}</div>` +
+    `<div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${pct}%;background:${color}20;border-left:3px solid ${color}">` +
+    `<span class="funnel-bar-text" style="color:${color}">${count}</span></div></div>` +
+    `<div class="funnel-stat">${count} &middot; ${Math.round(count / total * 100)}%</div></div>`;
+}
+
+function buildConversionArrowHtml(s, ns, cumulative, benchmarks) {
+  const fromCum = cumulative[s.id] || 0;
+  const toCum = cumulative[ns.id] || 0;
+  const convRate = fromCum > 0 ? Math.round((toCum / fromCum) * 100) : 0;
+  const benchKey = s.id + '_' + ns.id;
+  const bench = benchmarks[benchKey];
+  let convClass = 'conv-warn';
+  if (bench) { convClass = convRate >= bench.good ? 'conv-good' : convRate >= bench.warn ? 'conv-warn' : 'conv-bad'; }
+  const benchLabel = bench ? ` <span style="color:var(--muted);font-size:0.58rem;font-family:var(--mono)">&middot; target &ge;${bench.good}%</span>` : '';
+  return `<div class="conversion-arrow">&darr; <span class="conv-rate ${convClass}">${convRate}% conversion</span>${benchLabel}</div>`;
+}
+
+function buildFunnelBarsHtml(activeStages, counts, cumulative, total) {
+  let html = '';
+  for (let i = 0; i < activeStages.length; i++) {
+    const s = activeStages[i];
+    html += buildFunnelBarHtml(s, counts[s.id], total, STAGE_COLORS[s.id]);
+    if (i < activeStages.length - 1) {
+      html += buildConversionArrowHtml(s, activeStages[i + 1], cumulative, FUNNEL_BENCHMARKS);
+    }
+  }
+  return html;
+}
+
+function getExitHighestStage(activity, stageKws) {
+  let highestStage = 'target';
+  outerKw: for (let ski = 0; ski < stageKws.length; ski++) {
+    for (let aii = 0; aii < activity.length; aii++) {
+      if ((activity[aii].text || '').indexOf(stageKws[ski].kw) >= 0) {
+        highestStage = stageKws[ski].stage;
+        break outerKw;
+      }
+    }
+  }
+  return highestStage;
+}
+
+function getExitNote(activity, noiseTexts) {
+  for (let en = 0; en < activity.length; en++) {
+    const enText = activity[en].text || '';
+    const isNoise = noiseTexts.some(n => enText.indexOf(n) >= 0);
+    if (!isNoise && enText.length > 0) return enText;
+  }
+  return null;
+}
+
+function buildExitRow(cc, stageKws, noiseTexts) {
+  const activity = cc.activity || [];
+  const highestStage = getExitHighestStage(activity, stageKws);
+  const exitNote = getExitNote(activity, noiseTexts);
+  const stageColor = STAGE_COLORS[highestStage] || '#6b6f78';
+  const stageLabel = highestStage.charAt(0).toUpperCase() + highestStage.slice(1);
+  const noteDisplay = exitNote ? (exitNote.length > 80 ? exitNote.substring(0, 77) + '...' : exitNote) : null;
+  const noteHtml = noteDisplay
+    ? `<span class="funnel-exit-note">${window.esc(noteDisplay)}</span>`
+    : '<span class="funnel-exit-note funnel-exit-no-note">no note</span>';
+  return {
+    html: `<div class="funnel-exit-row">` +
+      `<span class="funnel-exit-company">${window.esc(cc.company)}</span>` +
+      `<span class="funnel-exit-stage" style="border-color:${stageColor};color:${stageColor}">${stageLabel}</span>` +
+      noteHtml + '</div>',
+    isPost: highestStage === 'interview' || highestStage === 'offer'
+  };
+}
+
+function buildClosedSectionHtml(closedCos) {
+  if (closedCos.length === 0) return '';
+  const noiseTexts = ['Updated details', 'Researched company culture', 'Added to pipeline', 'Marked as closed'];
+  const stageKws = [
+    { stage: 'offer',     kw: 'Offer' },
+    { stage: 'interview', kw: 'Interview' },
+    { stage: 'screen',    kw: 'Screen' },
+    { stage: 'warm',      kw: 'Warming Up' }
+  ];
+  let preInterview = 0, postInterview = 0, exitRows = '';
+  for (let i = 0; i < closedCos.length; i++) {
+    const row = buildExitRow(closedCos[i], stageKws, noiseTexts);
+    if (row.isPost) { postInterview++; } else { preInterview++; }
+    exitRows += row.html;
+  }
+  const aiBtn = funnelAiLoading
+    ? '<button class="funnel-ai-btn" disabled>Analysing...</button>'
+    : '<button class="funnel-ai-btn" onclick="window.analyzeFunnelWithAI()">Analyse with AI</button>';
+  let aiResultHtml = '';
+  if (funnelAiLoading) {
+    aiResultHtml = '<div class="funnel-ai-result"><div class="funnel-ai-result-label">AI Insights</div>'
+      + '<div class="funnel-ai-result-body" style="color:var(--muted)">Thinking...</div></div>';
+  } else if (funnelAiResult) {
+    aiResultHtml = '<div class="funnel-ai-result"><div class="funnel-ai-result-label">AI Insights &middot; <span style="cursor:pointer;text-decoration:underline" onclick="funnelAiResult=null;window.renderFunnel()">clear</span></div>'
+      + '<div class="funnel-ai-result-body">' + window.mdToHtml(funnelAiResult) + '</div></div>';
+  }
+  return '<div class="funnel-closed-section">' +
+    '<div class="funnel-closed-header">' +
+      `<span class="funnel-closed-title">Closed &middot; ${closedCos.length}</span>` +
+      `<div style="display:flex;align-items:center;gap:1rem"><span class="funnel-closed-split">${preInterview} before interview &middot; ${postInterview} after</span>${aiBtn}</div>` +
+    '</div>' +
+    exitRows + aiResultHtml + '</div>';
+}
+
+function buildFunnelInsightsHtml(stats, counts) {
+  const netConv = stats.netConv;
+  const boardConv = stats.boardConv;
+  const screenCount = stats.screenCount;
+  const bottleneck = stats.bottleneck;
+  const channelMsg = netConv > boardConv ? 'Prioritise network outreach over cold applications.' : 'Both channels performing similarly.';
+  let diagMsg = '';
+  if (bottleneck === 'target_warm') {
+    diagMsg = `You have <span class="highlight">${counts['target']} companies</span> sitting in Target without warm outreach. The block is activation.`;
+  } else if (bottleneck === 'warm_screen') {
+    diagMsg = 'Warm-up is not converting to screens. Review your follow-up cadence.';
+  } else {
+    diagMsg = `Pipeline shape looks healthy. Focus on advancing the <span class="highlight">${counts['interview'] || 0} interviewing</span> stage.`;
+  }
+  return '<div class="funnel-insights">' +
+    `<div class="insight-card"><h4>Channel Efficiency</h4><p>Network converts at <span class="highlight">${netConv}%</span> to screen. Job boards at <span class="highlight">${boardConv}%</span>. ${channelMsg}</p></div>` +
+    `<div class="insight-card"><h4>Pipeline Diagnosis</h4><p>${diagMsg}</p></div>` +
+    `<div class="insight-card"><h4>Tier Distribution</h4><p>Tier A: <span class="highlight">${stats.tierA}</span> &middot; Tier B: <span class="highlight">${stats.tierB}</span> &middot; Tier C: <span class="highlight">${stats.tierC}</span>. ${stats.tierA < 4 ? 'Add more Tier A targets.' : 'Good tier spread.'}</p></div>` +
+    `<div class="insight-card"><h4>Velocity</h4><p><span class="highlight">${screenCount}</span> active past warm stage. Target: 6-8. ${screenCount < 4 ? 'Accelerate outreach.' : screenCount > 10 ? 'Focus on quality now.' : 'Good momentum.'}</p></div></div>`;
+}
 
 window.renderFunnel = function() {
   var container = document.getElementById('funnel-container');
@@ -2027,138 +2122,17 @@ window.renderFunnel = function() {
   var cumulative = stats.cumulative;
   var total = companies.length || 1;
   var activeStages = [];
-  var i;
-  for (i = 0; i < STAGES.length; i++) { if (STAGES[i].id !== 'closed') activeStages.push(STAGES[i]); }
+  for (var i = 0; i < STAGES.length; i++) { if (STAGES[i].id !== 'closed') activeStages.push(STAGES[i]); }
+
+  var closedCos = companies.filter(function(c) { return c.stage === 'closed'; });
 
   var html = '<div class="funnel-title">Funnel Analysis</div>' +
     '<div class="funnel-subtitle">Live conversion rates &middot; ' + companies.length + ' companies tracked</div>';
 
-  for (i = 0; i < activeStages.length; i++) {
-    var s = activeStages[i];
-    var count = counts[s.id];
-    var pct = Math.max(4, Math.round((count / total) * 100));
-    var color = STAGE_COLORS[s.id];
-    html += '<div class="funnel-stage-row">' +
-      '<div class="funnel-stage-label">' + s.label + '</div>' +
-      '<div class="funnel-bar-wrap"><div class="funnel-bar" style="width:' + pct + '%;background:' + color + '20;border-left:3px solid ' + color + '"><span class="funnel-bar-text" style="color:' + color + '">' + count + '</span></div></div>' +
-      '<div class="funnel-stat">' + count + ' &middot; ' + Math.round(count/total*100) + '%</div></div>';
+  html += buildFunnelBarsHtml(activeStages, counts, cumulative, total);
+  html += buildFunnelInsightsHtml(stats, counts);
 
-    if (i < activeStages.length - 1) {
-      var ns = activeStages[i+1];
-      var fromCum = cumulative[s.id] || 0;
-      var toCum = cumulative[ns.id] || 0;
-      var convRate = fromCum > 0 ? Math.round((toCum / fromCum) * 100) : 0;
-      var benchKey = s.id + '_' + ns.id;
-      var bench = FUNNEL_BENCHMARKS[benchKey];
-      var convClass = 'conv-warn';
-      if (bench) { convClass = convRate >= bench.good ? 'conv-good' : convRate >= bench.warn ? 'conv-warn' : 'conv-bad'; }
-      var benchLabel = bench ? ' <span style="color:var(--muted);font-size:0.58rem;font-family:var(--mono)">&middot; target &ge;' + bench.good + '%</span>' : '';
-      html += '<div class="conversion-arrow">&darr; <span class="conv-rate ' + convClass + '">' + convRate + '% conversion</span>' + benchLabel + '</div>';
-    }
-  }
-
-  // Closed exit section
-  var closedCos = [];
-  var closedHtml = '';
-  for (var ci = 0; ci < companies.length; ci++) {
-    if (companies[ci].stage === 'closed') closedCos.push(companies[ci]);
-  }
-  if (closedCos.length > 0) {
-    var noiseTexts = ['Updated details', 'Researched company culture', 'Added to pipeline', 'Marked as closed'];
-    var stageKws = [
-      { stage: 'offer',     kw: 'Offer' },
-      { stage: 'interview', kw: 'Interview' },
-      { stage: 'screen',    kw: 'Screen' },
-      { stage: 'warm',      kw: 'Warming Up' }
-    ];
-
-    var preInterview = 0, postInterview = 0;
-    var exitRows = '';
-
-    for (var ci2 = 0; ci2 < closedCos.length; ci2++) {
-      var cc = closedCos[ci2];
-      var cActivity = cc.activity || [];
-
-      var highestStage = 'target';
-      outerKw: for (var ski = 0; ski < stageKws.length; ski++) {
-        for (var aii = 0; aii < cActivity.length; aii++) {
-          if ((cActivity[aii].text || '').indexOf(stageKws[ski].kw) >= 0) {
-            highestStage = stageKws[ski].stage;
-            break outerKw;
-          }
-        }
-      }
-
-      if (highestStage === 'interview' || highestStage === 'offer') { postInterview++; } else { preInterview++; }
-
-      var exitNote = null;
-      for (var en = 0; en < cActivity.length; en++) {
-        var enText = cActivity[en].text || '';
-        var enNoise = false;
-        for (var ni = 0; ni < noiseTexts.length; ni++) {
-          if (enText.indexOf(noiseTexts[ni]) >= 0) { enNoise = true; break; }
-        }
-        if (!enNoise && enText.length > 0) { exitNote = enText; break; }
-      }
-
-      var stageColor = STAGE_COLORS[highestStage] || '#6b6f78';
-      var stageLabel = highestStage.charAt(0).toUpperCase() + highestStage.slice(1);
-      var noteDisplay = exitNote ? (exitNote.length > 80 ? exitNote.substring(0, 77) + '...' : exitNote) : null;
-      var noteHtml = noteDisplay
-        ? '<span class="funnel-exit-note">' + window.esc(noteDisplay) + '</span>'
-        : '<span class="funnel-exit-note funnel-exit-no-note">no note</span>';
-
-      exitRows += '<div class="funnel-exit-row">' +
-        '<span class="funnel-exit-company">' + window.esc(cc.company) + '</span>' +
-        '<span class="funnel-exit-stage" style="border-color:' + stageColor + ';color:' + stageColor + '">' + stageLabel + '</span>' +
-        noteHtml +
-        '</div>';
-    }
-
-    var aiBtn = funnelAiLoading
-      ? '<button class="funnel-ai-btn" disabled>Analysing...</button>'
-      : '<button class="funnel-ai-btn" onclick="window.analyzeFunnelWithAI()">Analyse with AI</button>';
-
-    var aiResultHtml = '';
-    if (funnelAiLoading) {
-      aiResultHtml = '<div class="funnel-ai-result"><div class="funnel-ai-result-label">AI Insights</div>'
-        + '<div class="funnel-ai-result-body" style="color:var(--muted)">Thinking...</div></div>';
-    } else if (funnelAiResult) {
-      aiResultHtml = '<div class="funnel-ai-result"><div class="funnel-ai-result-label">AI Insights &middot; <span style="cursor:pointer;text-decoration:underline" onclick="funnelAiResult=null;window.renderFunnel()">clear</span></div>'
-        + '<div class="funnel-ai-result-body">' + window.mdToHtml(funnelAiResult) + '</div></div>';
-    }
-
-    var closedHtml = '<div class="funnel-closed-section">' +
-      '<div class="funnel-closed-header">' +
-        '<span class="funnel-closed-title">Closed &middot; ' + closedCos.length + '</span>' +
-        '<div style="display:flex;align-items:center;gap:1rem"><span class="funnel-closed-split">' + preInterview + ' before interview &middot; ' + postInterview + ' after</span>' + aiBtn + '</div>' +
-      '</div>' +
-      exitRows +
-      aiResultHtml +
-      '</div>';
-  }
-
-  var netConv = stats.netConv;
-  var boardConv = stats.boardConv;
-  var screenCount = stats.screenCount;
-  var bottleneck = stats.bottleneck;
-
-  var channelMsg = netConv > boardConv ? 'Prioritise network outreach over cold applications.' : 'Both channels performing similarly.';
-  var diagMsg = '';
-  if (bottleneck === 'target_warm') {
-    diagMsg = 'You have <span class="highlight">' + counts['target'] + ' companies</span> sitting in Target without warm outreach. The block is activation.';
-  } else if (bottleneck === 'warm_screen') {
-    diagMsg = 'Warm-up is not converting to screens. Review your follow-up cadence.';
-  } else {
-    diagMsg = 'Pipeline shape looks healthy. Focus on advancing the <span class="highlight">' + (counts['interview'] || 0) + ' interviewing</span> stage.';
-  }
-
-  html += '<div class="funnel-insights">' +
-    '<div class="insight-card"><h4>Channel Efficiency</h4><p>Network converts at <span class="highlight">' + netConv + '%</span> to screen. Job boards at <span class="highlight">' + boardConv + '%</span>. ' + channelMsg + '</p></div>' +
-    '<div class="insight-card"><h4>Pipeline Diagnosis</h4><p>' + diagMsg + '</p></div>' +
-    '<div class="insight-card"><h4>Tier Distribution</h4><p>Tier A: <span class="highlight">' + stats.tierA + '</span> &middot; Tier B: <span class="highlight">' + stats.tierB + '</span> &middot; Tier C: <span class="highlight">' + stats.tierC + '</span>. ' + (stats.tierA < 4 ? 'Add more Tier A targets.' : 'Good tier spread.') + '</p></div>' +
-    '<div class="insight-card"><h4>Velocity</h4><p><span class="highlight">' + screenCount + '</span> active past warm stage. Target: 6-8. ' + (screenCount < 4 ? 'Accelerate outreach.' : screenCount > 10 ? 'Focus on quality now.' : 'Good momentum.') + '</p></div></div>';
-
+  var closedHtml = buildClosedSectionHtml(closedCos);
   html += closedHtml;
   console.log('[FunnelAI] setting innerHTML, closedHtml length=' + closedHtml.length);
   container.innerHTML = html;
@@ -2170,30 +2144,18 @@ window.renderFunnel = function() {
 
 // ── DETAIL PANEL ───────────────────────────────────────────────────
 
-window.selectCompany = function(id) {
-  selectedId = id;
-  var c = null;
-  for (var i = 0; i < companies.length; i++) { if (companies[i].id == id) c = companies[i]; }
-  if (!c) return;
-  document.getElementById('dp-company').textContent = c.company;
-  document.getElementById('dp-role').textContent = c.role;
-  var notesInput = document.getElementById('dp-notes-input');
-  if (notesInput) notesInput.value = c.notes || '';
-  notesInput && notesInput.setAttribute('data-id', id);
-  document.getElementById('dp-next').textContent = c.next || '';
-  document.getElementById('dp-contact').textContent = c.contact || 'No contact listed';
-
-  var docsSection = document.getElementById('dp-linked-docs-section');
-  var docsContainer = document.getElementById('dp-linked-docs');
+function renderDetailLinkedDocs(c) {
+  const docsSection = document.getElementById('dp-linked-docs-section');
+  const docsContainer = document.getElementById('dp-linked-docs');
   if (c.linked_documents && c.linked_documents.trim()) {
-    var urls = c.linked_documents.split('\n');
-    var docsHtml = '<div style="display:flex;flex-direction:column;gap:0.4rem;">';
-    for (var d = 0; d < urls.length; d++) {
-      var urlStr = urls[d].trim();
+    const urls = c.linked_documents.split('\n');
+    let docsHtml = '<div style="display:flex;flex-direction:column;gap:0.4rem;">';
+    for (let d = 0; d < urls.length; d++) {
+      const urlStr = urls[d].trim();
       if (urlStr) {
-        var safeUrl = urlStr;
+        let safeUrl = urlStr;
         if (safeUrl.indexOf('http://') !== 0 && safeUrl.indexOf('https://') !== 0) safeUrl = '';
-        docsHtml += '<a href="' + safeUrl + '" target="_blank" rel="noopener" style="font-size:0.78rem;color:var(--blue);text-decoration:none;word-break:break-all;line-height:1.4;">' + window.esc(urlStr) + '</a>';
+        docsHtml += `<a href="${safeUrl}" target="_blank" rel="noopener" style="font-size:0.78rem;color:var(--blue);text-decoration:none;word-break:break-all;line-height:1.4;">${window.esc(urlStr)}</a>`;
       }
     }
     docsHtml += '</div>';
@@ -2202,25 +2164,67 @@ window.selectCompany = function(id) {
   } else {
     docsSection.style.display = 'none';
   }
+}
 
-  // Culture section visibility is handled by renderCulture(c) at the end of this function
-
-  // Interview notes log
-  var interviewNotes = c.interviewNotes || [];
-  var inEl = document.getElementById('dp-interview-notes');
+function renderDetailInterviewNotes(c, id) {
+  const interviewNotes = c.interviewNotes || [];
+  const inEl = document.getElementById('dp-interview-notes');
   if (inEl) {
     if (interviewNotes.length === 0) {
       inEl.innerHTML = '<div class="detail-text" style="color:var(--muted);font-style:italic">No interview notes yet.</div>';
     } else {
-      var inHTML = '';
-      for (var n = 0; n < interviewNotes.length; n++) {
-        inHTML += '<div class="activity-item"><div class="activity-dot" style="background:var(--accent2)"></div><div class="activity-content"><div style="font-size:0.8rem;line-height:1.5">' + window.esc(interviewNotes[n].text) + '</div><div class="activity-date">' + window.esc(interviewNotes[n].date) + '</div></div></div>';
+      let inHTML = '';
+      for (let n = 0; n < interviewNotes.length; n++) {
+        inHTML += `<div class="activity-item"><div class="activity-dot" style="background:var(--accent2)"></div><div class="activity-content"><div style="font-size:0.8rem;line-height:1.5">${window.esc(interviewNotes[n].text)}</div><div class="activity-date">${window.esc(interviewNotes[n].date)}</div></div></div>`;
       }
       inEl.innerHTML = inHTML;
     }
   }
-  var noteEntryInput = document.getElementById('dp-note-entry');
+  const noteEntryInput = document.getElementById('dp-note-entry');
   if (noteEntryInput) { noteEntryInput.value = ''; noteEntryInput.setAttribute('data-id', id); }
+}
+
+function renderDetailActivityLog(acts) {
+  let actHTML = '';
+  for (let k = 0; k < acts.length; k++) {
+    actHTML += `<div class="activity-item"><div class="activity-dot"></div><div class="activity-content"><div>${window.esc(acts[k].text)}</div><div class="activity-date">${window.esc(acts[k].date)}</div></div></div>`;
+  }
+  document.getElementById('dp-activity').innerHTML = actHTML || '<div class="detail-text">No activity yet.</div>';
+}
+
+function renderDetailActions(c, id) {
+  let stageIdx = -1;
+  for (let m = 0; m < STAGES.length; m++) { if (STAGES[m].id === c.stage) stageIdx = m; }
+  let btns = '';
+  if (stageIdx >= 0 && stageIdx < STAGES.length - 2) {
+    const nxt = STAGES[stageIdx + 1];
+    btns += `<button class="btn-advance primary" onclick="advanceStage(${id})">Move to ${nxt.label}</button>`;
+  }
+  btns += `<button class="btn-advance" onclick="logActivity(${id})">+ Log Activity</button>`;
+  btns += `<button class="btn-advance" onclick="editCompany(${id})">Edit</button>`;
+  btns += `<button class="btn-advance" onclick="openScorer(${id})" style="color:var(--blue);border-color:var(--blue)">Score Role</button>`;
+  btns += `<button class="btn-advance" onclick="researchCulture(${id})" style="color:var(--purple);border-color:var(--purple)">Research Culture</button>`;
+  btns += `<button class="btn-advance danger" onclick="closeCompany(${id})">Close</button>`;
+  btns += `<button class="btn-advance danger" onclick="deleteCompany(${id})">Delete</button>`;
+  document.getElementById('dp-actions').innerHTML = btns;
+}
+
+window.selectCompany = function(id) {
+  selectedId = id;
+  var c = null;
+  for (var i = 0; i < companies.length; i++) { if (companies[i].id == id) c = companies[i]; }
+  if (!c) return;
+
+  document.getElementById('dp-company').textContent = c.company;
+  document.getElementById('dp-role').textContent = c.role;
+  var notesInput = document.getElementById('dp-notes-input');
+  if (notesInput) notesInput.value = c.notes || '';
+  notesInput && notesInput.setAttribute('data-id', id);
+  document.getElementById('dp-next').textContent = c.next || '';
+  document.getElementById('dp-contact').textContent = c.contact || 'No contact listed';
+
+  renderDetailLinkedDocs(c);
+  renderDetailInterviewNotes(c, id);
 
   if (c.url && c.url.length > 0) {
     document.getElementById('dp-url').href = c.url;
@@ -2237,27 +2241,9 @@ window.selectCompany = function(id) {
     '<span class="stage-pill stage-' + c.stage + '">' + sl + '</span>' +
     '<span class="tag">' + window.esc(c.source) + '</span>';
 
-  var actHTML = '';
-  var acts = c.activity || [];
-  for (var k = 0; k < acts.length; k++) {
-    actHTML += '<div class="activity-item"><div class="activity-dot"></div><div class="activity-content"><div>' + window.esc(acts[k].text) + '</div><div class="activity-date">' + window.esc(acts[k].date) + '</div></div></div>';
-  }
-  document.getElementById('dp-activity').innerHTML = actHTML || '<div class="detail-text">No activity yet.</div>';
+  renderDetailActivityLog(c.activity || []);
+  renderDetailActions(c, id);
 
-  var stageIdx = -1;
-  for (var m = 0; m < STAGES.length; m++) { if (STAGES[m].id === c.stage) stageIdx = m; }
-  var btns = '';
-  if (stageIdx >= 0 && stageIdx < STAGES.length - 2) {
-    var nxt = STAGES[stageIdx + 1];
-    btns += '<button class="btn-advance primary" onclick="advanceStage(' + id + ')">Move to ' + nxt.label + '</button>';
-  }
-  btns += '<button class="btn-advance" onclick="logActivity(' + id + ')">+ Log Activity</button>';
-  btns += '<button class="btn-advance" onclick="editCompany(' + id + ')">Edit</button>';
-  btns += '<button class="btn-advance" onclick="openScorer(' + id + ')" style="color:var(--blue);border-color:var(--blue)">Score Role</button>';
-  btns += '<button class="btn-advance" onclick="researchCulture(' + id + ')" style="color:var(--purple);border-color:var(--purple)">Research Culture</button>';
-  btns += '<button class="btn-advance danger" onclick="closeCompany(' + id + ')">Close</button>';
-  btns += '<button class="btn-advance danger" onclick="deleteCompany(' + id + ')">Delete</button>';
-  document.getElementById('dp-actions').innerHTML = btns;
   document.getElementById('detail-panel').classList.add('open');
 
   window.showScoreInPanel(c.score || null);
@@ -2287,14 +2273,45 @@ window.advanceStage = function(id) {
   window.selectCompany(id);
 };
 
+function buildCultureSearchContext(company, results) {
+  return results.reduce((ctx, r) => ctx + `- ${r.title}\n  ${r.content}\n\n`, `Search Results for ${company}:\n\n`);
+}
+
+function buildCultureLlmPrompt(company, context) {
+  const system = "You are an expert career advisor. Summarize the following web search snippets about a company's culture, work-life balance, management, and compensation.\n\n" +
+    "IMPORTANT: You must respond ONLY with a JSON object. Use double quotes for all keys and string values. Do NOT use backticks for multiline strings; use \\n instead.\n" +
+    "Format:\n{\n  \"rating\": <number 1-5 based on sentiment>,\n  \"summary\": \"<concise summary with bullet points>\"\n}";
+  return { system, user: `Company: ${company}\n\n${context}` };
+}
+
+function applyCultureResponse(c, id, response, loadingEl) {
+  const parsed = window.parseCultureResponse(response);
+  if (parsed) {
+    c.culture_notes = parsed.summary;
+    c.culture_rating = parsed.rating;
+  } else {
+    console.warn('Failed to parse culture JSON, storing raw text');
+    c.culture_notes = response;
+    c.culture_rating = 0;
+  }
+  if (!c.activity) c.activity = [];
+  c.activity.unshift({ date: window.todayLabel(), text: 'Researched company culture' });
+  window.syncCompanyToDb(c);
+  if (selectedId === id) {
+    window.renderCulture(c);
+    loadingEl.style.display = 'none';
+    window.render();
+  }
+}
+
 window.researchCulture = function(id) {
   var c = null;
   for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
   if (!c) return;
 
-  var section = document.getElementById('dp-culture-section');
-  var textEl = document.getElementById('dp-culture-text');
-  var loadingEl = document.getElementById('dp-culture-loading');
+  const section = document.getElementById('dp-culture-section');
+  const textEl = document.getElementById('dp-culture-text');
+  const loadingEl = document.getElementById('dp-culture-loading');
   section.style.display = 'block';
   loadingEl.style.display = 'inline';
   textEl.textContent = 'Searching web for ' + c.company + ' employee reviews...';
@@ -2302,61 +2319,21 @@ window.researchCulture = function(id) {
   fetch('/proxy/tavily-search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      query: c.company + ' employee reviews culture working conditions glassdoor'
-    })
+    body: JSON.stringify({ query: c.company + ' employee reviews culture working conditions glassdoor' })
   })
   .then(function(res) {
     if (res.status === 503) throw new Error('Tavily not configured on server. Add TAVILY_API_KEY to .env and restart.');
-    return res;
-  })
-  .then(function(res) {
     if (!res.ok) throw new Error('Tavily search failed');
     return res.json();
   })
   .then(function(data) {
-    if (!data.results || data.results.length === 0) {
-      throw new Error('No search results found for ' + c.company);
-    }
-    var context = 'Search Results for ' + c.company + ':\n\n';
-    for (var j = 0; j < data.results.length; j++) {
-      context += '- ' + data.results[j].title + '\n  ' + data.results[j].content + '\n\n';
-    }
-
+    if (!data.results || data.results.length === 0) throw new Error('No search results found for ' + c.company);
+    const context = buildCultureSearchContext(c.company, data.results);
     textEl.textContent = 'Summarizing reviews with LLM...';
-    
-    var system = "You are an expert career advisor. Summarize the following web search snippets about a company's culture, work-life balance, management, and compensation.\n\n" +
-                 "IMPORTANT: You must respond ONLY with a JSON object. Use double quotes for all keys and string values. Do NOT use backticks for multiline strings; use \\n instead.\n" +
-                 "Format:\n" +
-                 "{\n" +
-                 "  \"rating\": <number 1-5 based on sentiment>,\n" +
-                 "  \"summary\": \"<concise summary with bullet points>\"\n" +
-                 "}";
-    var user = "Company: " + c.company + "\n\n" + context;
-    
-    return window.callLlm(system, user, null);
+    const prompt = buildCultureLlmPrompt(c.company, context);
+    return window.callLlm(prompt.system, prompt.user, null);
   })
-  .then(function(response) {
-    var parsed = window.parseCultureResponse(response);
-    if (parsed) {
-      c.culture_notes = parsed.summary;
-      c.culture_rating = parsed.rating;
-    } else {
-      console.warn('Failed to parse culture JSON, storing raw text');
-      c.culture_notes = response;
-      c.culture_rating = 0;
-    }
-
-    if (!c.activity) c.activity = [];
-    c.activity.unshift({ date: window.todayLabel(), text: 'Researched company culture' });
-    window.syncCompanyToDb(c);
-    
-    if (selectedId === id) {
-      window.renderCulture(c);
-      loadingEl.style.display = 'none';
-      window.render();
-    }
-  })
+  .then(function(response) { applyCultureResponse(c, id, response, loadingEl); })
   .catch(function(err) {
     console.error('Culture research error:', err);
     if (selectedId === id) {
@@ -2366,56 +2343,53 @@ window.researchCulture = function(id) {
   });
 };
 
-window.renderCulture = function(c) {
-  var textEl = document.getElementById('dp-culture-text');
-  var ratingEl = document.getElementById('dp-culture-rating');
-  if (!textEl || !ratingEl) return;
+function buildCultureRatingHtml(rating) {
+  if (!rating) return '';
+  const rColor = rating >= 4 ? 'var(--green)' : rating >= 3 ? 'var(--accent2)' : 'var(--red)';
+  let stars = '';
+  for (let i = 1; i <= 5; i++) {
+    stars += `<span style="font-size:0.9rem;margin-right:0.05rem;color:${i <= rating ? rColor : 'var(--border2)'}">★</span>`;
+  }
+  const sentiment = rating >= 4 ? 'Positive' : rating >= 3 ? 'Neutral' : 'Negative';
+  return `<div style="background:var(--surface2);padding:0.75rem 1rem;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">` +
+    `<div>` +
+      `<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.3rem;letter-spacing:0.05em">Cultural Sentiment</div>` +
+      `<div style="display:flex;align-items:center;gap:0.5rem">` +
+        `<span style="font-family:var(--serif);font-size:1.4rem;font-weight:600;color:${rColor}">${rating}</span>` +
+        `<span style="font-family:var(--mono);font-size:0.6rem;color:var(--dim);margin-top:0.3rem">/ 5</span>` +
+      `</div>` +
+    `</div>` +
+    `<div style="text-align:right">` +
+      `<div style="margin-bottom:0.2rem">${stars}</div>` +
+      `<div style="font-size:0.55rem;color:var(--dim);font-family:var(--mono);text-transform:uppercase">${sentiment}</div>` +
+    `</div>` +
+  `</div>`;
+}
 
+function healCultureData(c) {
   if (c.culture_notes === '[object Object]') { c.culture_notes = null; c.culture_rating = null; }
-  var notesRaw = c.culture_notes || '';
-  // Attempt to re-parse if stored value looks like it slipped through as raw JSON
-  var parsed = window.parseCultureResponse(notesRaw);
-  if (parsed && parsed.summary) {
+  const parsed = window.parseCultureResponse(c.culture_notes || '');
+  if (parsed && parsed.summary && parsed.summary !== c.culture_notes) {
     c.culture_notes = parsed.summary;
     c.culture_rating = parsed.rating;
     window.syncCompanyToDb(c);
   }
-  var notes = c.culture_notes || '';
-  var rating = c.culture_rating || 0;
+}
+
+window.renderCulture = function(c) {
+  const textEl = document.getElementById('dp-culture-text');
+  const ratingEl = document.getElementById('dp-culture-rating');
+  if (!textEl || !ratingEl) return;
+
+  healCultureData(c);
+  const notes = c.culture_notes || '';
+  const rating = c.culture_rating || 0;
 
   textEl.textContent = notes;
-  
-  if (rating) {
-    var rColor = rating >= 4 ? 'var(--green)' : rating >= 3 ? 'var(--accent2)' : 'var(--red)';
-    var stars = '';
-    for (var i = 1; i <= 5; i++) {
-      stars += '<span style="font-size:0.9rem;margin-right:0.05rem;color:' + (i <= rating ? rColor : 'var(--border2)') + '">★</span>';
-    }
-    
-    ratingEl.innerHTML = 
-      '<div style="background:var(--surface2);padding:0.75rem 1rem;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">' +
-        '<div>' +
-          '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.3rem;letter-spacing:0.05em">Cultural Sentiment</div>' +
-          '<div style="display:flex;align-items:center;gap:0.5rem">' +
-            '<span style="font-family:var(--serif);font-size:1.4rem;font-weight:600;color:' + rColor + '">' + rating + '</span>' +
-            '<span style="font-family:var(--mono);font-size:0.6rem;color:var(--dim);margin-top:0.3rem">/ 5</span>' +
-          '</div>' +
-        '</div>' +
-        '<div style="text-align:right">' +
-          '<div style="margin-bottom:0.2rem">' + stars + '</div>' +
-          '<div style="font-size:0.55rem;color:var(--dim);font-family:var(--mono);text-transform:uppercase">' + (rating >= 4 ? 'Positive' : rating >= 3 ? 'Neutral' : 'Negative') + '</div>' +
-        '</div>' +
-      '</div>';
-  } else {
-    ratingEl.innerHTML = '';
-  }
+  ratingEl.innerHTML = buildCultureRatingHtml(rating);
 
-  var cultureSection = document.getElementById('dp-culture-section');
-  if (notes || rating) {
-    if (cultureSection) cultureSection.style.display = 'block';
-  } else {
-    if (cultureSection) cultureSection.style.display = 'none';
-  }
+  const cultureSection = document.getElementById('dp-culture-section');
+  if (cultureSection) cultureSection.style.display = (notes || rating) ? 'block' : 'none';
 };
 
 window.closeCompany = function(id) {
@@ -2661,83 +2635,75 @@ window.loadLlmConfig = function() {
   return Promise.resolve();
 };
 
-window.callLlm = function(system, user, onToken) {
-  if (llmConfig.provider === 'ollama') {
-    return fetch('/proxy/ollama/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: llmConfig.ollamaModel,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user }
-        ],
-        stream: true,
-        think: false
-      })
-    }).then(function(res) {
-      if (!res.ok) { return res.text().then(function(t) { throw new Error('Ollama error: ' + t); }); }
-      var reader = res.body.getReader();
-      var decoder = new TextDecoder();
-      var fullText = '';
-      var buffer = '';
-      var tokenCount = 0;
-      var loggedLines = 0;
-      function read() {
-        return reader.read().then(function(chunk) {
-          if (chunk.done) {
-            console.log('[callLlm] stream done. tokens:', tokenCount, 'fullText length:', fullText.length);
-            return fullText;
-          }
-          buffer += decoder.decode(chunk.value, { stream: true });
-          var lines = buffer.split('\n');
-          buffer = lines.pop();
-          for (var i = 0; i < lines.length; i++) {
-            var line = lines[i].trim();
-            if (loggedLines < 5) {
-              console.log('[callLlm] raw line:', JSON.stringify(line));
-              loggedLines++;
-            }
-            try {
-              var result = window.parseOllamaSseLine(line);
-              if (result) {
-                if (result.delta) fullText += result.delta;
-                if (result.delta || result.reasoning) {
-                  tokenCount++;
-                  if (onToken) onToken(tokenCount);
-                }
-              }
-            } catch(e) {
-              console.warn('[callLlm] parse error:', e.message, 'line:', JSON.stringify(line));
-            }
-          }
-          return read();
-        });
+function processOllamaLines(lines, state, onToken) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (state.loggedLines < 5) { console.log('[callLlm] raw line:', JSON.stringify(line)); state.loggedLines++; }
+    try {
+      const result = window.parseOllamaSseLine(line);
+      if (result) {
+        if (result.delta) state.fullText += result.delta;
+        if (result.delta || result.reasoning) { state.tokenCount++; if (onToken) onToken(state.tokenCount); }
       }
-      return read();
-    });
-  } else {
-    return fetch('/proxy/anthropic', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 512,
-        system: system,
-        messages: [{ role: 'user', content: user }]
-      })
-    }).then(function(res) { return res.json(); }).then(function(data) {
-      if (!data.content) {
-        var msg = (data.error && data.error.message) ? data.error.message : 'Unknown error from Anthropic API';
-        throw new Error('Anthropic API error: ' + msg + '. Ensure ANTHROPIC_API_KEY is set in .env and restart the server.');
-      }
-      var text = '';
-      for (var i = 0; i < data.content.length; i++) {
-        if (data.content[i].type === 'text') text += data.content[i].text;
-      }
-      return text;
-    });
+    } catch(e) {
+      console.warn('[callLlm] parse error:', e.message, 'line:', JSON.stringify(line));
+    }
   }
+}
+
+function callOllama(system, user, onToken) {
+  return fetch('/proxy/ollama/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: llmConfig.ollamaModel, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], stream: true, think: false })
+  }).then(function(res) {
+    if (!res.ok) { return res.text().then(function(t) { throw new Error('Ollama error: ' + t); }); }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    const state = { fullText: '', buffer: '', tokenCount: 0, loggedLines: 0 };
+    function read() {
+      return reader.read().then(function(chunk) {
+        if (chunk.done) {
+          console.log('[callLlm] stream done. tokens:', state.tokenCount, 'fullText length:', state.fullText.length);
+          return state.fullText;
+        }
+        state.buffer += decoder.decode(chunk.value, { stream: true });
+        const lines = state.buffer.split('\n');
+        state.buffer = lines.pop();
+        processOllamaLines(lines, state, onToken);
+        return read();
+      });
+    }
+    return read();
+  });
+}
+
+function callAnthropic(system, user) {
+  return fetch('/proxy/anthropic', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 512,
+      system: system,
+      messages: [{ role: 'user', content: user }]
+    })
+  }).then(function(res) { return res.json(); }).then(function(data) {
+    if (!data.content) {
+      const msg = (data.error && data.error.message) ? data.error.message : 'Unknown error from Anthropic API';
+      throw new Error('Anthropic API error: ' + msg + '. Ensure ANTHROPIC_API_KEY is set in .env and restart the server.');
+    }
+    let text = '';
+    for (let i = 0; i < data.content.length; i++) {
+      if (data.content[i].type === 'text') text += data.content[i].text;
+    }
+    return text;
+  });
+}
+
+window.callLlm = function(system, user, onToken) {
+  if (llmConfig.provider === 'ollama') return callOllama(system, user, onToken);
+  return callAnthropic(system, user);
 };
 
 // ── URL IMPORT ─────────────────────────────────────────────────────
@@ -2803,58 +2769,66 @@ window.extractJobData = function(content, onToken) {
   });
 };
 
-window.fetchAndFill = function() {
-  var urlInput = document.getElementById('f-url');
-  if (!urlInput || !urlInput.value.trim()) return Promise.resolve();
-  var url = urlInput.value.trim();
+function setField(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = value;
+}
 
-  var btn = document.getElementById('fetch-btn');
-  var tokensEl = document.getElementById('fetch-tokens');
-  var origText = btn ? btn.textContent : 'Fetch';
-  if (btn) btn.textContent = 'Fetching...';
-  if (tokensEl) { tokensEl.style.display = 'none'; tokensEl.textContent = ''; }
+function fillContactIfEmpty(name) {
+  const el = document.getElementById('f-contact');
+  if (el && !el.value) el.value = name;
+}
 
-  var tokensFired = 0;
-  function onToken(count) {
-    tokensFired = count;
-    console.log('[onToken] count:', count);
-    if (tokensEl) {
-      tokensEl.style.display = 'block';
-      tokensEl.textContent = 'Extracting — ' + count + ' tokens';
-    }
+function fillJdField(rawContent) {
+  const jdEl = document.getElementById('f-jd');
+  if (!jdEl || !rawContent) return;
+  const jdText = window.stripJdGuff(rawContent);
+  jdEl.value = jdText.length > 12000 ? jdText.substring(0, 12000) : jdText;
+}
+
+function fillExtractedFields(extracted, url, rawContent) {
+  if (extracted) {
+    if (extracted.company_name) setField('f-company', extracted.company_name);
+    if (extracted.job_title) setField('f-role', extracted.job_title);
+    if (extracted.contact_name) fillContactIfEmpty(extracted.contact_name);
   }
+  if (url.indexOf('linkedin.com') !== -1) setField('f-source', 'LinkedIn');
+  fillJdField(rawContent);
+}
 
-  var rawContent = '';
+var _NOOP = { textContent: '', style: { display: '' } };
+
+window.fetchAndFill = function() {
+  const urlInput = document.getElementById('f-url');
+  if (!urlInput || !urlInput.value.trim()) return Promise.resolve();
+  const url = urlInput.value.trim();
+
+  const btn = document.getElementById('fetch-btn') || _NOOP;
+  const tok = document.getElementById('fetch-tokens') || _NOOP;
+  const origText = btn.textContent || 'Fetch';
+  btn.textContent = 'Fetching...';
+  tok.style.display = 'none'; tok.textContent = '';
+
+  let tokensFired = 0;
+  let rawContent = '';
+
   return window.fetchJobFromUrl(url).then(function(content) {
     rawContent = content;
-    if (btn) btn.textContent = 'Extracting...';
-    if (tokensEl) { tokensEl.style.display = 'block'; tokensEl.textContent = 'Extracting — 0 tokens'; }
-    return window.extractJobData(content, onToken);
+    btn.textContent = 'Extracting...';
+    tok.style.display = 'block'; tok.textContent = 'Extracting — 0 tokens';
+    return window.extractJobData(content, function(count) {
+      tokensFired = count;
+      tok.textContent = 'Extracting — ' + count + ' tokens';
+    });
   }).then(function(extracted) {
-    if (extracted && extracted.company_name) document.getElementById('f-company').value = extracted.company_name;
-    if (extracted && extracted.job_title) document.getElementById('f-role').value = extracted.job_title;
-    if (extracted && extracted.contact_name) {
-      var contactEl = document.getElementById('f-contact');
-      if (contactEl && !contactEl.value) contactEl.value = extracted.contact_name;
-    }
-    if (url.indexOf('linkedin.com') !== -1) {
-      var sourceEl = document.getElementById('f-source');
-      if (sourceEl) sourceEl.value = 'LinkedIn';
-    }
-    var jdEl = document.getElementById('f-jd');
-    if (jdEl && rawContent) {
-      var jdText = window.stripJdGuff(rawContent);
-      jdEl.value = jdText.length > 12000 ? jdText.substring(0, 12000) : jdText;
-    }
-    if (btn) btn.textContent = origText;
-    if (tokensEl) {
-      tokensEl.style.display = tokensFired > 0 ? 'block' : 'none';
-      if (tokensFired > 0) tokensEl.textContent = 'Done — ' + tokensFired + ' tokens';
-    }
+    fillExtractedFields(extracted, url, rawContent);
+    btn.textContent = origText;
+    tok.style.display = tokensFired > 0 ? 'block' : 'none';
+    if (tokensFired > 0) tok.textContent = 'Done — ' + tokensFired + ' tokens';
   }).catch(function(err) {
     console.error('fetchAndFill error:', err);
-    if (btn) btn.textContent = origText;
-    if (tokensEl) tokensEl.style.display = 'none';
+    btn.textContent = origText;
+    tok.style.display = 'none';
     alert(err.message || 'Failed to fetch the URL. Please paste the job description manually.');
   });
 };
@@ -2894,105 +2868,114 @@ window.addAndScore = function() {
 
 // ── SCORER INTEGRATION ────────────────────────────────────────────
 
+function buildDimensionCard(d) {
+  const c = scoreColor(d.score);
+  return `<div style="background:var(--surface2);padding:0.4rem 0.6rem;border-radius:4px;border:1px solid var(--border)">` +
+    `<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.2rem">${window.esc(d.name)}</div>` +
+    `<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-weight:600;font-size:0.85rem;color:${c}">${d.score}</span><span style="font-size:0.55rem;color:var(--dim)">${d.weight}</span></div></div>`;
+}
+
+function buildDimensionBreakdownHtml(dimensions) {
+  if (!dimensions || dimensions.length === 0) return '';
+  return '<div style="margin-top:1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:1rem">' +
+    dimensions.map(buildDimensionCard).join('') + '</div>';
+}
+
+function buildDiscoveryItemsHtml(items) {
+  if (!items || items.length === 0) return '';
+  let html = '<div style="margin-top:0.75rem">' +
+    '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--accent2);text-transform:uppercase;margin-bottom:0.4rem;letter-spacing:0.05em">Needs Discovery</div>';
+  for (let j = 0; j < items.length; j++) {
+    html += `<div style="font-size:0.72rem;color:var(--dim);margin-bottom:0.3rem;display:flex;gap:0.4rem"><span>•</span><span>${window.esc(items[j])}</span></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function extractOverall(score) {
+  if (!score) return null;
+  return score.overall !== undefined ? score.overall : score.overall_score;
+}
+
+function scoreColor(n) {
+  if (n >= 7) return 'var(--green)';
+  if (n >= 5) return 'var(--accent2)';
+  return 'var(--red)';
+}
+
+function buildScoreHeaderHtml(overall, score) {
+  const scColor = scoreColor(overall);
+  const hardNoTag = score.hard_nos_pass === false
+    ? '<span style="font-family:var(--mono);font-size:0.58rem;color:var(--red);margin-left:0.8rem;background:rgba(232,91,91,0.1);padding:0.1rem 0.4rem;border-radius:2px">Hard no triggered</span>'
+    : '';
+  return `<div style="display:flex;align-items:baseline;gap:0.25rem;margin-bottom:0.4rem"><span style="font-family:var(--serif);font-size:2rem;line-height:1;color:${scColor}">${overall}</span><span style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">/10</span>${hardNoTag}</div>` +
+    `<div style="font-size:0.78rem;color:var(--text);font-weight:500;margin-bottom:0.75rem;line-height:1.4">${window.esc(score.verdict || score.overall_verdict || '')}</div>`;
+}
+
 window.showScoreInPanel = function(score) {
-  var section = document.getElementById('dp-score-section');
-  var el = document.getElementById('dp-score');
+  const section = document.getElementById('dp-score-section');
+  const el = document.getElementById('dp-score');
   if (!section || !el) return;
-  
-  var overall = score ? (score.overall !== undefined ? score.overall : score.overall_score) : null;
-  if (overall === null || overall === undefined) { section.style.display = 'none'; return; }
-  
-  var scColor = overall >= 7 ? 'var(--green)' : overall >= 5 ? 'var(--accent2)' : 'var(--red)';
-  
-  var html = 
-    '<div style="display:flex;align-items:baseline;gap:0.25rem;margin-bottom:0.4rem">' +
-      '<span style="font-family:var(--serif);font-size:2rem;line-height:1;color:' + scColor + '">' + overall + '</span>' +
-      '<span style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">/10</span>' +
-      (score.hard_nos_pass === false ? '<span style="font-family:var(--mono);font-size:0.58rem;color:var(--red);margin-left:0.8rem;background:rgba(232,91,91,0.1);padding:0.1rem 0.4rem;border-radius:2px">Hard no triggered</span>' : '') +
-    '</div>' +
-    '<div style="font-size:0.78rem;color:var(--text);font-weight:500;margin-bottom:0.75rem;line-height:1.4">' + window.esc(score.verdict || score.overall_verdict || '') + '</div>';
 
-  // Dimension breakdown
-  if (score.dimensions && score.dimensions.length > 0) {
-    html += '<div style="margin-top:1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:1rem">';
-    for (var i = 0; i < score.dimensions.length; i++) {
-      var d = score.dimensions[i];
-      var dColor = d.score >= 7 ? 'var(--green)' : d.score >= 5 ? 'var(--accent2)' : 'var(--red)';
-      html += '<div style="background:var(--surface2);padding:0.4rem 0.6rem;border-radius:4px;border:1px solid var(--border)">' +
-        '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.2rem">' + window.esc(d.name) + '</div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
-          '<span style="font-weight:600;font-size:0.85rem;color:' + dColor + '">' + d.score + '</span>' +
-          '<span style="font-size:0.55rem;color:var(--dim)">' + d.weight + '</span>' +
-        '</div>' +
-      '</div>';
-    }
-    html += '</div>';
-  }
+  const overall = extractOverall(score);
+  if (overall == null) { section.style.display = 'none'; return; }
 
-  // Discovery items
-  var discovery = score.discovery_items || [];
-  if (discovery.length > 0) {
-    html += '<div style="margin-top:0.75rem">' +
-      '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--accent2);text-transform:uppercase;margin-bottom:0.4rem;letter-spacing:0.05em">Needs Discovery</div>';
-    for (var j = 0; j < discovery.length; j++) {
-      html += '<div style="font-size:0.72rem;color:var(--dim);margin-bottom:0.3rem;display:flex;gap:0.4rem"><span>•</span><span>' + window.esc(discovery[j]) + '</span></div>';
-    }
-    html += '</div>';
-  }
+  let html = buildScoreHeaderHtml(overall, score);
+  html += buildDimensionBreakdownHtml(score.dimensions);
+  html += buildDiscoveryItemsHtml(score.discovery_items);
+  html += `<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);margin-top:1rem;border-top:1px solid var(--border);padding-top:0.5rem">Scored ${window.esc(score.scored_at || 'Recently')}</div>`;
 
-  html += '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);margin-top:1rem;border-top:1px solid var(--border);padding-top:0.5rem">Scored ' + window.esc(score.scored_at || 'Recently') + '</div>';
-  
   el.innerHTML = html;
   section.style.display = 'block';
 };
 
+function extractScoreValue(score) {
+  return score && (score.overall || score.overall_score);
+}
+
+function applyStoredScore(c) {
+  const scoreKey = 'score-' + c.id;
+  try {
+    const ls = localStorage.getItem(scoreKey);
+    if (!ls) return false;
+    const score = JSON.parse(ls);
+    const val = extractScoreValue(score);
+    if (!val) return false;
+    c.score = score;
+    c.score.overall = val;
+    if (score.jd) c.jd = score.jd;
+    c.tier = window.scoreTier(val);
+    localStorage.removeItem(scoreKey);
+    console.log('[Pipeline] Applied localStorage score for ID:', c.id);
+    return true;
+  } catch(e) {
+    console.warn('Score check failed', e);
+    return false;
+  }
+}
+
 window.checkForAllScores = function() {
   if (!isLoaded || companies.length === 0) return;
-  console.log('[Pipeline] Checking for new scores for IDs:', companies.map(function(c) { return c.id; }));
-  var changed = false;
-  var processed = 0;
-  var total = companies.length;
-  
+  let changed = false;
+  let processed = 0;
+  const total = companies.length;
+
   function finish(changedCompany) {
     processed++;
-    if (changedCompany) {
-      window.syncCompanyToDb(changedCompany);
-      changed = true;
-    }
-    if (processed === total && (changed || changedCompany)) {
-      window.saveToStorage(); // for nextId if it changed
+    if (changedCompany) { window.syncCompanyToDb(changedCompany); changed = true; }
+    if (processed === total && changed) {
+      window.saveToStorage();
       window.render();
       if (selectedId) {
-        var sc = null;
-        for (var k = 0; k < companies.length; k++) { if (companies[k].id == selectedId) sc = companies[k].score; }
-        window.showScoreInPanel(sc);
+        const sel = companies.find(c => c.id == selectedId);
+        if (sel) window.showScoreInPanel(sel.score);
       }
     }
   }
 
-  for (var i = 0; i < companies.length; i++) {
-    (function(c) {
-      var scoreKey = 'score-' + c.id;
-      try {
-        var ls = localStorage.getItem(scoreKey);
-        if (ls) {
-          var score = JSON.parse(ls);
-          if (score && (score.overall || score.overall_score)) {
-            var val = score.overall || score.overall_score;
-            c.score = score;
-            c.score.overall = val;
-            if (score.jd) c.jd = score.jd;
-            c.tier = window.scoreTier(val);
-            localStorage.removeItem(scoreKey);
-            console.log('[Pipeline] Applied localStorage score for ID:', c.id);
-            finish(c);
-            return;
-          }
-        }
-      } catch(e) { console.warn('Score check failed', e); }
-      finish(null);
-    })(companies[i]);
-  }
+  companies.forEach(function(c) {
+    if (applyStoredScore(c)) { finish(c); } else { finish(null); }
+  });
 };
 
 window.checkForNewScore = function(id) {

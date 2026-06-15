@@ -14,13 +14,10 @@ When a direct file path returns empty (glob/read fails):
 ## Critical constraints
 
 ### JavaScript patterns (MUST follow)
-- **All functions must be assigned to `window`**: `window.myFunc = function() {...}`
-- **All state variables must use `var`**: `var companies = [];` (not `const` or `let`)
-- **No arrow functions in global scope** — use `function(){}` syntax
-- **No template literals** — use string concatenation with `+`
-- **No optional chaining** (`?.`) — use explicit null checks
-- **No destructuring** — use dot notation
-- **Reason**: The app renders in a sandboxed iframe where `const`/`let`/`function` declarations don't attach to `window`. Inline `onclick` handlers need global access.
+- **Top-level state variables must use `var`**: `var companies = [];` — `const`/`let` at the top level of a `<script>` tag do not attach to `window`, so `onclick` handlers can't reach them.
+- **Functions callable from inline `onclick` must be on `window`**: either `window.myFunc = function(){}` or a top-level `function myFunc(){}` declaration (both attach to `window` in non-module scripts).
+- **Inside function bodies**: `const`/`let`, arrow functions, template literals, destructuring, and optional chaining are all fine.
+- **Reason**: Scripts are plain non-module `<script>` tags served by a local Node.js server. The only real constraint is that `const`/`let` at the top level don't go on `window`, so inline handlers can't see them.
 
 ### Storage
 - Data is persisted in a local SQLite database (`pipeline.db`) via the Node.js backend.
