@@ -6,6 +6,7 @@ services:
     environment:
       - TAVILY_API_KEY=${TAVILY_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - DB_PATH=/app/data/pipeline.db
       # Uses Ollama running natively on the Mac host (GPU-accelerated).
       # Make sure Ollama is running: `ollama serve`

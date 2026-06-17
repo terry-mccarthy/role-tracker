@@ -53,6 +53,17 @@ Uses Claude via the Anthropic API (costs money per call).
 2. In the scorer's Settings, select **Anthropic (Claude)** and paste your key.
    > The key is stored in your browser's localStorage — it never leaves your machine.
 
+#### Option C — OpenRouter (multi-provider gateway)
+Routes to many providers (GPT, Claude, Gemini, Llama, etc.) through a single API (costs money per call).
+
+1. Get an API key at https://openrouter.ai/keys
+2. Add it to your `.env` file:
+   ```
+   OPENROUTER_API_KEY=sk-or-...
+   ```
+   The server reads this from the environment — restart after changes. The key stays server-side and is never exposed to the browser.
+3. In the scorer's Settings, select **OpenRouter** and enter a model name (e.g. `openai/gpt-4o-mini`, `google/gemini-2.0-flash-001`). Full list at https://openrouter.ai/models.
+
 ### URL Extraction (optional)
 The scorer can auto-fetch job descriptions from a URL using **Tavily**.
 
@@ -173,6 +184,8 @@ Pipeline data is stored in a local SQLite database (`pipeline.db`).
 The frontend communicates with the backend via REST APIs defined in `server.js`.
 The server also provides proxies for:
 - **Ollama**: Local AI scoring (port 11434)
+- **Anthropic**: Cloud AI scoring via Claude
+- **OpenRouter**: Cloud AI scoring via a multi-provider gateway
 - **Tavily**: External search and content extraction
 
 The MCP server (`mcp-server.js` / `mcp-server-http.js`) exposes the same data to Claude Code via `list_jobs` and `add_job` tools.
