@@ -17,6 +17,7 @@ function startServer(env) {
       process.env.PORT = '${port}';
       process.env.TAVILY_API_KEY = '${env.TAVILY_KEY || ''}';
       process.env.ANTHROPIC_API_KEY = '${env.ANTHROPIC_KEY || ''}';
+      process.env.OPENROUTER_API_KEY = '${env.OPENROUTER_KEY || ''}';
       var srv = require('./src/server/server.js');
     `], { cwd: path.join(__dirname, '..'), stdio: ['pipe', 'pipe', 'pipe'] });
     var started = false;
@@ -153,10 +154,23 @@ test('missing ANTHROPIC_API_KEY returns 503 from proxy', async function(t) {
   }
 });
 
+test('missing OPENROUTER_API_KEY returns 503 from proxy', async function(t) {
+  var s;
+  try {
+    s = await startServer({ TAVILY_KEY: '', ANTHROPIC_KEY: '', OPENROUTER_KEY: '' });
+    var res = await apiPostRaw('localhost', s.port, '/proxy/openrouter', '{}');
+    assert.equal(res.status, 503);
+    var parsed = JSON.parse(res.body);
+    assert.ok(parsed.error.indexOf('OPENROUTER_API_KEY') !== -1);
+  } finally {
+    stopServer(s);
+  }
+});
+
 test('API endpoints never return API keys', async function(t) {
   var s;
   try {
-    s = await startServer({ TAVILY_KEY: 'tvly-fake', ANTHROPIC_KEY: 'sk-ant-fake' });
+    s = await startServer({ TAVILY_KEY: 'tvly-fake', ANTHROPIC_KEY: 'sk-ant-fake', OPENROUTER_KEY: 'sk-or-fake' });
     // GET /api/companies should not include keys
     var res = await apiGet('localhost', s.port, '/api/companies');
     assert.equal(res.status, 200);
@@ -164,6 +178,7 @@ test('API endpoints never return API keys', async function(t) {
     var bodyStr = JSON.stringify(data);
     assert.equal(bodyStr.indexOf('tvly-fake'), -1, 'Should not leak TAVILY key');
     assert.equal(bodyStr.indexOf('sk-ant-fake'), -1, 'Should not leak ANTHROPIC key');
+    assert.equal(bodyStr.indexOf('sk-or-fake'), -1, 'Should not leak OPENROUTER key');
 
     // Save a company with XSS payload
     var saveRes = await apiPost('localhost', s.port, '/api/save', {
