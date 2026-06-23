@@ -90,6 +90,15 @@ function mcpPostMessage(host, port, sessionId, message) {
   });
 }
 
+function parseDataLine(line) {
+  if (line.indexOf('data: ') !== 0) return null;
+  try {
+    var parsed = JSON.parse(line.slice(6));
+    if (parsed.result || parsed.error) return parsed;
+  } catch(e) {}
+  return null;
+}
+
 function waitForSseResult(sseRes, done) {
   return new Promise(function(resolve) {
     var buf = '';
@@ -97,29 +106,39 @@ function waitForSseResult(sseRes, done) {
     sseRes.on('data', function(chunk) {
       if (done) return;
       buf += chunk.toString();
-      // Look for a result JSON-RPC response
       var lines = buf.split('\n');
       for (var i = 0; i < lines.length; i++) {
-        if (lines[i].indexOf('data: ') === 0) {
-          try {
-            var parsed = JSON.parse(lines[i].slice(6));
-            if (parsed.result || parsed.error) {
-              clearTimeout(timer);
-              done = true;
-              resolve(parsed);
-              return;
-            }
-          } catch(e) {}
-        }
+        var match = parseDataLine(lines[i]);
+        if (match) { clearTimeout(timer); done = true; resolve(match); return; }
       }
     });
   });
 }
 
+function safeCleanup(obj, method) {
+  if (!obj) return;
+  try { obj[method](); } catch(e) {}
+}
+
 function cleanup(api, mcp, conn) {
-  if (conn && conn.sseReq) try { conn.sseReq.destroy(); } catch(e) {}
-  if (mcp && mcp.proc) try { mcp.proc.kill(); } catch(e) {}
-  if (api) try { api.close(); } catch(e) {}
+  safeCleanup(conn && conn.sseReq, 'destroy');
+  safeCleanup(mcp && mcp.proc, 'kill');
+  safeCleanup(api, 'close');
+}
+
+function readBody(req, cb) {
+  var body = '';
+  req.on('data', function(c) { body += c; });
+  req.on('end', function() { cb(JSON.parse(body)); });
+}
+
+function mockRoute(routes) {
+  return function(req, res) {
+    var key = req.method + ' ' + req.url;
+    var fn = routes[key];
+    if (fn) { fn(req, res); return; }
+    res.statusCode = 404; res.end('{}');
+  };
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────
@@ -127,11 +146,11 @@ function cleanup(api, mcp, conn) {
 test('mcp: list_jobs returns empty array when no companies exist', async function(t) {
   var api, mcp, conn;
   try {
-    api = await startMockApi(function(req, res) {
-      if (req.url === '/api/companies' && req.method === 'GET')
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
         res.end(JSON.stringify({ companies: [], nextId: 1 }));
-      else { res.statusCode = 404; res.end('{}'); }
-    });
+      }
+    }));
     mcp = await startMcpServer(getPort(api));
     conn = await mcpConnect('localhost', mcp.port);
     var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
@@ -160,11 +179,11 @@ test('mcp: list_jobs returns companies from API', async function(t) {
       { id:1, company:'Acme', role:'Engineer', stage:'target', tier:'A', data:fakeData1, culture_rating:null, culture_notes:null, updated_at:'2026-05-24' },
       { id:2, company:'Globex', role:'Manager', stage:'warm', tier:'B', data:fakeData2, culture_rating:null, culture_notes:null, updated_at:'2026-05-23' }
     ];
-    api = await startMockApi(function(req, res) {
-      if (req.url === '/api/companies' && req.method === 'GET')
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
         res.end(JSON.stringify({ companies: fakeCompanies, nextId: 3 }));
-      else { res.statusCode = 404; res.end('{}'); }
-    });
+      }
+    }));
     mcp = await startMcpServer(getPort(api));
     conn = await mcpConnect('localhost', mcp.port);
     var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
@@ -200,17 +219,17 @@ test('mcp: add_job creates company and returns result', async function(t) {
   var api, mcp, conn;
   var savedPayload = null;
   try {
-    api = await startMockApi(function(req, res) {
-      if (req.url === '/api/companies' && req.method === 'GET')
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
         res.end(JSON.stringify({ companies: [], nextId: 5 }));
-      else if (req.url === '/api/save' && req.method === 'POST') {
-        var body = '';
-        req.on('data', function(c) { body += c; });
-        req.on('end', function() { savedPayload = JSON.parse(body); res.end(JSON.stringify({ success: true })); });
-      } else if (req.url === '/api/kv' && req.method === 'POST')
+      },
+      'POST /api/save': function(req, res) {
+        readBody(req, function(body) { savedPayload = body; res.end(JSON.stringify({ success: true })); });
+      },
+      'POST /api/kv': function(req, res) {
         res.end(JSON.stringify({ success: true }));
-      else { res.statusCode = 404; res.end('{}'); }
-    });
+      }
+    }));
     mcp = await startMcpServer(getPort(api));
     conn = await mcpConnect('localhost', mcp.port);
     var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
@@ -281,6 +300,221 @@ test('mcp: tools/list returns tool definitions', async function(t) {
     assert.ok(names.indexOf('list_jobs') !== -1);
     assert.ok(names.indexOf('add_job') !== -1);
     assert.ok(names.indexOf('get_job_details') !== -1);
+    assert.ok(names.indexOf('edit_job') !== -1);
+    assert.ok(names.indexOf('fetch_jd') !== -1);
+    assert.ok(names.indexOf('score_job') !== -1);
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: edit_job updates url field', async function(t) {
+  var api, mcp, conn;
+  var savedPayload = null;
+  try {
+    var fakeData = JSON.stringify({ url: 'https://old.com/jobs', added: '2026-06-01', activity: [] });
+    var fakeCompanies = [
+      { id: 3, company: 'TestCo', role: 'EM', stage: 'target', tier: 'B',
+        data: fakeData, culture_rating: null, culture_notes: null, updated_at: '2026-06-01' }
+    ];
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 4 }));
+      },
+      'POST /api/save': function(req, res) {
+        readBody(req, function(body) { savedPayload = body; res.end(JSON.stringify({ success: true })); });
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'edit_job', arguments: { id: 3, url: 'https://new.com/jobs' } }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result, 'Should receive a result');
+    assert.ok(!result.result.isError, 'Should not error');
+    assert.ok(savedPayload, 'Should call /api/save');
+    assert.equal(savedPayload.url, 'https://new.com/jobs');
+    assert.equal(savedPayload.id, 3);
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: edit_job errors on unknown id', async function(t) {
+  var api, mcp, conn;
+  try {
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: [], nextId: 1 }));
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'edit_job', arguments: { id: 999, url: 'https://example.com' } }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result);
+    assert.ok(result.result.isError, 'Should return an error for unknown id');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: fetch_jd fetches from url and saves jd', async function(t) {
+  var api, mcp, conn;
+  var savedPayload = null;
+  try {
+    var fakeData = JSON.stringify({ url: 'https://example.com/job', added: '2026-06-01', activity: [], jd: '' });
+    var fakeCompanies = [
+      { id: 5, company: 'FetchCo', role: 'Dev', stage: 'target', tier: 'B',
+        data: fakeData, culture_rating: null, culture_notes: null, updated_at: '2026-06-01' }
+    ];
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 6 }));
+      },
+      'POST /proxy/jina-reader': function(req, res) {
+        readBody(req, function() {
+          res.setHeader('Content-Type', 'text/plain');
+          res.end('Engineering Manager role. Lead a team of 20 engineers. Remote-friendly.');
+        });
+      },
+      'POST /api/save': function(req, res) {
+        readBody(req, function(body) { savedPayload = body; res.end(JSON.stringify({ success: true })); });
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'fetch_jd', arguments: { id: 5 } }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result, 'Should receive a result');
+    assert.ok(!result.result.isError, 'Should not error');
+    var content = JSON.parse(result.result.content[0].text);
+    assert.equal(content.id, 5);
+    assert.ok(content.jd_length > 0, 'Should report JD length');
+    assert.ok(savedPayload, 'Should call /api/save');
+    assert.ok(savedPayload.jd && savedPayload.jd.length > 0, 'Saved job should have JD');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: fetch_jd errors when no url set', async function(t) {
+  var api, mcp, conn;
+  try {
+    var fakeData = JSON.stringify({ url: '', added: '2026-06-01', activity: [] });
+    var fakeCompanies = [
+      { id: 6, company: 'NoUrlCo', role: 'Dev', stage: 'target', tier: 'B',
+        data: fakeData, culture_rating: null, culture_notes: null, updated_at: '2026-06-01' }
+    ];
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 7 }));
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'fetch_jd', arguments: { id: 6 } }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result);
+    assert.ok(result.result.isError, 'Should return an error when no URL set');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: score_job scores and saves result', async function(t) {
+  var api, mcp, conn;
+  var scoredPayload = null;
+  try {
+    var fakeJd = 'Engineering Manager at TechCorp. Lead 20 engineers. Fully remote. AUD 300k.';
+    var fakeProfile = '# Eval Profile\n## Scoring weights\n| Dimension | Weight |\n|---|---|\n| Lifestyle | 25% |';
+    var fakeData = JSON.stringify({ url: 'https://techcorp.com/em', added: '2026-06-01', activity: [], jd: fakeJd });
+    var fakeCompanies = [
+      { id: 7, company: 'TechCorp', role: 'EM', stage: 'target', tier: 'B',
+        data: fakeData, culture_rating: null, culture_notes: null, updated_at: '2026-06-01' }
+    ];
+    var fakeScoreJson = JSON.stringify({
+      overall_score: 8, overall_verdict: 'Strong fit',
+      hard_nos_pass: true, hard_nos_detail: 'None triggered',
+      dimensions: [{ name: 'Lifestyle', weight: '25%', score: 8, detail: 'Good balance' }],
+      tensions: [], discovery_items: [], extraction: {}
+    });
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 8 }));
+      },
+      'GET /config/evaluation-profile.md': function(req, res) {
+        res.setHeader('Content-Type', 'text/markdown');
+        res.end(fakeProfile);
+      },
+      'POST /proxy/anthropic': function(req, res) {
+        readBody(req, function() {
+          res.end(JSON.stringify({ content: [{ type: 'text', text: fakeScoreJson }] }));
+        });
+      },
+      'POST /api/save-score': function(req, res) {
+        readBody(req, function(body) { scoredPayload = body; res.end(JSON.stringify({ success: true })); });
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'score_job', arguments: { id: 7 } }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result, 'Should receive a result');
+    assert.ok(!result.result.isError, 'Should not error: ' + JSON.stringify(result.result));
+    var content = JSON.parse(result.result.content[0].text);
+    assert.equal(content.id, 7);
+    assert.equal(content.overall_score, 8);
+    assert.ok(scoredPayload, 'Should call /api/save-score');
+    assert.equal(scoredPayload.id, 7);
+    assert.ok(scoredPayload.score, 'Payload should include score');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: score_job errors when no jd stored', async function(t) {
+  var api, mcp, conn;
+  try {
+    var fakeData = JSON.stringify({ url: 'https://techcorp.com/em', added: '2026-06-01', activity: [], jd: '' });
+    var fakeCompanies = [
+      { id: 8, company: 'TechCorp', role: 'EM', stage: 'target', tier: 'B',
+        data: fakeData, culture_rating: null, culture_notes: null, updated_at: '2026-06-01' }
+    ];
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 9 }));
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'score_job', arguments: { id: 8 } }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result);
+    assert.ok(result.result.isError, 'Should return an error when no JD stored');
   } finally {
     cleanup(api, mcp, conn);
   }
@@ -290,17 +524,17 @@ test('mcp: add_job defaults optional fields', async function(t) {
   var api, mcp, conn;
   var savedPayload = null;
   try {
-    api = await startMockApi(function(req, res) {
-      if (req.url === '/api/companies' && req.method === 'GET')
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
         res.end(JSON.stringify({ companies: [], nextId: 10 }));
-      else if (req.url === '/api/save' && req.method === 'POST') {
-        var body = '';
-        req.on('data', function(c) { body += c; });
-        req.on('end', function() { savedPayload = JSON.parse(body); res.end(JSON.stringify({ success: true })); });
-      } else if (req.url === '/api/kv' && req.method === 'POST')
+      },
+      'POST /api/save': function(req, res) {
+        readBody(req, function(body) { savedPayload = body; res.end(JSON.stringify({ success: true })); });
+      },
+      'POST /api/kv': function(req, res) {
         res.end(JSON.stringify({ success: true }));
-      else { res.statusCode = 404; res.end('{}'); }
-    });
+      }
+    }));
     mcp = await startMcpServer(getPort(api));
     conn = await mcpConnect('localhost', mcp.port);
     var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
@@ -335,11 +569,11 @@ test('mcp: get_job_details returns full record for known id', async function(t) 
       { id: 7, company: 'Acme', role: 'Engineer', stage: 'target', tier: 'A',
         data: fakeData, culture_rating: 4, culture_notes: 'Good vibes', updated_at: '2026-05-24' }
     ];
-    api = await startMockApi(function(req, res) {
-      if (req.url === '/api/companies' && req.method === 'GET')
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
         res.end(JSON.stringify({ companies: fakeCompanies, nextId: 8 }));
-      else { res.statusCode = 404; res.end('{}'); }
-    });
+      }
+    }));
     mcp = await startMcpServer(getPort(api));
     conn = await mcpConnect('localhost', mcp.port);
     var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
@@ -366,11 +600,11 @@ test('mcp: get_job_details returns full record for known id', async function(t) 
 test('mcp: get_job_details returns error for unknown id', async function(t) {
   var api, mcp, conn;
   try {
-    api = await startMockApi(function(req, res) {
-      if (req.url === '/api/companies' && req.method === 'GET')
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
         res.end(JSON.stringify({ companies: [], nextId: 1 }));
-      else { res.statusCode = 404; res.end('{}'); }
-    });
+      }
+    }));
     mcp = await startMcpServer(getPort(api));
     conn = await mcpConnect('localhost', mcp.port);
     var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {

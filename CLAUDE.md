@@ -1,5 +1,21 @@
 # CLAUDE.md — Project instructions for Claude Code
 
+## AI Responsibilities
+1. Update docs when tests go green.
+Before declaring a phase done, update:
+README.md — stack section, test count, config table, project layout
+CLAUDE.md — any new gotchas, changed startup commands, updated flow description
+
+2. Document gotchas immediately, not at end-of-phase.
+If something takes more than one attempt to get right — a library quirk, an API difference from docs, a config flag that was removed, a subtle ordering issue — add it to the relevant section of this file before moving on. Future sessions start cold; anything not written here will be re-discovered the hard way.
+
+3. Red before green.
+Write the test file first. Run it, confirm it fails for the right reason, then implement. A test that was never red proves nothing.
+
+4. Code health
+Maintain code-health at >= 9
+Do not commit if there are failing tests
+
 ## Project overview
 
 This is a personal job search pipeline tool for a senior engineering manager. It uses a Node.js server with a SQLite backend for persistent storage and proxies for AI services. The frontend consists of HTML files in `src/` using vanilla JS with strict compatibility constraints.
@@ -121,8 +137,12 @@ Start services with: `docker compose -f docker-compose.local-ollama.yml up -d` (
 
 | Tool | Description |
 |---|---|
-| `list_jobs` | Returns all pipeline entries (company, role, stage, tier, etc.) |
+| `list_jobs` | Returns a slim summary of all jobs (id, company, role, stage, tier, url, added). |
+| `get_job_details` | Returns full details for one job by id (score, activity, culture notes). |
 | `add_job` | Adds a new job to Target List stage. Required: `company`, `role`. Optional: `url`, `source`, `notes`, `tier` (default B). |
+| `edit_job` | Edits fields on an existing job. Required: `id`. Optional: `url`, `role`, `company`, `tier`, `source`, `contact`, `notes`. |
+| `fetch_jd` | Fetches the job description from the stored URL via Jina Reader and saves it. Requires `url` set (use `edit_job` first). Run before `score_job`. |
+| `score_job` | Scores a job against the evaluation profile using AI. Requires JD stored (run `fetch_jd` first). Optional: `provider` (`anthropic`/`openrouter`), `model`. Stdio server needs `ANTHROPIC_API_KEY` or `OPENROUTER_API_KEY` in env. |
 
 ## Testing
 
