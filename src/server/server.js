@@ -321,6 +321,8 @@ function serveStatic(req, res) {
   var filePath = req.url === '/' ? '/pipeline.html' : req.url;
   // Strip query string
   filePath = filePath.split('?')[0];
+  // Browsers request /favicon.ico by default; redirect to our PNG icon
+  if (filePath === '/favicon.ico') filePath = '/assets/jobsearch-icon.png';
   // Auto-append .html if there is no extension
   if (!path.extname(filePath)) filePath += '.html';
 
