@@ -303,6 +303,7 @@ test('mcp: tools/list returns tool definitions', async function(t) {
     assert.ok(names.indexOf('edit_job') !== -1);
     assert.ok(names.indexOf('fetch_jd') !== -1);
     assert.ok(names.indexOf('score_job') !== -1);
+    assert.ok(names.indexOf('export_pipeline') !== -1);
   } finally {
     cleanup(api, mcp, conn);
   }
@@ -338,6 +339,41 @@ test('mcp: edit_job updates url field', async function(t) {
     assert.ok(savedPayload, 'Should call /api/save');
     assert.equal(savedPayload.url, 'https://new.com/jobs');
     assert.equal(savedPayload.id, 3);
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: edit_job updates stage field', async function(t) {
+  var api, mcp, conn;
+  var savedPayload = null;
+  try {
+    var fakeData = JSON.stringify({ url: 'https://old.com/jobs', added: '2026-06-01', activity: [] });
+    var fakeCompanies = [
+      { id: 4, company: 'StageCo', role: 'EM', stage: 'target', tier: 'B',
+        data: fakeData, culture_rating: null, culture_notes: null, updated_at: '2026-06-01' }
+    ];
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 5 }));
+      },
+      'POST /api/save': function(req, res) {
+        readBody(req, function(body) { savedPayload = body; res.end(JSON.stringify({ success: true })); });
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'edit_job', arguments: { id: 4, stage: 'interview' } }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result, 'Should receive a result');
+    assert.ok(!result.result.isError, 'Should not error');
+    assert.ok(savedPayload, 'Should call /api/save');
+    assert.equal(savedPayload.stage, 'interview');
+    assert.equal(savedPayload.id, 4);
   } finally {
     cleanup(api, mcp, conn);
   }
@@ -615,6 +651,104 @@ test('mcp: get_job_details returns error for unknown id', async function(t) {
     var result = await waitForSseResult(conn.sseRes);
     assert.ok(result);
     assert.ok(result.result && result.result.isError, 'Should return an error for unknown id');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: export_pipeline returns full job data with metadata', async function(t) {
+  var api, mcp, conn;
+  try {
+    var fakeData1 = JSON.stringify({
+      url: 'https://acme.com/jobs', source: 'LinkedIn', contact: 'Jane', notes: 'Great culture',
+      added: '2026-06-01', score: { overall_score: 8, overall_verdict: 'Strong fit' },
+      activity: [{ date: 'Jun 1', text: 'Added' }], jd: 'Long JD text here'
+    });
+    var fakeData2 = JSON.stringify({
+      url: '', source: 'Seek', contact: '', notes: '',
+      added: '2026-06-02', score: null, activity: [], jd: ''
+    });
+    var fakeCompanies = [
+      { id: 1, company: 'Acme', role: 'EM', stage: 'interview', tier: 'A',
+        data: fakeData1, culture_rating: 4, culture_notes: 'Good vibes', updated_at: '2026-06-10' },
+      { id: 2, company: 'Globex', role: 'Manager', stage: 'target', tier: 'B',
+        data: fakeData2, culture_rating: null, culture_notes: null, updated_at: '2026-06-02' }
+    ];
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 3 }));
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'export_pipeline', arguments: {} }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result, 'Should receive a result');
+    assert.ok(!result.result.isError, 'Should not error');
+    var data = JSON.parse(result.result.content[0].text);
+    assert.equal(data.total, 2);
+    assert.ok(data.exported_at, 'Should include export date');
+    assert.deepEqual(data.by_stage, { interview: 1, target: 1 });
+    assert.deepEqual(data.by_tier, { A: 1, B: 1 });
+    assert.equal(data.jobs.length, 2);
+    // full fields present
+    var job1 = data.jobs[0];
+    assert.equal(job1.id, 1);
+    assert.equal(job1.company, 'Acme');
+    assert.equal(job1.source, 'LinkedIn');
+    assert.equal(job1.contact, 'Jane');
+    assert.equal(job1.notes, 'Great culture');
+    assert.equal(job1.culture_rating, 4);
+    assert.equal(job1.culture_notes, 'Good vibes');
+    assert.ok(job1.score, 'Should include score object');
+    assert.equal(job1.score.overall_score, 8);
+    assert.ok(Array.isArray(job1.activity), 'Should include activity array');
+    // jd excluded by default
+    assert.equal(job1.jd, undefined, 'JD should be excluded by default');
+    assert.equal(data.evaluation_profile, undefined, 'Profile should be excluded by default');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: export_pipeline includes jd and profile when requested', async function(t) {
+  var api, mcp, conn;
+  try {
+    var fakeData = JSON.stringify({
+      url: 'https://acme.com/jobs', source: 'LinkedIn', contact: '', notes: '',
+      added: '2026-06-01', score: null, activity: [], jd: 'Full JD text for analysis'
+    });
+    var fakeCompanies = [
+      { id: 1, company: 'Acme', role: 'EM', stage: 'target', tier: 'A',
+        data: fakeData, culture_rating: null, culture_notes: null, updated_at: '2026-06-01' }
+    ];
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 2 }));
+      },
+      'GET /config/evaluation-profile.md': function(req, res) {
+        res.setHeader('Content-Type', 'text/markdown');
+        res.end('# Evaluation Profile\n## Scoring weights\n| Dim | 100% |');
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'export_pipeline', arguments: { include_jd: true, include_profile: true } }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result, 'Should receive a result');
+    assert.ok(!result.result.isError, 'Should not error');
+    var data = JSON.parse(result.result.content[0].text);
+    assert.equal(data.jobs[0].jd, 'Full JD text for analysis');
+    assert.ok(data.evaluation_profile, 'Should include evaluation profile');
+    assert.ok(data.evaluation_profile.indexOf('Scoring weights') !== -1);
   } finally {
     cleanup(api, mcp, conn);
   }

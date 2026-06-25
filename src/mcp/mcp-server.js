@@ -40,7 +40,7 @@ function mcpErr(msg) {
 // ── Business logic ────────────────────────────────────────────────────────
 
 var BLOB_DEFAULTS = { url: '', source: '', contact: '', notes: '', added: '', score: null, activity: [] };
-var EDITABLE_TOP_FIELDS = ['company', 'role', 'tier'];
+var EDITABLE_TOP_FIELDS = ['company', 'role', 'tier', 'stage'];
 var EDITABLE_BLOB_FIELDS = ['url', 'source', 'contact', 'notes'];
 var JOB_FIELD_DEFAULTS = { url: '', source: '', notes: '', tier: 'B' };
 
@@ -105,7 +105,7 @@ function editJob(id, fields) {
   if (!r) return null;
 
   var blob = safeParse(r.data);
-  var top = { company: r.company, role: r.role, tier: r.tier };
+  var top = { company: r.company, role: r.role, tier: r.tier, stage: r.stage };
 
   EDITABLE_TOP_FIELDS.forEach(function(k) {
     if (fields[k] !== undefined) top[k] = fields[k];
@@ -114,8 +114,8 @@ function editJob(id, fields) {
     if (fields[k] !== undefined) blob[k] = fields[k];
   });
 
-  db.prepare('UPDATE companies SET company=?, role=?, tier=?, data=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
-    .run(top.company, top.role, top.tier, JSON.stringify(blob), id);
+  db.prepare('UPDATE companies SET company=?, role=?, tier=?, stage=?, data=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
+    .run(top.company, top.role, top.tier, top.stage, JSON.stringify(blob), id);
   return { id: id, updated: true };
 }
 
@@ -206,6 +206,37 @@ function callOpenRouterDirect(model, prompts) {
   });
 }
 
+function exportPipeline(includeJd, includeProfile) {
+  var rows = db.prepare('SELECT * FROM companies ORDER BY id ASC').all();
+
+  var jobs = rows.map(function(r) {
+    var blob = Object.assign({}, BLOB_DEFAULTS, safeParse(r.data));
+    var job = {
+      id: r.id, company: r.company, role: r.role, stage: r.stage, tier: r.tier,
+      url: blob.url, source: blob.source, contact: blob.contact, notes: blob.notes,
+      added: blob.added, score: blob.score, activity: blob.activity,
+      culture_rating: r.culture_rating, culture_notes: r.culture_notes, updated_at: r.updated_at
+    };
+    if (includeJd) job.jd = blob.jd || '';
+    return job;
+  });
+
+  var byStage = {};
+  var byTier = {};
+  jobs.forEach(function(j) {
+    byStage[j.stage] = (byStage[j.stage] || 0) + 1;
+    byTier[j.tier] = (byTier[j.tier] || 0) + 1;
+  });
+
+  var out = { exported_at: todayISO(), total: jobs.length, by_stage: byStage, by_tier: byTier, jobs: jobs };
+  if (includeProfile) {
+    var profilePath = path.join(__dirname, '../../config/evaluation-profile.md');
+    try { out.evaluation_profile = fs.readFileSync(profilePath, 'utf8'); }
+    catch(e) { out.evaluation_profile = null; }
+  }
+  return out;
+}
+
 function scoreJob(id, provider, model) {
   var r = db.prepare('SELECT * FROM companies WHERE id = ?').get(id);
   if (!r) return Promise.reject(new Error('Job not found: ' + id));
@@ -276,13 +307,18 @@ async function handleScoreJob(args) {
   }
 }
 
+function handleExportPipeline(args) {
+  return ok(exportPipeline(!!args.include_jd, !!args.include_profile));
+}
+
 var TOOL_HANDLERS = {
   list_jobs:       handleListJobs,
   get_job_details: handleGetJobDetails,
   add_job:         handleAddJob,
   edit_job:        handleEditJob,
   fetch_jd:        handleFetchJd,
-  score_job:       handleScoreJob
+  score_job:       handleScoreJob,
+  export_pipeline: handleExportPipeline
 };
 
 // ── MCP server ────────────────────────────────────────────────────────────
@@ -335,6 +371,7 @@ server.setRequestHandler(ListToolsRequestSchema, async function() {
             url: { type: 'string', description: 'Job posting URL' },
             company: { type: 'string', description: 'Company name' },
             role: { type: 'string', description: 'Job title / role' },
+            stage: { type: 'string', description: 'Pipeline stage (target, warm, screen, interview, offer, closed)' },
             tier: { type: 'string', description: 'Priority tier (A, B, C, D)' },
             source: { type: 'string', description: 'Where you found this' },
             contact: { type: 'string', description: 'Recruiter or contact name' },
@@ -363,6 +400,17 @@ server.setRequestHandler(ListToolsRequestSchema, async function() {
             model: { type: 'string', description: 'Model name override (optional)' }
           },
           required: ['id']
+        }
+      },
+      {
+        name: 'export_pipeline',
+        description: 'Export the full pipeline as structured JSON for analysis in another tool. Includes all jobs with scores, activity logs, and culture notes. JD text and evaluation profile are excluded by default (they are large) — set include_jd or include_profile to true to add them.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            include_jd: { type: 'boolean', description: 'Include stored JD text for each job (can be large). Default false.' },
+            include_profile: { type: 'boolean', description: 'Include the evaluation profile markdown. Default false.' }
+          }
         }
       }
     ]

@@ -124,7 +124,7 @@ function mcpErr(msg) {
 // ── Business logic ────────────────────────────────────────────────────────
 
 var BLOB_DEFAULTS = { url: '', source: '', contact: '', notes: '', added: '', score: null, activity: [] };
-var EDITABLE_TOP_FIELDS = ['company', 'role', 'tier'];
+var EDITABLE_TOP_FIELDS = ['company', 'role', 'tier', 'stage'];
 var EDITABLE_BLOB_FIELDS = ['url', 'source', 'contact', 'notes'];
 var JOB_FIELD_DEFAULTS = { url: '', source: '', notes: '', tier: 'B' };
 
@@ -242,6 +242,34 @@ async function callAiHttp(provider, model, prompts) {
   return callAnthropicHttp(model, prompts);
 }
 
+async function exportPipeline(includeJd, includeProfile) {
+  var result = await apiGet('/api/companies');
+  var rows = result.companies || [];
+
+  var jobs = rows.map(function(r) {
+    var blob = Object.assign({}, BLOB_DEFAULTS, safeParse(r.data));
+    var job = {
+      id: r.id, company: r.company, role: r.role, stage: r.stage, tier: r.tier,
+      url: blob.url, source: blob.source, contact: blob.contact, notes: blob.notes,
+      added: blob.added, score: blob.score, activity: blob.activity,
+      culture_rating: r.culture_rating, culture_notes: r.culture_notes, updated_at: r.updated_at
+    };
+    if (includeJd) job.jd = blob.jd || '';
+    return job;
+  });
+
+  var byStage = {};
+  var byTier = {};
+  jobs.forEach(function(j) {
+    byStage[j.stage] = (byStage[j.stage] || 0) + 1;
+    byTier[j.tier] = (byTier[j.tier] || 0) + 1;
+  });
+
+  var out = { exported_at: todayISO(), total: jobs.length, by_stage: byStage, by_tier: byTier, jobs: jobs };
+  if (includeProfile) out.evaluation_profile = await apiGetText('/config/evaluation-profile.md');
+  return out;
+}
+
 async function scoreJob(id, provider, model) {
   var result = await apiGet('/api/companies');
   var row = (result.companies || []).find(function(r) { return r.id === id; });
@@ -322,13 +350,22 @@ async function handleScoreJob(args) {
   }
 }
 
+async function handleExportPipeline(args) {
+  try {
+    return ok(await exportPipeline(!!args.include_jd, !!args.include_profile));
+  } catch(e) {
+    return mcpErr('Failed to export pipeline: ' + e.message);
+  }
+}
+
 var TOOL_HANDLERS = {
   list_jobs:       handleListJobs,
   get_job_details: handleGetJobDetails,
   add_job:         handleAddJob,
   edit_job:        handleEditJob,
   fetch_jd:        handleFetchJd,
-  score_job:       handleScoreJob
+  score_job:       handleScoreJob,
+  export_pipeline: handleExportPipeline
 };
 
 // ── MCP server ────────────────────────────────────────────────────────────
@@ -381,6 +418,7 @@ server.setRequestHandler(ListToolsRequestSchema, async function() {
             url: { type: 'string', description: 'Job posting URL' },
             company: { type: 'string', description: 'Company name' },
             role: { type: 'string', description: 'Job title / role' },
+            stage: { type: 'string', description: 'Pipeline stage (target, warm, screen, interview, offer, closed)' },
             tier: { type: 'string', description: 'Priority tier (A, B, C, D)' },
             source: { type: 'string', description: 'Where you found this' },
             contact: { type: 'string', description: 'Recruiter or contact name' },
@@ -409,6 +447,17 @@ server.setRequestHandler(ListToolsRequestSchema, async function() {
             model: { type: 'string', description: 'Model name override (optional)' }
           },
           required: ['id']
+        }
+      },
+      {
+        name: 'export_pipeline',
+        description: 'Export the full pipeline as structured JSON for analysis in another tool. Includes all jobs with scores, activity logs, and culture notes. JD text and evaluation profile are excluded by default (they are large) — set include_jd or include_profile to true to add them.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            include_jd: { type: 'boolean', description: 'Include stored JD text for each job (can be large). Default false.' },
+            include_profile: { type: 'boolean', description: 'Include the evaluation profile markdown. Default false.' }
+          }
         }
       }
     ]

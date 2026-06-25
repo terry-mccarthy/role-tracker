@@ -143,6 +143,7 @@ Start services with: `docker compose -f docker-compose.local-ollama.yml up -d` (
 | `edit_job` | Edits fields on an existing job. Required: `id`. Optional: `url`, `role`, `company`, `tier`, `source`, `contact`, `notes`. |
 | `fetch_jd` | Fetches the job description from the stored URL via Jina Reader and saves it. Requires `url` set (use `edit_job` first). Run before `score_job`. |
 | `score_job` | Scores a job against the evaluation profile using AI. Requires JD stored (run `fetch_jd` first). Optional: `provider` (`anthropic`/`openrouter`), `model`. Stdio server needs `ANTHROPIC_API_KEY` or `OPENROUTER_API_KEY` in env. |
+| `export_pipeline` | Exports the full pipeline as structured JSON (all jobs with scores, activity, culture notes, funnel metadata). Optional: `include_jd` (bool), `include_profile` (bool). JD and profile excluded by default due to size. |
 
 ## Testing
 
