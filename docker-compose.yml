@@ -15,7 +15,7 @@ services:
       - OLLAMA_HOST=http://ollama:11434
     volumes:
       - ./pipeline.db:/app/data/pipeline.db
-      - ./config:/app/config:ro
+      - ./config:/app/config
     depends_on:
       - ollama
     restart: unless-stopped

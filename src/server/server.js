@@ -34,6 +34,7 @@ var MIME = {
 
 var PORT = process.env.PORT !== undefined ? parseInt(process.env.PORT, 10) : 3000;
 var LOG_FILE = path.join(__dirname, '../../pipeline.log');
+var PROFILE_PATH = process.env.PROFILE_PATH || path.join(__dirname, '../../config/evaluation-profile.md');
 var MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MB request body limit
 
 function logToFile(msg) {
@@ -307,6 +308,45 @@ function handleApiReset(req, res) {
   return true;
 }
 
+function handleApiProfile(req, res) {
+  if (req.url !== '/api/profile') return false;
+  if (req.method === 'GET') {
+    fs.readFile(PROFILE_PATH, 'utf8', function(err, data) {
+      if (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Could not read profile: ' + err.message }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ content: data }));
+    });
+    return true;
+  }
+  if (req.method === 'POST') {
+    readBody(req, res, function(rawBody) {
+      var body = parseBody(rawBody, res);
+      if (!body) return;
+      var content = body.content;
+      if (!content || !content.trim()) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'content is required' }));
+        return;
+      }
+      fs.writeFile(PROFILE_PATH, content, 'utf8', function(err) {
+        if (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Could not write profile: ' + err.message }));
+          return;
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      });
+    });
+    return true;
+  }
+  return false;
+}
+
 function handleApiWrite(req, res) {
   if (req.method !== 'POST') return false;
   var mutate = API_WRITE_ROUTES[req.url];
@@ -366,6 +406,7 @@ var ROUTES = [
   handleOllama,
   handleApiCompanies,
   handleApiReset,
+  handleApiProfile,
   handleApiWrite,
   serveStatic
 ];

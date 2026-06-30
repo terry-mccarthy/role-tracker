@@ -23,15 +23,19 @@ var currentProfile = DEFAULT_PROFILE;
 // ── STORAGE ─────────────────────────────────────────────────────
 
 window.loadProfile = function() {
-  try {
-    var saved = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (saved) currentProfile = saved;
-  } catch(e) {}
-  window.renderProfileBar();
-};
-
-window.saveProfileToStorage = function() {
-  try { localStorage.setItem(PROFILE_STORAGE_KEY, currentProfile); } catch(e) {}
+  fetch('/api/profile')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.content) currentProfile = data.content;
+      window.renderProfileBar();
+    })
+    .catch(function() {
+      try {
+        var saved = localStorage.getItem(PROFILE_STORAGE_KEY);
+        if (saved) currentProfile = saved;
+      } catch(e) {}
+      window.renderProfileBar();
+    });
 };
 
 // ── API KEY ──────────────────────────────────────────────────────
@@ -210,7 +214,15 @@ window.saveProfile = function() {
   var val = document.getElementById('profile-editor').value;
   if (!val.trim()) return;
   currentProfile = val;
-  try { localStorage.setItem(PROFILE_STORAGE_KEY, val); } catch(e) {}
+  fetch('/api/profile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: val })
+  }).then(function(r) {
+    if (!r.ok) { try { localStorage.setItem(PROFILE_STORAGE_KEY, val); } catch(e) {} }
+  }).catch(function() {
+    try { localStorage.setItem(PROFILE_STORAGE_KEY, val); } catch(e) {}
+  });
   window.renderProfileBar();
   window.closeProfileEditor();
 };

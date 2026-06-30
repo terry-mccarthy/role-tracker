@@ -13,7 +13,7 @@ services:
       - OLLAMA_HOST=http://host.docker.internal:11434
     volumes:
       - ./pipeline.db:/app/data/pipeline.db
-      - ./config:/app/config:ro
+      - ./config:/app/config
     restart: unless-stopped
 
   mcp:
