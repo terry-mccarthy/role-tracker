@@ -1,4 +1,4 @@
-# Role Tracker — Senior EM Search System
+# Role Tracker — Job Search System
 
 A personal job search CRM with persistent storage, funnel analytics, and AI-powered role scoring against your evaluation profile.
 

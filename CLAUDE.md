@@ -6,26 +6,9 @@ Before declaring a phase done, update:
 README.md — stack section, test count, config table, project layout
 CLAUDE.md — any new gotchas, changed startup commands, updated flow description
 
-2. Document gotchas immediately, not at end-of-phase.
-If something takes more than one attempt to get right — a library quirk, an API difference from docs, a config flag that was removed, a subtle ordering issue — add it to the relevant section of this file before moving on. Future sessions start cold; anything not written here will be re-discovered the hard way.
-
-3. Red before green.
-Write the test file first. Run it, confirm it fails for the right reason, then implement. A test that was never red proves nothing.
-
-4. Code health
-Maintain code-health at >= 9
-Do not commit if there are failing tests
-
 ## Project overview
 
 This is a personal job search pipeline tool for a senior engineering manager. It uses a Node.js server with a SQLite backend for persistent storage and proxies for AI services. The frontend consists of HTML files in `src/` using vanilla JS with strict compatibility constraints.
-
-## File discovery fallback
-
-When a direct file path returns empty (glob/read fails):
-1. Read the parent directory first to discover actual structure
-2. Use a broader glob pattern (e.g. `src/**/*.js` instead of `src/pipeline.js`)
-3. Never retry the same path — widen the search
 
 ## Critical constraints
 
