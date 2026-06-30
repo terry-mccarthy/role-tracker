@@ -8,7 +8,7 @@
       var line = lines[i].trim();
       if (line.indexOf('|') !== 0) continue;
       if (line.indexOf('Weight') !== -1) continue;
-      if (line.indexOf('---') !== -1) continue;
+      if (/^[\s|:-]+$/.test(line)) continue;
       var parts = line.split('|');
       if (parts.length < 3) continue;
       var dim = parts[1].trim();
