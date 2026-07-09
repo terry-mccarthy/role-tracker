@@ -214,6 +214,38 @@ test('filterCompanies handles missing contact field', function() {
   assert.equal(filterCompanies(list, 'acme').length, 1);
 });
 
+test('filterCompanies matches by id: prefix', function() {
+  var list = [
+    { id: 5, company: 'Acme', role: 'Engineer' },
+    { id: 10, company: 'Globex', role: 'Manager' }
+  ];
+  var result = filterCompanies(list, 'id:5');
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 5);
+});
+
+test('filterCompanies id: returns empty when id not found', function() {
+  var list = [
+    { id: 5, company: 'Acme', role: 'Engineer' },
+    { id: 10, company: 'Globex', role: 'Manager' }
+  ];
+  assert.equal(filterCompanies(list, 'id:999').length, 0);
+});
+
+test('filterCompanies id: with no number returns empty', function() {
+  var list = [
+    { id: 5, company: 'Acme', role: 'Engineer' }
+  ];
+  assert.equal(filterCompanies(list, 'id:').length, 0);
+});
+
+test('filterCompanies id: with non-numeric value returns empty', function() {
+  var list = [
+    { id: 5, company: 'Acme', role: 'Engineer' }
+  ];
+  assert.equal(filterCompanies(list, 'id:abc').length, 0);
+});
+
 // ── addInterviewNoteToCompany ─────────────────────────────────────────
 
 test('addInterviewNoteToCompany prepends note to empty array', function() {

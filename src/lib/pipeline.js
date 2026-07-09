@@ -135,6 +135,11 @@
   function filterCompanies(list, query) {
     if (!query) return list;
     var q = query.toLowerCase();
+    var idMatch = q.match(/^id:(\d+)$/);
+    if (idMatch) {
+      var targetId = parseInt(idMatch[1], 10);
+      return list.filter(function(c) { return c.id === targetId; });
+    }
     return list.filter(function(c) {
       return c.company.toLowerCase().indexOf(q) !== -1 ||
              c.role.toLowerCase().indexOf(q) !== -1 ||

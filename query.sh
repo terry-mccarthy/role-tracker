@@ -1,0 +1,1 @@
+sqlite3 pipeline.db "SELECT company, stage FROM companies WHERE company like 'Blinq'"

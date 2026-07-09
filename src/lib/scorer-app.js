@@ -410,6 +410,34 @@ window.fetchOllama = function(prompts) {
   });
 };
 
+window.fetchAndScore = function() {
+  var url = document.getElementById('jd-url').value.trim();
+  if (!url) { alert('Please enter a job URL.'); return; }
+
+  var fetchBtn = document.getElementById('fetch-btn');
+  fetchBtn.disabled = true;
+  fetchBtn.textContent = 'Fetching...';
+
+  fetch('/proxy/jina-reader', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: url })
+  }).then(function(res) {
+    if (!res.ok) { return res.text().then(function(t) { throw new Error('Fetch failed: ' + t); }); }
+    return res.text();
+  }).then(function(text) {
+    document.getElementById('jd-input').value = text;
+    fetchBtn.textContent = 'Fetch + Score';
+    fetchBtn.disabled = false;
+    window.scoreRole();
+  }).catch(function(err) {
+    console.error('Fetch error:', err);
+    alert('Failed to fetch job description: ' + err.message);
+    fetchBtn.textContent = 'Fetch + Score';
+    fetchBtn.disabled = false;
+  });
+};
+
 window.scoreRole = function() {
   var jdText = document.getElementById('jd-input').value.trim();
   if (!jdText) { alert('Please paste a job description.'); return; }

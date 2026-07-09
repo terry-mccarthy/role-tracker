@@ -197,9 +197,10 @@ h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 1rem; }
     <div class="section-label">Paste Job Description</div>
     <textarea id="jd-input" placeholder="Paste the full job description here. Include the company name, role title, requirements, location policy, and any other details from the listing. The more detail you include, the more accurate the scoring will be."></textarea>
     <div class="input-row">
-      <input id="jd-url" placeholder="LinkedIn / job URL (optional - for reference only)">
+      <input id="jd-url" placeholder="LinkedIn / job URL">
       <input id="jd-company" placeholder="Company name (if not in JD)">
-      <button class="btn-score" id="score-btn" onclick="scoreRole()">Score This Role</button>
+      <button class="btn-score" id="fetch-btn" onclick="fetchAndScore()">Fetch + Score</button>
+      <button class="btn-score" id="score-btn" onclick="scoreRole()" style="background:var(--surface3);color:var(--dim);border:1px solid var(--border2)">Score This Role</button>
     </div>
   </div>
 

@@ -9,6 +9,7 @@ config/evaluation-profile.md
 
 # Database and generated data — never commit
 pipeline.db
+pipeline.db-journal
 pipeline.log
 output.json
 
