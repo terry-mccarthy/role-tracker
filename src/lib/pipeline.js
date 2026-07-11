@@ -132,6 +132,14 @@
     return c;
   }
 
+  function closeCompanyRecord(c, stageLabel, reason, dateLabel) {
+    var reasonText = (reason && reason.trim()) ? reason.trim() : 'No reason given';
+    c.stage = 'closed';
+    if (!c.activity) c.activity = [];
+    c.activity.unshift({ date: dateLabel, text: 'Closed at ' + stageLabel + ' — Reason: ' + reasonText });
+    return c;
+  }
+
   function filterCompanies(list, query) {
     if (!query) return list;
     var q = query.toLowerCase();
@@ -154,6 +162,7 @@
       computeFunnelStats: computeFunnelStats,
       addInterviewNoteToCompany: addInterviewNoteToCompany,
       logActivityToCompany: logActivityToCompany,
+      closeCompanyRecord: closeCompanyRecord,
       parseCultureResponse: parseCultureResponse,
       filterCompanies: filterCompanies
     };
@@ -163,6 +172,7 @@
     window.computeFunnelStats = computeFunnelStats;
     window.addInterviewNoteToCompany = addInterviewNoteToCompany;
     window.logActivityToCompany = logActivityToCompany;
+    window.closeCompanyRecord = closeCompanyRecord;
     window.parseCultureResponse = parseCultureResponse;
     window.filterCompanies = filterCompanies;
   }
