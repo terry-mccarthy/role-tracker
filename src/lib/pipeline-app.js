@@ -954,9 +954,10 @@ window.closeCompany = function(id) {
   var c = null;
   for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
   if (!c) return;
-  c.stage = 'closed';
-  if (!c.activity) c.activity = [];
-  c.activity.unshift({ date: window.todayLabel(), text: 'Marked as closed' });
+  var stageLabel = c.stage;
+  for (var j = 0; j < STAGES.length; j++) { if (STAGES[j].id === c.stage) stageLabel = STAGES[j].label; }
+  var reason = prompt('Rejection reason (optional):');
+  window.closeCompanyRecord(c, stageLabel, reason, window.todayLabel());
   window.syncCompanyToDb(c);
   window.render();
   document.getElementById('detail-panel').classList.remove('open');

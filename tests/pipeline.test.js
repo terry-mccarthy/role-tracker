@@ -1,6 +1,6 @@
 var test = require('node:test');
 var assert = require('node:assert/strict');
-var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany, parseCultureResponse, filterCompanies } = require('../src/lib/pipeline.js');
+var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany, closeCompanyRecord, parseCultureResponse, filterCompanies } = require('../src/lib/pipeline.js');
 
 // ── createCompanyRecord ───────────────────────────────────────────────
 
@@ -291,6 +291,60 @@ test('logActivityToCompany prepends to existing activity', function() {
 test('logActivityToCompany returns the company', function() {
   var c = { id: 1, activity: [] };
   var result = logActivityToCompany(c, 'note', '14 May');
+  assert.equal(result, c);
+});
+
+// ── closeCompanyRecord ──────────────────────────────────────────────
+
+test('closeCompanyRecord sets stage to closed', function() {
+  var c = { id: 1, stage: 'interview', activity: [] };
+  closeCompanyRecord(c, 'Interviewing', 'Ghosted after final round', '14 May');
+  assert.equal(c.stage, 'closed');
+});
+
+test('closeCompanyRecord logs the furthest stage reached and the reason', function() {
+  var c = { id: 1, stage: 'interview', activity: [] };
+  closeCompanyRecord(c, 'Interviewing', 'Ghosted after final round', '14 May');
+  assert.equal(c.activity.length, 1);
+  assert.equal(c.activity[0].date, '14 May');
+  assert.ok(c.activity[0].text.indexOf('Interviewing') !== -1, 'should mention furthest stage');
+  assert.ok(c.activity[0].text.indexOf('Ghosted after final round') !== -1, 'should mention reason');
+});
+
+test('closeCompanyRecord prepends to existing activity', function() {
+  var c = { id: 1, stage: 'screen', activity: [{ date: '10 May', text: 'Advanced to screen' }] };
+  closeCompanyRecord(c, 'Screen', 'Position filled internally', '14 May');
+  assert.equal(c.activity.length, 2);
+  assert.equal(c.activity[1].text, 'Advanced to screen');
+});
+
+test('closeCompanyRecord defaults to "No reason given" when reason is blank', function() {
+  var c = { id: 1, stage: 'target', activity: [] };
+  closeCompanyRecord(c, 'Target List', '', '14 May');
+  assert.ok(c.activity[0].text.indexOf('No reason given') !== -1);
+});
+
+test('closeCompanyRecord defaults to "No reason given" when reason is null', function() {
+  var c = { id: 1, stage: 'target', activity: [] };
+  closeCompanyRecord(c, 'Target List', null, '14 May');
+  assert.ok(c.activity[0].text.indexOf('No reason given') !== -1);
+});
+
+test('closeCompanyRecord trims whitespace-only reason to "No reason given"', function() {
+  var c = { id: 1, stage: 'target', activity: [] };
+  closeCompanyRecord(c, 'Target List', '   ', '14 May');
+  assert.ok(c.activity[0].text.indexOf('No reason given') !== -1);
+});
+
+test('closeCompanyRecord initializes activity array if missing', function() {
+  var c = { id: 1, stage: 'warm' };
+  closeCompanyRecord(c, 'Warming Up', 'No response', '14 May');
+  assert.equal(c.activity.length, 1);
+});
+
+test('closeCompanyRecord returns the company', function() {
+  var c = { id: 1, stage: 'offer', activity: [] };
+  var result = closeCompanyRecord(c, 'Offer', 'Comp too low', '14 May');
   assert.equal(result, c);
 });
 
