@@ -775,6 +775,7 @@ window.selectCompany = function(id) {
 
   document.getElementById('dp-company').textContent = c.company;
   document.getElementById('dp-role').textContent = c.role;
+  document.getElementById('dp-id').textContent = 'ID: ' + c.id;
   var notesInput = document.getElementById('dp-notes-input');
   if (notesInput) notesInput.value = c.notes || '';
   notesInput && notesInput.setAttribute('data-id', id);
