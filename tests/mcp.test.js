@@ -633,6 +633,107 @@ test('mcp: get_job_details returns full record for known id', async function(t) 
   }
 });
 
+test('mcp: get_job_details includes furthest_stage', async function(t) {
+  var api, mcp, conn;
+  try {
+    var fakeData = JSON.stringify({
+      url: '', source: '', notes: '', added: '2026-05-24', score: null, activity: []
+    });
+    var fakeCompanies = [
+      { id: 9, company: 'ClosedCo', role: 'EM', stage: 'closed', tier: 'B',
+        data: fakeData, culture_rating: null, culture_notes: null, furthest_stage: 'interview', updated_at: '2026-05-24' }
+    ];
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 10 }));
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'get_job_details', arguments: { id: 9 } }
+    });
+    assert.equal(postRes.status, 202);
+    var result = await waitForSseResult(conn.sseRes);
+    assert.ok(result);
+    var job = JSON.parse(result.result.content[0].text);
+    assert.equal(job.furthest_stage, 'interview');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: edit_job preserves furthest_stage on unrelated field edits', async function(t) {
+  var api, mcp, conn;
+  var savedPayload = null;
+  try {
+    var fakeData = JSON.stringify({ url: 'https://old.com/jobs', added: '2026-06-01', activity: [] });
+    var fakeCompanies = [
+      { id: 10, company: 'PreserveCo', role: 'EM', stage: 'closed', tier: 'B',
+        data: fakeData, culture_rating: null, culture_notes: null, furthest_stage: 'offer', updated_at: '2026-06-01' }
+    ];
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 11 }));
+      },
+      'POST /api/save': function(req, res) {
+        readBody(req, function(body) { savedPayload = body; res.end(JSON.stringify({ success: true })); });
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'edit_job', arguments: { id: 10, contact: 'Jane Doe' } }
+    });
+    assert.equal(postRes.status, 202);
+    await waitForSseResult(conn.sseRes);
+    assert.ok(savedPayload, 'Should call /api/save');
+    assert.equal(savedPayload.furthest_stage, 'offer', 'furthest_stage should survive an unrelated edit');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: fetch_jd preserves furthest_stage', async function(t) {
+  var api, mcp, conn;
+  var savedPayload = null;
+  try {
+    var fakeData = JSON.stringify({ url: 'https://example.com/job', added: '2026-06-01', activity: [], jd: '' });
+    var fakeCompanies = [
+      { id: 11, company: 'FetchPreserveCo', role: 'Dev', stage: 'closed', tier: 'B',
+        data: fakeData, culture_rating: null, culture_notes: null, furthest_stage: 'screen', updated_at: '2026-06-01' }
+    ];
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 12 }));
+      },
+      'POST /proxy/jina-reader': function(req, res) {
+        readBody(req, function() {
+          res.setHeader('Content-Type', 'text/plain');
+          res.end('Some JD text.');
+        });
+      },
+      'POST /api/save': function(req, res) {
+        readBody(req, function(body) { savedPayload = body; res.end(JSON.stringify({ success: true })); });
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'fetch_jd', arguments: { id: 11 } }
+    });
+    assert.equal(postRes.status, 202);
+    await waitForSseResult(conn.sseRes);
+    assert.ok(savedPayload, 'Should call /api/save');
+    assert.equal(savedPayload.furthest_stage, 'screen', 'furthest_stage should survive a fetch_jd save');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
 test('mcp: get_job_details returns error for unknown id', async function(t) {
   var api, mcp, conn;
   try {
@@ -670,9 +771,9 @@ test('mcp: export_pipeline returns full job data with metadata', async function(
     });
     var fakeCompanies = [
       { id: 1, company: 'Acme', role: 'EM', stage: 'interview', tier: 'A',
-        data: fakeData1, culture_rating: 4, culture_notes: 'Good vibes', updated_at: '2026-06-10' },
+        data: fakeData1, culture_rating: 4, culture_notes: 'Good vibes', furthest_stage: 'screen', updated_at: '2026-06-10' },
       { id: 2, company: 'Globex', role: 'Manager', stage: 'target', tier: 'B',
-        data: fakeData2, culture_rating: null, culture_notes: null, updated_at: '2026-06-02' }
+        data: fakeData2, culture_rating: null, culture_notes: null, furthest_stage: null, updated_at: '2026-06-02' }
     ];
     api = await startMockApi(mockRoute({
       'GET /api/companies': function(req, res) {
@@ -704,6 +805,7 @@ test('mcp: export_pipeline returns full job data with metadata', async function(
     assert.equal(job1.notes, 'Great culture');
     assert.equal(job1.culture_rating, 4);
     assert.equal(job1.culture_notes, 'Good vibes');
+    assert.equal(job1.furthest_stage, 'screen');
     assert.ok(job1.score, 'Should include score object');
     assert.equal(job1.score.overall_score, 8);
     assert.ok(Array.isArray(job1.activity), 'Should include activity array');

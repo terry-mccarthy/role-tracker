@@ -154,7 +154,8 @@ async function getJobDetails(id) {
     id: row.id, company: row.company, role: row.role, stage: row.stage, tier: row.tier,
     url: blob.url, source: blob.source, contact: blob.contact, notes: blob.notes,
     added: blob.added, score: blob.score, activity: blob.activity,
-    culture_rating: row.culture_rating, culture_notes: row.culture_notes, updated_at: row.updated_at
+    culture_rating: row.culture_rating, culture_notes: row.culture_notes,
+    furthest_stage: row.furthest_stage, updated_at: row.updated_at
   };
 }
 
@@ -185,7 +186,8 @@ async function editJob(id, fields) {
   var blob = safeParse(row.data);
   var payload = Object.assign({}, blob, {
     id: row.id, stage: row.stage,
-    culture_rating: row.culture_rating, culture_notes: row.culture_notes
+    culture_rating: row.culture_rating, culture_notes: row.culture_notes,
+    furthest_stage: row.furthest_stage
   });
 
   EDITABLE_TOP_FIELDS.forEach(function(k) {
@@ -210,7 +212,8 @@ async function fetchJd(id) {
   var jdText = await apiPostText('/proxy/jina-reader', { url: blob.url });
   var payload = Object.assign({}, blob, {
     id: row.id, company: row.company, role: row.role, tier: row.tier, stage: row.stage,
-    culture_rating: row.culture_rating, culture_notes: row.culture_notes, jd: jdText
+    culture_rating: row.culture_rating, culture_notes: row.culture_notes,
+    furthest_stage: row.furthest_stage, jd: jdText
   });
 
   await apiPost('/api/save', payload);
@@ -252,7 +255,8 @@ async function exportPipeline(includeJd, includeProfile) {
       id: r.id, company: r.company, role: r.role, stage: r.stage, tier: r.tier,
       url: blob.url, source: blob.source, contact: blob.contact, notes: blob.notes,
       added: blob.added, score: blob.score, activity: blob.activity,
-      culture_rating: r.culture_rating, culture_notes: r.culture_notes, updated_at: r.updated_at
+      culture_rating: r.culture_rating, culture_notes: r.culture_notes,
+      furthest_stage: r.furthest_stage, updated_at: r.updated_at
     };
     if (includeJd) job.jd = blob.jd || '';
     return job;

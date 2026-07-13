@@ -72,7 +72,8 @@ function getJobDetails(id) {
     id: r.id, company: r.company, role: r.role, stage: r.stage, tier: r.tier,
     url: blob.url, source: blob.source, contact: blob.contact, notes: blob.notes,
     added: blob.added, score: blob.score, activity: blob.activity,
-    culture_rating: r.culture_rating, culture_notes: r.culture_notes, updated_at: r.updated_at
+    culture_rating: r.culture_rating, culture_notes: r.culture_notes,
+    furthest_stage: r.furthest_stage, updated_at: r.updated_at
   };
 }
 
@@ -215,7 +216,8 @@ function exportPipeline(includeJd, includeProfile) {
       id: r.id, company: r.company, role: r.role, stage: r.stage, tier: r.tier,
       url: blob.url, source: blob.source, contact: blob.contact, notes: blob.notes,
       added: blob.added, score: blob.score, activity: blob.activity,
-      culture_rating: r.culture_rating, culture_notes: r.culture_notes, updated_at: r.updated_at
+      culture_rating: r.culture_rating, culture_notes: r.culture_notes,
+      furthest_stage: r.furthest_stage, updated_at: r.updated_at
     };
     if (includeJd) job.jd = blob.jd || '';
     return job;
