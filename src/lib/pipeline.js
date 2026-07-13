@@ -134,10 +134,31 @@
 
   function closeCompanyRecord(c, stageLabel, reason, dateLabel) {
     var reasonText = (reason && reason.trim()) ? reason.trim() : 'No reason given';
+    c.furthest_stage = c.stage;
     c.stage = 'closed';
     if (!c.activity) c.activity = [];
     c.activity.unshift({ date: dateLabel, text: 'Closed at ' + stageLabel + ' — Reason: ' + reasonText });
     return c;
+  }
+
+  // Ordered highest-to-lowest so the first keyword match wins. Used to recover
+  // the furthest stage reached for companies closed before furthest_stage existed.
+  var STAGE_EXIT_KEYWORDS = [
+    { stage: 'offer',     kw: 'Offer' },
+    { stage: 'interview', kw: 'Interview' },
+    { stage: 'screen',    kw: 'Screen' },
+    { stage: 'warm',      kw: 'Warming Up' }
+  ];
+
+  function inferFurthestStage(activity, keywords) {
+    var kws = keywords || STAGE_EXIT_KEYWORDS;
+    var list = activity || [];
+    for (var ki = 0; ki < kws.length; ki++) {
+      for (var ai = 0; ai < list.length; ai++) {
+        if ((list[ai].text || '').indexOf(kws[ki].kw) >= 0) return kws[ki].stage;
+      }
+    }
+    return 'target';
   }
 
   function filterCompanies(list, query) {
@@ -163,6 +184,7 @@
       addInterviewNoteToCompany: addInterviewNoteToCompany,
       logActivityToCompany: logActivityToCompany,
       closeCompanyRecord: closeCompanyRecord,
+      inferFurthestStage: inferFurthestStage,
       parseCultureResponse: parseCultureResponse,
       filterCompanies: filterCompanies
     };
@@ -173,6 +195,7 @@
     window.addInterviewNoteToCompany = addInterviewNoteToCompany;
     window.logActivityToCompany = logActivityToCompany;
     window.closeCompanyRecord = closeCompanyRecord;
+    window.inferFurthestStage = inferFurthestStage;
     window.parseCultureResponse = parseCultureResponse;
     window.filterCompanies = filterCompanies;
   }

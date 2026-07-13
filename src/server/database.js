@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const { inferFurthestStage } = require('../lib/pipeline.js');
 
 const dbPath = process.env.DB_PATH || path.join(__dirname, '../../pipeline.db');
 const db = new Database(dbPath);
@@ -23,7 +24,7 @@ db.exec(`
 `);
 
 // Migrations: add columns if they don't exist yet
-['culture_rating INTEGER', 'culture_notes TEXT'].forEach(function(col) {
+['culture_rating INTEGER', 'culture_notes TEXT', 'furthest_stage TEXT'].forEach(function(col) {
   try { db.exec('ALTER TABLE companies ADD COLUMN ' + col); } catch(e) { /* already exists */ }
 });
 
@@ -42,6 +43,20 @@ db.exec(`
   }
 })();
 
+// Data migration: backfill furthest_stage for companies closed before this column
+// existed. The real stage was overwritten to 'closed' at the time, so the best we
+// can do is infer it from the "Advanced to X" / "Closed at X" activity log text.
+(function migrateFurthestStage() {
+  const rows = db.prepare("SELECT id, data FROM companies WHERE stage = 'closed' AND furthest_stage IS NULL").all();
+  const stmt = db.prepare('UPDATE companies SET furthest_stage = ? WHERE id = ?');
+  for (const row of rows) {
+    try {
+      const blob = JSON.parse(row.data || '{}');
+      stmt.run(inferFurthestStage(blob.activity), row.id);
+    } catch(e) { /* malformed blob — skip */ }
+  }
+})();
+
 /**
  * Maps a numeric overall score (1–10) to a tier label (A/B/C/D).
  * Single source of truth — used by saveScore and by the frontend.
@@ -55,8 +70,8 @@ function scoreTier(val) {
 
 // Prepared statements (hoisted for reuse)
 const stmtUpsertCompany = db.prepare(`
-  INSERT INTO companies (id, company, role, tier, stage, data, culture_rating, culture_notes, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+  INSERT INTO companies (id, company, role, tier, stage, data, culture_rating, culture_notes, furthest_stage, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
   ON CONFLICT(id) DO UPDATE SET
     company=excluded.company,
     role=excluded.role,
@@ -65,6 +80,7 @@ const stmtUpsertCompany = db.prepare(`
     data=excluded.data,
     culture_rating=excluded.culture_rating,
     culture_notes=excluded.culture_notes,
+    furthest_stage=excluded.furthest_stage,
     updated_at=CURRENT_TIMESTAMP
 `);
 
@@ -77,9 +93,9 @@ module.exports = {
   },
   
   saveCompany: (company) => {
-    const { id, company: name, role, tier, stage, updated_at, data: rawData, culture_rating, culture_notes, ...rest } = company;
+    const { id, company: name, role, tier, stage, updated_at, data: rawData, culture_rating, culture_notes, furthest_stage, ...rest } = company;
     const data = JSON.stringify(rest);
-    return stmtUpsertCompany.run(id, name, role, tier, stage, data, culture_rating || null, culture_notes || null);
+    return stmtUpsertCompany.run(id, name, role, tier, stage, data, culture_rating || null, culture_notes || null, furthest_stage || null);
   },
 
   deleteCompany: (id) => {
@@ -102,10 +118,10 @@ module.exports = {
   migrateCompanies: (companiesList, nextId) => {
     const transaction = db.transaction((list) => {
       for (const c of list) {
-        const { id, company: name, role, tier, stage, updated_at, data: rawData, culture_rating, culture_notes, ...rest } = c;
+        const { id, company: name, role, tier, stage, updated_at, data: rawData, culture_rating, culture_notes, furthest_stage, ...rest } = c;
         delete rest.data;
         delete rest.updated_at;
-        stmtUpsertCompany.run(id, name, role, tier, stage, JSON.stringify(rest), culture_rating || null, culture_notes || null);
+        stmtUpsertCompany.run(id, name, role, tier, stage, JSON.stringify(rest), culture_rating || null, culture_notes || null, furthest_stage || null);
       }
       if (nextId) {
         db.prepare(

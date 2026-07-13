@@ -1,6 +1,6 @@
 var test = require('node:test');
 var assert = require('node:assert/strict');
-var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany, closeCompanyRecord, parseCultureResponse, filterCompanies } = require('../src/lib/pipeline.js');
+var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany, closeCompanyRecord, inferFurthestStage, parseCultureResponse, filterCompanies } = require('../src/lib/pipeline.js');
 
 // ── createCompanyRecord ───────────────────────────────────────────────
 
@@ -346,6 +346,42 @@ test('closeCompanyRecord returns the company', function() {
   var c = { id: 1, stage: 'offer', activity: [] };
   var result = closeCompanyRecord(c, 'Offer', 'Comp too low', '14 May');
   assert.equal(result, c);
+});
+
+test('closeCompanyRecord captures the pre-close stage as furthest_stage', function() {
+  var c = { id: 1, stage: 'interview', activity: [] };
+  closeCompanyRecord(c, 'Interviewing', 'Ghosted after final round', '14 May');
+  assert.equal(c.furthest_stage, 'interview');
+});
+
+// ── inferFurthestStage ──────────────────────────────────────────────
+
+test('inferFurthestStage picks the highest stage keyword found in activity text', function() {
+  var activity = [
+    { date: '14 May', text: 'Closed at Interviewing — Reason: Ghosted' },
+    { date: '10 May', text: 'Advanced to Interviewing' },
+    { date: '5 May', text: 'Advanced to Screen' }
+  ];
+  assert.equal(inferFurthestStage(activity), 'interview');
+});
+
+test('inferFurthestStage prefers offer over interview when both are present', function() {
+  var activity = [
+    { date: '14 May', text: 'Closed at Offer — Reason: Comp too low' },
+    { date: '10 May', text: 'Advanced to Interviewing' }
+  ];
+  assert.equal(inferFurthestStage(activity), 'offer');
+});
+
+test('inferFurthestStage defaults to target when no stage keyword matches', function() {
+  var activity = [{ date: '14 May', text: 'Closed at Target List — Reason: No response' }];
+  assert.equal(inferFurthestStage(activity), 'target');
+});
+
+test('inferFurthestStage defaults to target for empty or missing activity', function() {
+  assert.equal(inferFurthestStage([]), 'target');
+  assert.equal(inferFurthestStage(null), 'target');
+  assert.equal(inferFurthestStage(undefined), 'target');
 });
 
 // ── parseCultureResponse ──────────────────────────────────────────────
