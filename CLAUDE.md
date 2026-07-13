@@ -29,6 +29,9 @@ This is a personal job search pipeline tool for a senior engineering manager. It
   - `POST /api/log`: Write a log entry server-side.
   - `POST /api/migrate`: Bulk import companies.
   - `POST /api/reset`: Wipe all pipeline data.
+- `companies.furthest_stage` tracks the deepest funnel stage a company reached before being closed (its `stage` column is overwritten to `'closed'` at that point, so this is the only place the peak stage survives).
+  - Set exactly by `closeCompanyRecord` (`src/lib/pipeline.js`) at close time, from the company's current `stage`.
+  - For companies closed before this column existed, `database.js` runs a one-time startup migration (`migrateFurthestStage`) that infers it from `activity` log text ("Advanced to X" / "Closed at X") via `inferFurthestStage` — falls back to `'target'` if no stage keyword is found, which is also the correct answer for jobs that never advanced.
 
 ### Styling
 - Dark theme with CSS custom properties (see `:root` in pipeline.html)
