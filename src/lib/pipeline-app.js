@@ -17,6 +17,18 @@ var STAGE_COLORS = {
   interview: '#9b72e8', offer: '#4caf82', closed: '#3a3d42'
 };
 
+function stageLabel(id) {
+  for (var i = 0; i < STAGES.length; i++) { if (STAGES[i].id === id) return STAGES[i].label; }
+  return id;
+}
+
+function furthestStageBadge(stageId, prefix) {
+  if (!stageId) return '';
+  var color = STAGE_COLORS[stageId] || '#6b6f78';
+  return '<span class="funnel-exit-stage" style="border-color:' + color + ';color:' + color + '">' +
+    (prefix || '') + window.esc(stageLabel(stageId)) + '</span>';
+}
+
 var closedExpanded = false;
 var funnelAiResult = null;
 var funnelAiLoading = false;
@@ -27,12 +39,6 @@ window.toggleClosedStack = function() {
 };
 
 var AI_NOISE_TEXTS = ['Updated details', 'Researched company culture', 'Added to pipeline', 'Marked as closed'];
-var AI_STAGE_KWS = [
-  { stage: 'offer',     kw: 'Offer' },
-  { stage: 'interview', kw: 'Interview' },
-  { stage: 'screen',    kw: 'Screen' },
-  { stage: 'warm',      kw: 'Warming Up' }
-];
 
 function getSignificantNotes(activity, noiseTexts) {
   return (activity || []).filter(function(a) {
@@ -43,7 +49,7 @@ function getSignificantNotes(activity, noiseTexts) {
 
 function buildRoleSummaryEntry(idx, cc) {
   const activity = cc.activity || [];
-  const highestStage = getExitHighestStage(activity, AI_STAGE_KWS);
+  const highestStage = cc.furthest_stage || 'target';
   const notes = getSignificantNotes(activity, AI_NOISE_TEXTS);
   let entry = `${idx + 1}. ${cc.company} — ${cc.role}\n   Tier: ${cc.tier} | Exited at: ${highestStage}\n`;
   if (cc.notes) entry += `   Notes: ${cc.notes}\n`;
@@ -413,6 +419,7 @@ window.renderCompactCard = function(c) {
       '<div class="closed-stack-card-role">' + window.esc(c.role) + '</div>' +
     '</div>' +
     '<div class="closed-stack-card-right">' +
+      furthestStageBadge(c.furthest_stage) +
       '<span class="closed-stack-card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span>' +
       '<span class="closed-stack-card-date">' + days + 'd</span>' +
     '</div>' +
@@ -572,19 +579,6 @@ function buildFunnelBarsHtml(activeStages, counts, cumulative, total) {
   return html;
 }
 
-function getExitHighestStage(activity, stageKws) {
-  let highestStage = 'target';
-  outerKw: for (let ski = 0; ski < stageKws.length; ski++) {
-    for (let aii = 0; aii < activity.length; aii++) {
-      if ((activity[aii].text || '').indexOf(stageKws[ski].kw) >= 0) {
-        highestStage = stageKws[ski].stage;
-        break outerKw;
-      }
-    }
-  }
-  return highestStage;
-}
-
 function getExitNote(activity, noiseTexts) {
   for (let en = 0; en < activity.length; en++) {
     const enText = activity[en].text || '';
@@ -594,12 +588,10 @@ function getExitNote(activity, noiseTexts) {
   return null;
 }
 
-function buildExitRow(cc, stageKws, noiseTexts) {
+function buildExitRow(cc, noiseTexts) {
   const activity = cc.activity || [];
-  const highestStage = getExitHighestStage(activity, stageKws);
+  const highestStage = cc.furthest_stage || 'target';
   const exitNote = getExitNote(activity, noiseTexts);
-  const stageColor = STAGE_COLORS[highestStage] || '#6b6f78';
-  const stageLabel = highestStage.charAt(0).toUpperCase() + highestStage.slice(1);
   const noteDisplay = exitNote ? (exitNote.length > 80 ? exitNote.substring(0, 77) + '...' : exitNote) : null;
   const noteHtml = noteDisplay
     ? `<span class="funnel-exit-note">${window.esc(noteDisplay)}</span>`
@@ -607,7 +599,7 @@ function buildExitRow(cc, stageKws, noiseTexts) {
   return {
     html: `<div class="funnel-exit-row">` +
       `<span class="funnel-exit-company">${window.esc(cc.company)}</span>` +
-      `<span class="funnel-exit-stage" style="border-color:${stageColor};color:${stageColor}">${stageLabel}</span>` +
+      furthestStageBadge(highestStage) +
       noteHtml + '</div>',
     isPost: highestStage === 'interview' || highestStage === 'offer'
   };
@@ -616,15 +608,9 @@ function buildExitRow(cc, stageKws, noiseTexts) {
 function buildClosedSectionHtml(closedCos) {
   if (closedCos.length === 0) return '';
   const noiseTexts = ['Updated details', 'Researched company culture', 'Added to pipeline', 'Marked as closed'];
-  const stageKws = [
-    { stage: 'offer',     kw: 'Offer' },
-    { stage: 'interview', kw: 'Interview' },
-    { stage: 'screen',    kw: 'Screen' },
-    { stage: 'warm',      kw: 'Warming Up' }
-  ];
   let preInterview = 0, postInterview = 0, exitRows = '';
   for (let i = 0; i < closedCos.length; i++) {
-    const row = buildExitRow(closedCos[i], stageKws, noiseTexts);
+    const row = buildExitRow(closedCos[i], noiseTexts);
     if (row.isPost) { postInterview++; } else { preInterview++; }
     exitRows += row.html;
   }
@@ -793,11 +779,12 @@ window.selectCompany = function(id) {
     document.getElementById('dp-url-wrap').style.display = 'none';
   }
 
-  var sl = '';
-  for (var j = 0; j < STAGES.length; j++) { if (STAGES[j].id === c.stage) sl = STAGES[j].label; }
+  var sl = stageLabel(c.stage);
+  var reachedBadge = c.stage === 'closed' ? furthestStageBadge(c.furthest_stage, 'Reached: ') : '';
   document.getElementById('dp-meta').innerHTML =
     '<span class="card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span>' +
     '<span class="stage-pill stage-' + c.stage + '">' + sl + '</span>' +
+    reachedBadge +
     '<span class="tag">' + window.esc(c.source) + '</span>';
 
   renderDetailActivityLog(c.activity || []);
@@ -955,10 +942,8 @@ window.closeCompany = function(id) {
   var c = null;
   for (var i = 0; i < companies.length; i++) { if (companies[i].id === id) c = companies[i]; }
   if (!c) return;
-  var stageLabel = c.stage;
-  for (var j = 0; j < STAGES.length; j++) { if (STAGES[j].id === c.stage) stageLabel = STAGES[j].label; }
   var reason = prompt('Rejection reason (optional):');
-  window.closeCompanyRecord(c, stageLabel, reason, window.todayLabel());
+  window.closeCompanyRecord(c, stageLabel(c.stage), reason, window.todayLabel());
   window.syncCompanyToDb(c);
   window.render();
   document.getElementById('detail-panel').classList.remove('open');
