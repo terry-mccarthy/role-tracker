@@ -176,8 +176,8 @@ test('mcp: list_jobs returns companies from API', async function(t) {
     var fakeData1 = JSON.stringify({url:'https://acme.com/jobs',source:'LinkedIn',added:'2026-05-24',activity:[{date:'24 May',text:'Added'}],score:null});
     var fakeData2 = JSON.stringify({url:'',source:'Seek',added:'2026-05-23',activity:[],score:null});
     var fakeCompanies = [
-      { id:1, company:'Acme', role:'Engineer', stage:'target', tier:'A', data:fakeData1, culture_rating:null, culture_notes:null, updated_at:'2026-05-24' },
-      { id:2, company:'Globex', role:'Manager', stage:'warm', tier:'B', data:fakeData2, culture_rating:null, culture_notes:null, updated_at:'2026-05-23' }
+      { id:1, company:'Acme', role:'Engineer', stage:'closed', tier:'A', data:fakeData1, culture_rating:null, culture_notes:null, furthest_stage:'interview', updated_at:'2026-05-24' },
+      { id:2, company:'Globex', role:'Manager', stage:'warm', tier:'B', data:fakeData2, culture_rating:null, culture_notes:null, furthest_stage:null, updated_at:'2026-05-23' }
     ];
     api = await startMockApi(mockRoute({
       'GET /api/companies': function(req, res) {
@@ -199,10 +199,11 @@ test('mcp: list_jobs returns companies from API', async function(t) {
     assert.equal(jobs[0].id, 1);
     assert.equal(jobs[0].company, 'Acme');
     assert.equal(jobs[0].role, 'Engineer');
-    assert.equal(jobs[0].stage, 'target');
+    assert.equal(jobs[0].stage, 'closed');
     assert.equal(jobs[0].tier, 'A');
     assert.equal(jobs[0].url, 'https://acme.com/jobs');
     assert.equal(jobs[0].added, '2026-05-24');
+    assert.equal(jobs[0].furthest_stage, 'interview');
     // slim response must NOT include heavy fields
     assert.equal(jobs[0].score, undefined);
     assert.equal(jobs[0].activity, undefined);
@@ -210,6 +211,7 @@ test('mcp: list_jobs returns companies from API', async function(t) {
     assert.equal(jobs[0].source, undefined);
     assert.equal(jobs[1].company, 'Globex');
     assert.equal(jobs[1].stage, 'warm');
+    assert.equal(jobs[1].furthest_stage, null);
   } finally {
     cleanup(api, mcp, conn);
   }

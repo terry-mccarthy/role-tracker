@@ -141,7 +141,7 @@ async function getAllJobs() {
   return (result.companies || []).map(function(r) {
     var blob = safeParse(r.data);
     return { id: r.id, company: r.company, role: r.role, stage: r.stage, tier: r.tier,
-             url: blob.url || '', added: blob.added || '' };
+             url: blob.url || '', added: blob.added || '', furthest_stage: r.furthest_stage };
   });
 }
 

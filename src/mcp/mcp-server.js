@@ -60,7 +60,7 @@ function getAllJobs() {
   return db.prepare('SELECT * FROM companies ORDER BY id ASC').all().map(function(r) {
     var blob = safeParse(r.data);
     return { id: r.id, company: r.company, role: r.role, stage: r.stage, tier: r.tier,
-             url: blob.url || '', added: blob.added || '' };
+             url: blob.url || '', added: blob.added || '', furthest_stage: r.furthest_stage };
   });
 }
 

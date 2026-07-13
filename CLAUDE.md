@@ -32,7 +32,9 @@ This is a personal job search pipeline tool for a senior engineering manager. It
 - `companies.furthest_stage` tracks the deepest funnel stage a company reached before being closed (its `stage` column is overwritten to `'closed'` at that point, so this is the only place the peak stage survives).
   - Set exactly by `closeCompanyRecord` (`src/lib/pipeline.js`) at close time, from the company's current `stage`.
   - For companies closed before this column existed, `database.js` runs a one-time startup migration (`migrateFurthestStage`) that infers it from `activity` log text ("Advanced to X" / "Closed at X") via `inferFurthestStage` — falls back to `'target'` if no stage keyword is found, which is also the correct answer for jobs that never advanced.
-  - Exposed via MCP in `get_job_details` and `export_pipeline` (not in the slim `list_jobs` summary — same treatment as `culture_rating`/`culture_notes`). **Gotcha**: `mcp-server-http.js`'s `edit_job`/`fetch_jd` go through the web API's full-row `/api/save` upsert, so any column-backed field (including `furthest_stage`) must be explicitly carried forward in the payload or it gets silently nulled on the next save — mirror whatever `culture_rating`/`culture_notes` do in those functions.
+  - Exposed via MCP in `list_jobs`, `get_job_details`, and `export_pipeline` — unlike `culture_rating`/`culture_notes`, it's cheap (scalar column) so it's included in the slim `list_jobs` summary too, letting a caller get every job's furthest_stage in one lightweight call instead of one `get_job_details` per id.
+  - **Gotcha**: `mcp-server-http.js`'s `edit_job`/`fetch_jd` go through the web API's full-row `/api/save` upsert, so any column-backed field (including `furthest_stage`) must be explicitly carried forward in the payload or it gets silently nulled on the next save — mirror whatever `culture_rating`/`culture_notes` do in those functions.
+  - **Gotcha**: `export_pipeline`'s *default* response (no `include_jd`) is already ~1.9MB across ~140 jobs, purely from `activity`/`score`/`notes` accumulation — it has no size guard. If you need bulk data cheaply, prefer `list_jobs` (scalars only, ~30KB for the same set) over `export_pipeline`.
 
 ### Styling
 - Dark theme with CSS custom properties (see `:root` in pipeline.html)
@@ -124,7 +126,7 @@ Start services with: `docker compose -f docker-compose.local-ollama.yml up -d` (
 
 | Tool | Description |
 |---|---|
-| `list_jobs` | Returns a slim summary of all jobs (id, company, role, stage, tier, url, added). |
+| `list_jobs` | Returns a slim summary of all jobs (id, company, role, stage, tier, url, added, furthest_stage). |
 | `get_job_details` | Returns full details for one job by id (score, activity, culture notes, furthest_stage). |
 | `add_job` | Adds a new job to Target List stage. Required: `company`, `role`. Optional: `url`, `source`, `notes`, `tier` (default B). |
 | `edit_job` | Edits fields on an existing job. Required: `id`. Optional: `url`, `role`, `company`, `tier`, `source`, `contact`, `notes`. |
