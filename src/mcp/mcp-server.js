@@ -8,6 +8,7 @@ var { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.j
 var { CallToolRequestSchema, ListToolsRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
 var scoring = require('../lib/scoring');
 var parse = require('../lib/parse');
+var { bumpFurthestStage } = require('../lib/pipeline');
 
 var dbPath = process.env.DB_PATH || path.join(__dirname, '../../pipeline.db');
 var db = new Database(dbPath);
@@ -90,12 +91,12 @@ function addJob(fields) {
   };
 
   db.prepare(`
-    INSERT INTO companies (id, company, role, tier, stage, data, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    INSERT INTO companies (id, company, role, tier, stage, data, furthest_stage, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(id) DO UPDATE SET
       company=excluded.company, role=excluded.role, tier=excluded.tier,
-      stage=excluded.stage, data=excluded.data, updated_at=CURRENT_TIMESTAMP
-  `).run(nextId, fields.company, fields.role, jf.tier, 'target', JSON.stringify(data));
+      stage=excluded.stage, data=excluded.data, furthest_stage=excluded.furthest_stage, updated_at=CURRENT_TIMESTAMP
+  `).run(nextId, fields.company, fields.role, jf.tier, 'target', JSON.stringify(data), 'target');
 
   db.prepare("UPDATE kv_store SET value = ? WHERE key = 'nextId'").run(String(nextId + 1));
   return { id: nextId, company: fields.company, role: fields.role, stage: 'target' };
@@ -114,9 +115,10 @@ function editJob(id, fields) {
   EDITABLE_BLOB_FIELDS.forEach(function(k) {
     if (fields[k] !== undefined) blob[k] = fields[k];
   });
+  var newFurthestStage = bumpFurthestStage(r.furthest_stage, top.stage);
 
-  db.prepare('UPDATE companies SET company=?, role=?, tier=?, stage=?, data=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
-    .run(top.company, top.role, top.tier, top.stage, JSON.stringify(blob), id);
+  db.prepare('UPDATE companies SET company=?, role=?, tier=?, stage=?, data=?, furthest_stage=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
+    .run(top.company, top.role, top.tier, top.stage, JSON.stringify(blob), newFurthestStage, id);
   return { id: id, updated: true };
 }
 

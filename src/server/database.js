@@ -43,13 +43,16 @@ db.exec(`
   }
 })();
 
-// Data migration: backfill furthest_stage for companies closed before this column
-// existed. The real stage was overwritten to 'closed' at the time, so the best we
+// Data migration: backfill furthest_stage for companies that predate this column.
+// Closed companies had their real stage overwritten to 'closed', so the best we
 // can do is infer it from the "Advanced to X" / "Closed at X" activity log text.
+// Open companies haven't lost anything — their current stage IS the furthest
+// stage reached so far, so it's just copied across directly.
 (function migrateFurthestStage() {
-  const rows = db.prepare("SELECT id, data FROM companies WHERE stage = 'closed' AND furthest_stage IS NULL").all();
+  const rows = db.prepare('SELECT id, stage, data FROM companies WHERE furthest_stage IS NULL').all();
   const stmt = db.prepare('UPDATE companies SET furthest_stage = ? WHERE id = ?');
   for (const row of rows) {
+    if (row.stage !== 'closed') { stmt.run(row.stage, row.id); continue; }
     try {
       const blob = JSON.parse(row.data || '{}');
       stmt.run(inferFurthestStage(blob.activity), row.id);

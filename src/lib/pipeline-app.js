@@ -811,6 +811,7 @@ window.advanceStage = function(id) {
   if (stageIdx >= 0 && stageIdx < STAGES.length - 2) {
     var ns = STAGES[stageIdx + 1];
     c.stage = ns.id;
+    c.furthest_stage = window.bumpFurthestStage(c.furthest_stage, ns.id);
     if (!c.activity) c.activity = [];
     c.activity.unshift({ date: window.todayLabel(), text: 'Advanced to ' + ns.label });
   }
@@ -1135,6 +1136,7 @@ window.saveCompany = function() {
       c.role = role;
       c.tier = document.getElementById('f-tier').value;
       c.stage = document.getElementById('f-stage').value;
+      c.furthest_stage = window.bumpFurthestStage(c.furthest_stage, c.stage);
       c.source = document.getElementById('f-source').value;
       c.url = document.getElementById('f-url').value.trim();
       c.contact = document.getElementById('f-contact').value.trim();

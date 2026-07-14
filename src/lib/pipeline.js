@@ -1,6 +1,18 @@
 (function() {
   var STAGE_IDS = ['target', 'warm', 'screen', 'interview', 'offer', 'closed'];
 
+  // Real funnel stages only — 'closed' is a terminal status, not a rung on this ladder.
+  var REAL_STAGE_ORDER = ['target', 'warm', 'screen', 'interview', 'offer'];
+
+  // Tracks the peak stage ever reached, live — never regresses, and ignores
+  // 'closed' as a candidate since closing isn't itself a stage to credit.
+  function bumpFurthestStage(current, candidate) {
+    var candidateRank = REAL_STAGE_ORDER.indexOf(candidate);
+    if (candidateRank === -1) return current || null;
+    var currentRank = current ? REAL_STAGE_ORDER.indexOf(current) : -1;
+    return candidateRank > currentRank ? candidate : current;
+  }
+
   /**
    * Maps a numeric overall score (1-10) to a tier label.
    * Single source of truth — used by both the DB layer and the frontend.
@@ -29,6 +41,7 @@
       jd: fields.jd || '',
       added: todayStr,
       score: null,
+      furthest_stage: bumpFurthestStage(null, fields.stage),
       activity: [{ date: todayLabel, text: 'Added to pipeline (' + fields.stage + ')' }]
     };
   }
@@ -134,7 +147,7 @@
 
   function closeCompanyRecord(c, stageLabel, reason, dateLabel) {
     var reasonText = (reason && reason.trim()) ? reason.trim() : 'No reason given';
-    c.furthest_stage = c.stage;
+    c.furthest_stage = bumpFurthestStage(c.furthest_stage, c.stage);
     c.stage = 'closed';
     if (!c.activity) c.activity = [];
     c.activity.unshift({ date: dateLabel, text: 'Closed at ' + stageLabel + ' — Reason: ' + reasonText });
@@ -185,6 +198,7 @@
       logActivityToCompany: logActivityToCompany,
       closeCompanyRecord: closeCompanyRecord,
       inferFurthestStage: inferFurthestStage,
+      bumpFurthestStage: bumpFurthestStage,
       parseCultureResponse: parseCultureResponse,
       filterCompanies: filterCompanies
     };
@@ -196,6 +210,7 @@
     window.logActivityToCompany = logActivityToCompany;
     window.closeCompanyRecord = closeCompanyRecord;
     window.inferFurthestStage = inferFurthestStage;
+    window.bumpFurthestStage = bumpFurthestStage;
     window.parseCultureResponse = parseCultureResponse;
     window.filterCompanies = filterCompanies;
   }

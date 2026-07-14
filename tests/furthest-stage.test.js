@@ -118,7 +118,7 @@ test('furthest_stage: legacy closed companies without furthest_stage are backfil
   }
 });
 
-test('furthest_stage: backfill leaves non-closed companies untouched', async function(t) {
+test('furthest_stage: backfill sets non-closed companies to their current stage', async function(t) {
   var s;
   cleanupDb();
   try {
@@ -132,10 +132,13 @@ test('furthest_stage: backfill leaves non-closed companies untouched', async fun
     });
     stopServer(s);
 
+    // Second boot: an open company still sitting mid-funnel should get
+    // furthest_stage backfilled to its current stage — nothing is lost for
+    // open jobs the way it is for closed ones, so no inference needed.
     s = await startServer();
     var getRes = await apiGet(s.port, '/api/companies');
     var company = JSON.parse(getRes.body).companies[0];
-    assert.equal(company.furthest_stage, null);
+    assert.equal(company.furthest_stage, 'screen');
   } finally {
     stopServer(s);
     cleanupDb();

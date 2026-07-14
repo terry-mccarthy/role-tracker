@@ -1,6 +1,6 @@
 var test = require('node:test');
 var assert = require('node:assert/strict');
-var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany, closeCompanyRecord, inferFurthestStage, parseCultureResponse, filterCompanies } = require('../src/lib/pipeline.js');
+var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany, closeCompanyRecord, inferFurthestStage, bumpFurthestStage, parseCultureResponse, filterCompanies } = require('../src/lib/pipeline.js');
 
 // ── createCompanyRecord ───────────────────────────────────────────────
 
@@ -35,6 +35,17 @@ test('createCompanyRecord defaults optional fields to empty string', function() 
   assert.equal(rec.contact, '');
   assert.equal(rec.notes, '');
   assert.equal(rec.jd, '');
+});
+
+test('createCompanyRecord initializes furthest_stage to the starting stage', function() {
+  var rec = createCompanyRecord(BASE_FIELDS, 1, '2026-05-07', '7 May');
+  assert.equal(rec.furthest_stage, 'target');
+});
+
+test('createCompanyRecord initializes furthest_stage for a non-default starting stage', function() {
+  var fields = { company: 'X', role: 'Y', tier: 'B', stage: 'screen', source: 'Network' };
+  var rec = createCompanyRecord(fields, 1, '2026-05-07', '7 May');
+  assert.equal(rec.furthest_stage, 'screen');
 });
 
 // ── computeFunnelStats ────────────────────────────────────────────────
@@ -352,6 +363,38 @@ test('closeCompanyRecord captures the pre-close stage as furthest_stage', functi
   var c = { id: 1, stage: 'interview', activity: [] };
   closeCompanyRecord(c, 'Interviewing', 'Ghosted after final round', '14 May');
   assert.equal(c.furthest_stage, 'interview');
+});
+
+test('closeCompanyRecord does not regress furthest_stage if it was already ahead', function() {
+  var c = { id: 1, stage: 'interview', furthest_stage: 'offer', activity: [] };
+  closeCompanyRecord(c, 'Interviewing', 'Ghosted after final round', '14 May');
+  assert.equal(c.furthest_stage, 'offer');
+});
+
+// ── bumpFurthestStage ─────────────────────────────────────────────────
+
+test('bumpFurthestStage sets an unset furthest_stage to the candidate', function() {
+  assert.equal(bumpFurthestStage(null, 'target'), 'target');
+  assert.equal(bumpFurthestStage(undefined, 'screen'), 'screen');
+});
+
+test('bumpFurthestStage advances when the candidate is further along', function() {
+  assert.equal(bumpFurthestStage('target', 'warm'), 'warm');
+  assert.equal(bumpFurthestStage('warm', 'offer'), 'offer');
+});
+
+test('bumpFurthestStage never regresses to an earlier stage', function() {
+  assert.equal(bumpFurthestStage('interview', 'screen'), 'interview');
+  assert.equal(bumpFurthestStage('offer', 'target'), 'offer');
+});
+
+test('bumpFurthestStage is a no-op when the candidate equals the current stage', function() {
+  assert.equal(bumpFurthestStage('interview', 'interview'), 'interview');
+});
+
+test('bumpFurthestStage ignores "closed" as a candidate (not a real funnel stage)', function() {
+  assert.equal(bumpFurthestStage('offer', 'closed'), 'offer');
+  assert.equal(bumpFurthestStage(null, 'closed'), null);
 });
 
 // ── inferFurthestStage ──────────────────────────────────────────────

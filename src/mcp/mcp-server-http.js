@@ -5,6 +5,7 @@ var { SSEServerTransport } = require('@modelcontextprotocol/sdk/server/sse.js');
 var { CallToolRequestSchema, ListToolsRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
 var scoring = require('../lib/scoring');
 var parse = require('../lib/parse');
+var { bumpFurthestStage } = require('../lib/pipeline');
 
 var PORT = parseInt(process.env.MCP_PORT || '3100', 10);
 var API_BASE = process.env.API_BASE_URL || 'http://app:3000';
@@ -166,7 +167,7 @@ async function addJob(fields) {
 
   var company = {
     id: nextId, company: fields.company, role: fields.role,
-    tier: jf.tier, stage: 'target',
+    tier: jf.tier, stage: 'target', furthest_stage: 'target',
     url: jf.url, source: jf.source, contact: '',
     next: '', notes: jf.notes, linked_documents: '', jd: '',
     added: todayISO(), score: null,
@@ -186,8 +187,7 @@ async function editJob(id, fields) {
   var blob = safeParse(row.data);
   var payload = Object.assign({}, blob, {
     id: row.id, stage: row.stage,
-    culture_rating: row.culture_rating, culture_notes: row.culture_notes,
-    furthest_stage: row.furthest_stage
+    culture_rating: row.culture_rating, culture_notes: row.culture_notes
   });
 
   EDITABLE_TOP_FIELDS.forEach(function(k) {
@@ -196,6 +196,7 @@ async function editJob(id, fields) {
   EDITABLE_BLOB_FIELDS.forEach(function(k) {
     if (fields[k] !== undefined) payload[k] = fields[k];
   });
+  payload.furthest_stage = bumpFurthestStage(row.furthest_stage, payload.stage);
 
   await apiPost('/api/save', payload);
   return { id: id, updated: true };

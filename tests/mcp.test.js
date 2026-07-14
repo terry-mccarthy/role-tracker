@@ -256,6 +256,7 @@ test('mcp: add_job creates company and returns result', async function(t) {
     assert.equal(savedPayload.url, 'https://testco.com/jobs/em');
     assert.equal(savedPayload.source, 'LinkedIn');
     assert.equal(savedPayload.notes, 'Great fit');
+    assert.equal(savedPayload.furthest_stage, 'target');
   } finally {
     cleanup(api, mcp, conn);
   }
@@ -376,6 +377,40 @@ test('mcp: edit_job updates stage field', async function(t) {
     assert.ok(savedPayload, 'Should call /api/save');
     assert.equal(savedPayload.stage, 'interview');
     assert.equal(savedPayload.id, 4);
+    assert.equal(savedPayload.furthest_stage, 'interview', 'furthest_stage should live-update as stage advances');
+  } finally {
+    cleanup(api, mcp, conn);
+  }
+});
+
+test('mcp: edit_job does not regress furthest_stage when stage moves backward', async function(t) {
+  var api, mcp, conn;
+  var savedPayload = null;
+  try {
+    var fakeData = JSON.stringify({ url: 'https://old.com/jobs', added: '2026-06-01', activity: [] });
+    var fakeCompanies = [
+      { id: 12, company: 'RegressCo', role: 'EM', stage: 'interview', tier: 'B',
+        data: fakeData, culture_rating: null, culture_notes: null, furthest_stage: 'interview', updated_at: '2026-06-01' }
+    ];
+    api = await startMockApi(mockRoute({
+      'GET /api/companies': function(req, res) {
+        res.end(JSON.stringify({ companies: fakeCompanies, nextId: 13 }));
+      },
+      'POST /api/save': function(req, res) {
+        readBody(req, function(body) { savedPayload = body; res.end(JSON.stringify({ success: true })); });
+      }
+    }));
+    mcp = await startMcpServer(getPort(api));
+    conn = await mcpConnect('localhost', mcp.port);
+    var postRes = await mcpPostMessage('localhost', mcp.port, conn.sessionId, {
+      jsonrpc: '2.0', id: 1, method: 'tools/call',
+      params: { name: 'edit_job', arguments: { id: 12, stage: 'screen' } }
+    });
+    assert.equal(postRes.status, 202);
+    await waitForSseResult(conn.sseRes);
+    assert.ok(savedPayload, 'Should call /api/save');
+    assert.equal(savedPayload.stage, 'screen');
+    assert.equal(savedPayload.furthest_stage, 'interview', 'furthest_stage should not regress when stage is corrected backward');
   } finally {
     cleanup(api, mcp, conn);
   }
