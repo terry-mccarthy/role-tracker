@@ -46,62 +46,77 @@
     };
   }
 
-  // Returns pure stats from the companies array — no DOM, no HTML.
-  function computeFunnelStats(companies) {
+  function computeStageCounts(companies) {
     var counts = {};
-    var i, j;
-    for (i = 0; i < STAGE_IDS.length; i++) {
+    for (var i = 0; i < STAGE_IDS.length; i++) {
       var cnt = 0;
-      for (j = 0; j < companies.length; j++) {
+      for (var j = 0; j < companies.length; j++) {
         if (companies[j].stage === STAGE_IDS[i]) cnt++;
       }
       counts[STAGE_IDS[i]] = cnt;
     }
+    return counts;
+  }
 
-    // Cumulative counts: companies that reached at least each stage.
-    // A company in 'interview' also counts toward 'target', 'warm', 'screen'.
-    // Closed companies are excluded — they exited the funnel.
-    var funnelIds = ['target', 'warm', 'screen', 'interview', 'offer'];
+  // Cumulative counts: companies that reached at least each funnel stage.
+  // A company in 'interview' also counts toward 'target', 'warm', 'screen'.
+  // Closed companies are excluded — they exited the funnel.
+  var FUNNEL_IDS = ['target', 'warm', 'screen', 'interview', 'offer'];
+
+  function computeCumulativeCounts(counts) {
     var cumulative = {};
     var running = 0;
-    for (i = funnelIds.length - 1; i >= 0; i--) {
-      running += counts[funnelIds[i]] || 0;
-      cumulative[funnelIds[i]] = running;
+    for (var i = FUNNEL_IDS.length - 1; i >= 0; i--) {
+      running += counts[FUNNEL_IDS[i]] || 0;
+      cumulative[FUNNEL_IDS[i]] = running;
     }
+    return cumulative;
+  }
 
-    var networkTotal = 0, networkAdv = 0, boardTotal = 0, boardAdv = 0;
-    for (i = 0; i < companies.length; i++) {
+  // % of companies from this source that ever advanced past warm-up.
+  function computeSourceConversion(companies, source) {
+    var total = 0, advanced = 0;
+    for (var i = 0; i < companies.length; i++) {
       var c = companies[i];
-      var advanced = c.stage === 'screen' || c.stage === 'interview' || c.stage === 'offer';
-      if (c.source === 'Network') { networkTotal++; if (advanced) networkAdv++; }
-      if (c.source === 'Job Board') { boardTotal++; if (advanced) boardAdv++; }
+      if (c.source !== source) continue;
+      total++;
+      if (c.stage === 'screen' || c.stage === 'interview' || c.stage === 'offer') advanced++;
     }
+    return total > 0 ? Math.round(advanced / total * 100) : 0;
+  }
 
-    var netConv = networkTotal > 0 ? Math.round(networkAdv / networkTotal * 100) : 0;
-    var boardConv = boardTotal > 0 ? Math.round(boardAdv / boardTotal * 100) : 0;
-    var screenCount = (counts['screen'] || 0) + (counts['interview'] || 0) + (counts['offer'] || 0);
-    var bottleneck = counts['target'] > (counts['warm'] || 0) * 2
-      ? 'target_warm'
-      : (counts['warm'] || 0) > (counts['screen'] || 0) * 3
-        ? 'warm_screen'
-        : null;
+  function detectBottleneck(counts) {
+    if (counts['target'] > (counts['warm'] || 0) * 2) return 'target_warm';
+    if ((counts['warm'] || 0) > (counts['screen'] || 0) * 3) return 'warm_screen';
+    return null;
+  }
 
+  function computeTierCounts(companies) {
     var tierA = 0, tierB = 0, tierC = 0;
-    for (i = 0; i < companies.length; i++) {
+    for (var i = 0; i < companies.length; i++) {
       if (companies[i].tier === 'A') tierA++;
       else if (companies[i].tier === 'B') tierB++;
       else if (companies[i].tier === 'C') tierC++;
     }
+    return { tierA: tierA, tierB: tierB, tierC: tierC };
+  }
+
+  // Returns pure stats from the companies array — no DOM, no HTML.
+  function computeFunnelStats(companies) {
+    var counts = computeStageCounts(companies);
+    var cumulative = computeCumulativeCounts(counts);
+    var tiers = computeTierCounts(companies);
+    var screenCount = (counts['screen'] || 0) + (counts['interview'] || 0) + (counts['offer'] || 0);
 
     return {
       counts: counts,
       cumulative: cumulative,
-      netConv: netConv,
-      boardConv: boardConv,
-      bottleneck: bottleneck,
-      tierA: tierA,
-      tierB: tierB,
-      tierC: tierC,
+      netConv: computeSourceConversion(companies, 'Network'),
+      boardConv: computeSourceConversion(companies, 'Job Board'),
+      bottleneck: detectBottleneck(counts),
+      tierA: tiers.tierA,
+      tierB: tiers.tierB,
+      tierC: tiers.tierC,
       screenCount: screenCount
     };
   }
