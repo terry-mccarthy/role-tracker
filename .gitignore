@@ -6,6 +6,7 @@
 .env.*
 # User-specific configuration (local only)
 config/evaluation-profile.md
+.claude/settings.local.json
 
 # Database and generated data — never commit
 pipeline.db
