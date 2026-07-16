@@ -1,6 +1,6 @@
 var test = require('node:test');
 var assert = require('node:assert/strict');
-var { createCompanyRecord, computeFunnelStats, computeClosedStats, addInterviewNoteToCompany, logActivityToCompany, closeCompanyRecord, inferFurthestStage, bumpFurthestStage, parseCultureResponse, filterCompanies } = require('../src/lib/pipeline.js');
+var { createCompanyRecord, computeFunnelStats, computeClosedStats, addInterviewNoteToCompany, logActivityToCompany, closeCompanyRecord, inferFurthestStage, bumpFurthestStage, parseCultureResponse, filterCompanies, daysSince } = require('../src/lib/pipeline.js');
 
 // ── createCompanyRecord ───────────────────────────────────────────────
 
@@ -209,6 +209,24 @@ test('computeClosedStats handles empty array', function() {
   assert.equal(stats.total, 0);
   assert.equal(stats.byStage.target, 0);
   assert.equal(stats.byStage.offer, 0);
+});
+
+// ── daysSince ────────────────────────────────────────────────────────
+
+test('daysSince computes whole days between a past date and now', function() {
+  var past = new Date(Date.now() - 3 * 86400000 - 1000); // just over 3 days ago
+  assert.equal(daysSince(past.toISOString()), 3);
+});
+
+test('daysSince returns 0 for a date earlier today', function() {
+  assert.equal(daysSince(new Date().toISOString()), 0);
+});
+
+test('daysSince returns null for missing or invalid date input', function() {
+  assert.equal(daysSince(undefined), null);
+  assert.equal(daysSince(null), null);
+  assert.equal(daysSince(''), null);
+  assert.equal(daysSince('not-a-date'), null);
 });
 
 // ── filterCompanies ───────────────────────────────────────────────────

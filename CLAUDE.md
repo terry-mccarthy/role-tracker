@@ -41,6 +41,8 @@ This is a personal job search pipeline tool for a senior engineering manager. It
   - **Gotcha**: `mcp-server-http.js`'s `edit_job`/`fetch_jd` go through the web API's full-row `/api/save` upsert, so any column-backed field (including `furthest_stage`) must be explicitly carried forward in the payload or it gets silently nulled on the next save — mirror whatever `culture_rating`/`culture_notes` do in those functions.
   - **Gotcha**: `export_pipeline`'s *default* response (no `include_jd`) is already ~1.9MB across ~140 jobs, purely from `activity`/`score`/`notes` accumulation — it has no size guard. If you need bulk data cheaply, prefer `list_jobs` (scalars only, ~30KB for the same set) over `export_pipeline`.
 - The Table tab's `#closed-summary` bar (built by `computeClosedStats` in `src/lib/pipeline.js`, rendered by `window.renderClosedSummary` in `pipeline-app.js`) breaks down closed companies by `furthest_stage` reached — reuses the `funnel-exit-stage` badge styling from the Funnel tab's closed section for visual consistency. Hides itself (`.closed-summary:empty`) when nothing is closed yet.
+- `daysSince(dateStr)` lives in `src/lib/pipeline.js` (moved there from `pipeline-app.js` so it's covered by `tests/pipeline.test.js`) and returns `null` — not `NaN` — for missing/unparseable input. Callers render `null` as `—` via `daysAgoLabel()`/inline checks in `pipeline-app.js`.
+  - **Gotcha**: `new Date(null)` is the Unix epoch (`1970-01-01`), *not* an invalid date — `isNaN(new Date(x).getTime())` alone won't catch a `null`/`undefined` input. Check falsy-ness first, then fall back to the `isNaN` check for genuinely malformed strings.
 
 ### Styling
 - Dark theme with CSS custom properties (see `:root` in pipeline.html)

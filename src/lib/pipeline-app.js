@@ -297,12 +297,6 @@ window.confirmReset = function() {
 
 // ── UTILITY ────────────────────────────────────────────────────────
 
-window.daysSince = function(dateStr) {
-  var d = new Date(dateStr);
-  var now = new Date();
-  return Math.floor((now - d) / 86400000);
-};
-
 window.todayStr = function() {
   var d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -386,6 +380,10 @@ function buildCultureBadge(culture_rating) {
   return `<span style="color:${cColor};font-size:0.65rem;margin-left:0.4rem;font-family:var(--mono)">★${culture_rating}</span>`;
 }
 
+function daysAgoLabel(days) {
+  return days === null ? '—' : days + 'd ago';
+}
+
 window.renderCard = function(c) {
   var days = window.daysSince(c.updated_at || c.added);
   var urgent = (c.stage === 'interview' || c.stage === 'warm') && days > 5;
@@ -405,7 +403,7 @@ window.renderCard = function(c) {
     nextLine +
     '<div class="card-meta">' +
       '<span class="card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span>' +
-      '<span class="card-date">' + days + 'd ago</span>' +
+      '<span class="card-date">' + daysAgoLabel(days) + '</span>' +
     '</div>' +
     '<div class="card-tags"><span class="tag">' + window.esc(c.source) + '</span>' + contactTag + urlTag + '</div>' +
   '</div>';
@@ -421,7 +419,7 @@ window.renderCompactCard = function(c) {
     '<div class="closed-stack-card-right">' +
       furthestStageBadge(c.furthest_stage) +
       '<span class="closed-stack-card-tier tier-' + c.tier.toLowerCase() + '">Tier ' + c.tier + '</span>' +
-      '<span class="closed-stack-card-date">' + days + 'd</span>' +
+      '<span class="closed-stack-card-date">' + (days === null ? '—' : days + 'd') + '</span>' +
     '</div>' +
   '</div>';
 };
@@ -525,7 +523,7 @@ function buildTableRowHtml(c) {
     `<td><span class="card-tier tier-${c.tier.toLowerCase()}">Tier ${c.tier}</span></td>` +
     `<td><span class="stage-pill stage-${c.stage}">${sl}</span></td>` +
     `<td style="color:var(--dim)">${window.esc(c.source)}</td>` +
-    `<td style="color:var(--dim);font-family:var(--mono);font-size:0.7rem">${window.daysSince(c.added)}d ago</td>` +
+    `<td style="color:var(--dim);font-family:var(--mono);font-size:0.7rem">${daysAgoLabel(window.daysSince(c.added))}</td>` +
     `<td style="color:var(--accent2);font-style:italic;font-size:0.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${window.esc(c.next || '')}</td></tr>`;
 }
 

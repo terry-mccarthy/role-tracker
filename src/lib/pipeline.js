@@ -141,6 +141,16 @@
     return { total: total, byStage: byStage };
   }
 
+  // Whole days between dateStr and now. Returns null (rather than NaN) for
+  // missing/unparseable input, e.g. a company row whose data blob got lost.
+  function daysSince(dateStr) {
+    if (!dateStr) return null; // new Date(null) is the Unix epoch, not invalid
+    var d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+    var now = new Date();
+    return Math.floor((now - d) / 86400000);
+  }
+
   function parseCultureResponse(raw) {
     if (!raw) return null;
     var s = raw.trim();
@@ -230,6 +240,7 @@
       createCompanyRecord: createCompanyRecord,
       computeFunnelStats: computeFunnelStats,
       computeClosedStats: computeClosedStats,
+      daysSince: daysSince,
       addInterviewNoteToCompany: addInterviewNoteToCompany,
       logActivityToCompany: logActivityToCompany,
       closeCompanyRecord: closeCompanyRecord,
@@ -243,6 +254,7 @@
     window.createCompanyRecord = createCompanyRecord;
     window.computeFunnelStats = computeFunnelStats;
     window.computeClosedStats = computeClosedStats;
+    window.daysSince = daysSince;
     window.addInterviewNoteToCompany = addInterviewNoteToCompany;
     window.logActivityToCompany = logActivityToCompany;
     window.closeCompanyRecord = closeCompanyRecord;
