@@ -529,7 +529,28 @@ function buildTableRowHtml(c) {
     `<td style="color:var(--accent2);font-style:italic;font-size:0.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${window.esc(c.next || '')}</td></tr>`;
 }
 
+function closedStageBadge(stageId, count) {
+  const color = STAGE_COLORS[stageId] || '#6b6f78';
+  return '<span class="funnel-exit-stage" style="border-color:' + color + ';color:' + color + '">' +
+    window.esc(stageLabel(stageId)) + ' &middot; ' + count + '</span>';
+}
+
+window.renderClosedSummary = function() {
+  const el = document.getElementById('closed-summary');
+  if (!el) return;
+  const stats = window.computeClosedStats(companies);
+  if (stats.total === 0) { el.innerHTML = ''; return; }
+  const order = ['target', 'warm', 'screen', 'interview', 'offer'];
+  let badges = '';
+  for (let i = 0; i < order.length; i++) {
+    const count = stats.byStage[order[i]] || 0;
+    if (count > 0) badges += closedStageBadge(order[i], count);
+  }
+  el.innerHTML = '<span class="closed-summary-label">Closed at &middot; ' + stats.total + ' total</span>' + badges;
+};
+
 window.renderTable = function() {
+  window.renderClosedSummary();
   const tbody = document.getElementById('table-body');
   const search = document.getElementById('tbl-search') ? document.getElementById('tbl-search').value.toLowerCase() : '';
   const stageF = getCheckedValues('fd-stage-panel');

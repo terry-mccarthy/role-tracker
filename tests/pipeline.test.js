@@ -1,6 +1,6 @@
 var test = require('node:test');
 var assert = require('node:assert/strict');
-var { createCompanyRecord, computeFunnelStats, addInterviewNoteToCompany, logActivityToCompany, closeCompanyRecord, inferFurthestStage, bumpFurthestStage, parseCultureResponse, filterCompanies } = require('../src/lib/pipeline.js');
+var { createCompanyRecord, computeFunnelStats, computeClosedStats, addInterviewNoteToCompany, logActivityToCompany, closeCompanyRecord, inferFurthestStage, bumpFurthestStage, parseCultureResponse, filterCompanies } = require('../src/lib/pipeline.js');
 
 // ── createCompanyRecord ───────────────────────────────────────────────
 
@@ -167,6 +167,48 @@ test('computeFunnelStats cumulative excludes closed companies', function() {
   var c = computeFunnelStats(companies).cumulative;
   assert.equal(c.target, 2);
   assert.equal(c.offer, 1);
+});
+
+// ── computeClosedStats ────────────────────────────────────────────────
+
+function makeClosedCompany(furthestStage) {
+  return { stage: 'closed', furthest_stage: furthestStage };
+}
+
+test('computeClosedStats ignores open companies', function() {
+  var companies = [makeCompany('target'), makeCompany('interview')];
+  var stats = computeClosedStats(companies);
+  assert.equal(stats.total, 0);
+});
+
+test('computeClosedStats counts closed companies grouped by furthest_stage reached', function() {
+  var companies = [
+    makeClosedCompany('target'), makeClosedCompany('target'),
+    makeClosedCompany('warm'),
+    makeClosedCompany('interview'), makeClosedCompany('interview'), makeClosedCompany('interview'),
+    makeCompany('screen') // still open, should not be counted
+  ];
+  var stats = computeClosedStats(companies);
+  assert.equal(stats.total, 6);
+  assert.equal(stats.byStage.target, 2);
+  assert.equal(stats.byStage.warm, 1);
+  assert.equal(stats.byStage.screen, 0);
+  assert.equal(stats.byStage.interview, 3);
+  assert.equal(stats.byStage.offer, 0);
+});
+
+test('computeClosedStats falls back to target for closed companies missing furthest_stage', function() {
+  var companies = [makeClosedCompany(null), makeClosedCompany(undefined)];
+  var stats = computeClosedStats(companies);
+  assert.equal(stats.total, 2);
+  assert.equal(stats.byStage.target, 2);
+});
+
+test('computeClosedStats handles empty array', function() {
+  var stats = computeClosedStats([]);
+  assert.equal(stats.total, 0);
+  assert.equal(stats.byStage.target, 0);
+  assert.equal(stats.byStage.offer, 0);
 });
 
 // ── filterCompanies ───────────────────────────────────────────────────

@@ -121,6 +121,26 @@
     };
   }
 
+  // Breaks down closed companies by the furthest real stage they reached
+  // before closing (using furthest_stage, so a company that got to
+  // Interview and was then rejected still counts under Interview, not Closed).
+  function computeClosedStats(companies) {
+    var byStage = {};
+    var i;
+    for (i = 0; i < REAL_STAGE_ORDER.length; i++) byStage[REAL_STAGE_ORDER[i]] = 0;
+
+    var total = 0;
+    for (i = 0; i < companies.length; i++) {
+      var c = companies[i];
+      if (c.stage !== 'closed') continue;
+      total++;
+      var stage = c.furthest_stage || 'target';
+      byStage[stage] = (byStage[stage] || 0) + 1;
+    }
+
+    return { total: total, byStage: byStage };
+  }
+
   function parseCultureResponse(raw) {
     if (!raw) return null;
     var s = raw.trim();
@@ -209,6 +229,7 @@
       scoreTier: scoreTier,
       createCompanyRecord: createCompanyRecord,
       computeFunnelStats: computeFunnelStats,
+      computeClosedStats: computeClosedStats,
       addInterviewNoteToCompany: addInterviewNoteToCompany,
       logActivityToCompany: logActivityToCompany,
       closeCompanyRecord: closeCompanyRecord,
@@ -221,6 +242,7 @@
     window.scoreTier = scoreTier;
     window.createCompanyRecord = createCompanyRecord;
     window.computeFunnelStats = computeFunnelStats;
+    window.computeClosedStats = computeClosedStats;
     window.addInterviewNoteToCompany = addInterviewNoteToCompany;
     window.logActivityToCompany = logActivityToCompany;
     window.closeCompanyRecord = closeCompanyRecord;
